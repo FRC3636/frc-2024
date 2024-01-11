@@ -1,6 +1,11 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+
+
+
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -13,21 +18,20 @@ import edu.wpi.first.wpilibj2.command.Command
  * to the various subsystems in this container to pass into to commands. The commands can just
  * directly reference the (single instance of the) object.
  */
-object RobotContainer
-{
-    init
-    {
+object RobotContainer  {
+    init {
         configureBindings()
+        Shooter
     }
+
+    private val controller = CommandXboxController(0)
 
     /** Use this method to define your `trigger->command` mappings. */
-    private fun configureBindings()
-    {
-
+    private fun configureBindings() {
+        controller.b().whileTrue(Shooter.shootCommand())
     }
 
-    fun getAutonomousCommand(): Command?
-    {
+    fun getAutonomousCommand(): Command? {
         return null
     }
 }
