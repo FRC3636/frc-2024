@@ -28,7 +28,6 @@ object RobotContainer
 
     fun getAutonomousCommand(): Command?
     {
-        // TODO: Implement properly
         return null
     }
 }

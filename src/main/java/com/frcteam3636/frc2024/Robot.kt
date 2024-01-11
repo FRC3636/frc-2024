@@ -3,11 +3,16 @@ package com.frcteam3636.frc2024
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.wpilibj.TimedRobot
+import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
-import com.frcteam3636.frc2024.commands.Autos
+import org.littletonrobotics.junction.LogFileUtil
+import org.littletonrobotics.junction.LoggedRobot
+import org.littletonrobotics.junction.Logger
+import org.littletonrobotics.junction.networktables.NT4Publisher
+import org.littletonrobotics.junction.wpilog.WPILOGReader
+import org.littletonrobotics.junction.wpilog.WPILOGWriter
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton class),
@@ -19,7 +24,7 @@ import com.frcteam3636.frc2024.commands.Autos
  * the `Main.kt` file in the project. (If you use the IDE's Rename or Move refactorings when renaming the
  * object or package, it will get changed everywhere.)
  */
-object Robot : TimedRobot()
+object Robot : LoggedRobot()
 {
 
     private var autonomousCommand: Command? = null
@@ -29,6 +34,29 @@ object Robot : TimedRobot()
     {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
         HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version)
+
+        if (isReal()) {
+            Logger.addDataReceiver(WPILOGWriter("/U")) // Log to a USB stick
+            Logger.addDataReceiver(NT4Publisher()) // Publish data to NetworkTables
+            PowerDistribution(1, PowerDistribution.ModuleType.kRev) // Enables power distribution logging
+        } else {
+            var logPath: String? = null
+            try {
+                logPath = LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or prompt the user)
+            } catch (_: java.util.NoSuchElementException) {}
+
+            if (logPath == null) {
+                // No replay log, so perform physics simulation
+                Logger.addDataReceiver(NT4Publisher())
+            } else {
+                // Replay log exists, so replay data
+                setUseTiming(false) // Run as fast as possible
+                Logger.setReplaySource(WPILOGReader(logPath)) // Read replay log
+                Logger.addDataReceiver(WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))) // Save outputs to a new log
+            }
+        }
+        Logger.start() // Start logging! No more data receivers, replay sources, or metadata values may be added.
+
         // Access the RobotContainer object so that it is initialized. This will perform all our
         // button bindings, and put our autonomous chooser on the dashboard.
         RobotContainer
