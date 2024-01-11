@@ -12,9 +12,9 @@ interface ShooterIO {
     /** Updates the set of loggable inputs.  */
     fun updateInputs(inputs: ShooterIOInputs?) {}
 
-    /** Run the launcher wheel at the specified voltage.  */
-    fun setLaunchVoltage(volts: Double) {}
+    /** Run the launcher flywheel at the specified percent speed.  */
+    fun shoot(speed: Double) {}
 
-    /** Run the feeder wheel at the specified voltage.  */
-    fun setFeedVoltage(volts: Double) {}
+    /** Run the launcher flywheels in reverse to intake at the specified percent speed. */
+    fun intake(speed: Double) {}
 }
