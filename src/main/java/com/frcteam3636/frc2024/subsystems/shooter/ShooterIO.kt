@@ -45,6 +45,6 @@ class ShooterIOSim : ShooterIO {
 
     override fun intake(speed: Double) {
         left.setInputVoltage(-speed * 12)
-        right.setInputVoltage(-speed * 12 * 0.5)
+        right.setInputVoltage(-speed * 12)
     }
 }
