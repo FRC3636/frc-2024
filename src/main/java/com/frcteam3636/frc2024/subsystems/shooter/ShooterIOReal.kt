@@ -14,7 +14,7 @@ class ShooterIOReal : ShooterIO {
         left.inverted = true
     }
 
-    override fun updateInputs(inputs: ShooterIO.ShooterIOInputs?) {
+    override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
         // no-op
     }
 

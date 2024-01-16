@@ -8,7 +8,7 @@ object Shooter: Subsystem {
     private val io: ShooterIO = if (RobotBase.isReal()) {
         ShooterIOReal()
     }  else {
-        TODO()
+        ShooterIOSim()
     }
 
     val inputs = ShooterIO.ShooterIOInputs()
