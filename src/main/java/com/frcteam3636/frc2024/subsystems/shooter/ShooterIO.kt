@@ -23,19 +23,16 @@ interface ShooterIO {
 
 class ShooterIOSim : ShooterIO {
     companion object {
-        private const val LEFT_MOMENT_OF_INERTIA = 0.0103
-        private const val RIGHT_MOMENT_OF_INERTIA = 0.0103
-        private const val FEED_MOMENT_OF_INERTIA = 0.0103
+        private const val LEFT_MOMENT_OF_INERTIA = 0.00005
+        private const val RIGHT_MOMENT_OF_INERTIA = 0.00005
     }
 
     private val left = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, LEFT_MOMENT_OF_INERTIA)
     private val right = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, RIGHT_MOMENT_OF_INERTIA)
-    private val feed = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, FEED_MOMENT_OF_INERTIA)
 
     override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
         left.update(0.02)
         right.update(0.02)
-        feed.update(0.02)
     }
 
     override fun shoot(speed: Double) {
