@@ -5,18 +5,14 @@ import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkFlex
 import com.revrobotics.CANSparkLowLevel
 import com.revrobotics.CANSparkMax
-import com.revrobotics.SparkAbsoluteEncoder
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.AutoLog
 
 interface IntakeIO {
     @AutoLog
     class IntakeInputs {
-        var armAngle = Rotation2d()
-        var armAngularVelocityHz = Rotation2d()
         var overTheBumperFeedVelocityHz = Rotation2d()
         var underTheBumperRollersVelocityHz = Rotation2d()
     }
@@ -25,29 +21,13 @@ interface IntakeIO {
 
     fun setOverBumperFeed(speed: Double) {}
     fun setUnderBumperRoller(speed: Double) {}
-    fun moveArm(speed: Double) {}
 }
 
 class IntakeIOReal: IntakeIO {
-    companion object {
-        const val ARM_GEAR_RATIO = 1.0
-    }
-
-    private var armMotor = CANSparkMax(CANDevice.OverTheBumperIntakeArm.id, CANSparkLowLevel.MotorType.kBrushless)
-    private val armEncoder = armMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle)
-
     private var overTheBumperFeed = CANSparkMax(CANDevice.OverTheBumperIntakeFeed.id, CANSparkLowLevel.MotorType.kBrushless)
     private var underTheBumperRoller = CANSparkFlex(CANDevice.UnderTheBumperIntakeRoller.id, CANSparkLowLevel.MotorType.kBrushless)
 
-    init {
-        armEncoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ARM_GEAR_RATIO / 60
-        armEncoder.positionConversionFactor = Units.rotationsToRadians(1.0) * ARM_GEAR_RATIO
-
-        armMotor.burnFlash()
-    }
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
-        inputs.armAngle = Rotation2d(armEncoder.position)
-        inputs.armAngularVelocityHz = Rotation2d(armEncoder.velocity)
         inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.encoder.velocity)
         inputs.underTheBumperRollersVelocityHz = Rotation2d(underTheBumperRoller.encoder.velocity)
     }
@@ -58,10 +38,6 @@ class IntakeIOReal: IntakeIO {
 
     override fun setUnderBumperRoller(speed: Double) {
         underTheBumperRoller.set(speed)
-    }
-
-    override fun moveArm(speed: Double) {
-        armMotor.set(speed)
     }
 }
 
@@ -76,8 +52,6 @@ class IntakeIOSim: IntakeIO {
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
         overTheBumperFeed.update(Robot.period)
         underTheBumperRoller.update(Robot.period)
-        inputs.armAngle = Rotation2d()
-        inputs.armAngularVelocityHz = Rotation2d()
         inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.angularVelocityRadPerSec)
         inputs.underTheBumperRollersVelocityHz = Rotation2d(underTheBumperRoller.angularVelocityRadPerSec)
     }
