@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -22,6 +23,7 @@ object RobotContainer  {
     init {
         configureBindings()
         Shooter
+        Intake
     }
 
     private val controller = CommandXboxController(0)
@@ -29,6 +31,7 @@ object RobotContainer  {
     /** Use this method to define your `trigger->command` mappings. */
     private fun configureBindings() {
         controller.b().whileTrue(Shooter.shootCommand())
+        controller.rightTrigger().whileTrue(Intake.intakeCommand())
     }
 
     fun getAutonomousCommand(): Command? {
