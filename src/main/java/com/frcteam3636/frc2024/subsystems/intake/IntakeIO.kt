@@ -8,13 +8,23 @@ import com.revrobotics.CANSparkMax
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
-import org.littletonrobotics.junction.AutoLog
+import org.littletonrobotics.junction.LogTable
+import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface IntakeIO {
-    @AutoLog
-    class IntakeInputs {
+    class IntakeInputs: LoggableInputs {
         var overTheBumperFeedVelocityHz = Rotation2d()
         var underTheBumperRollersVelocityHz = Rotation2d()
+
+        override fun toLog(table: LogTable?) {
+            table?.put("OTB Feed Velocity", overTheBumperFeedVelocityHz.radians)
+            table?.put("UTB Roller Velocity", underTheBumperRollersVelocityHz.radians)
+        }
+
+        override fun fromLog(table: LogTable?) {
+            table?.get("OTB Feed Velocity", 0.0)?.let { overTheBumperFeedVelocityHz = Rotation2d.fromRadians(it) }
+            table?.get("UTB Roller Velocity", 0.0)?.let { underTheBumperRollersVelocityHz = Rotation2d.fromRadians(it) }
+        }
     }
 
     fun updateInputs(inputs: IntakeInputs)

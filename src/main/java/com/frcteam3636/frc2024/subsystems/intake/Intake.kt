@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024.subsystems.intake
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
+import org.littletonrobotics.junction.Logger
 
 object Intake: Subsystem {
     private var io: IntakeIO = if (RobotBase.isReal()) {
@@ -15,6 +16,7 @@ object Intake: Subsystem {
 
     override fun periodic() {
         io.updateInputs(inputs)
+        Logger.processInputs("Intake", inputs)
     }
 
     fun intakeCommand(): Command {
