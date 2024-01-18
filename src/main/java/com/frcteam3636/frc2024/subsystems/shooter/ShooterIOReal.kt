@@ -1,14 +1,13 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import com.frcteam3636.frc2024.CANDevice
+import com.frcteam3636.frc2024.can.*
 import com.revrobotics.CANSparkLowLevel
-import com.revrobotics.CANSparkMax
 
 
 class ShooterIOReal : ShooterIO {
 
-    private val left = CANSparkMax(CANDevice.LeftShooterFlywheel.id, CANSparkLowLevel.MotorType.kBrushless)
-    private val right = CANSparkMax(CANDevice.RightShooterFlywheel.id, CANSparkLowLevel.MotorType.kBrushless)
+    private val left = CANSparkMax(REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless)
+    private val right = CANSparkMax(REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless)
 
     init {
         left.inverted = true
