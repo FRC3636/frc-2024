@@ -54,6 +54,11 @@ object Drivetrain : Subsystem {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
 
+        poseEstimator.update(
+            inputs.gyroRotation.toRotation2d(),
+            inputs.measuredPositions.toTypedArray()
+        )
+
         Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
     }
 
@@ -158,8 +163,8 @@ class DrivetrainIOReal : DrivetrainIO() {
 }
 
 class DrivetrainIOSim : DrivetrainIO() {
-    override val gyro = GyroSim()
     override val modules = PerCorner.generate { SimSwerveModule() }
+    override val gyro = GyroSim(modules.map { it })
 }
 
 // Constants
