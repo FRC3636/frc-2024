@@ -1,6 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
-import com.frcteam3636.frc2024.CANDevice
+import com.frcteam3636.frc2024.can.*
 import com.revrobotics.CANSparkFlex
 import com.revrobotics.CANSparkLowLevel
 import com.revrobotics.CANSparkMax
@@ -28,11 +28,11 @@ class IntakeIOReal: IntakeIO {
         const val ARM_GEAR_RATIO = 1.0
     }
 
-    private var armMotor = CANSparkMax(CANDevice.OverTheBumperIntakeArm.id, CANSparkLowLevel.MotorType.kBrushless)
+    private var armMotor = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeArm, CANSparkLowLevel.MotorType.kBrushless)
     private val armEncoder = armMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle)
 
-    private var overTheBumperFeed = CANSparkMax(CANDevice.OverTheBumperIntakeFeed.id, CANSparkLowLevel.MotorType.kBrushless)
-    private var underTheBumperRoller = CANSparkFlex(CANDevice.UnderTheBumperIntakeRoller.id, CANSparkLowLevel.MotorType.kBrushless)
+    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless)
+    private var underTheBumperRoller = CANSparkFlex(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless)
 
     init {
         armEncoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ARM_GEAR_RATIO / 60
