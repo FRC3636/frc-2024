@@ -1,9 +1,12 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+
+
 
 
 /**
@@ -23,13 +26,16 @@ object RobotContainer {
     private val joystickRight = Joystick(1)
 
     init {
-        Drivetrain
         configureBindings()
+//        Shooter
+        Drivetrain.register()
+        Intake.register()
     }
 
     /** Use this method to define your `trigger->command` mappings. */
     private fun configureBindings() {
 //        controller.b().whileTrue(Shooter.shootCommand())
+        controller.b().whileTrue(Intake.intakeCommand())
         Drivetrain.defaultCommand =
             Drivetrain.driveWithJoysticks(translationJoystick = joystickLeft, rotationJoystick = joystickRight)
     }
