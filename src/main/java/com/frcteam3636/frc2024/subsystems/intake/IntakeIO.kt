@@ -3,8 +3,12 @@ package com.frcteam3636.frc2024.subsystems.intake
 import com.frcteam3636.frc2024.CANDevice
 import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkFlex
+import com.frcteam3636.frc2024.can.CANSparkFlex
+import com.frcteam3636.frc2024.can.CANSparkMax
+import com.frcteam3636.frc2024.can.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 import com.revrobotics.CANSparkMax
+import com.revrobotics.SparkAbsoluteEncoder
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
@@ -34,8 +38,8 @@ interface IntakeIO {
 }
 
 class IntakeIOReal: IntakeIO {
-    private var overTheBumperFeed = CANSparkMax(CANDevice.OverTheBumperIntakeFeed.id, CANSparkLowLevel.MotorType.kBrushless)
-    private var underTheBumperRoller = CANSparkFlex(CANDevice.UnderTheBumperIntakeRoller.id, CANSparkLowLevel.MotorType.kBrushless)
+    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless)
+    private var underTheBumperRoller = CANSparkFlex(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
         inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.encoder.velocity)

@@ -24,14 +24,12 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
  * the `Main.kt` file in the project. (If you use the IDE's Rename or Move refactorings when renaming the
  * object or package, it will get changed everywhere.)
  */
-object Robot : LoggedRobot()
-{
+object Robot : LoggedRobot() {
 
     private var autonomousCommand: Command? = null
 
 
-    override fun robotInit()
-    {
+    override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
         HAL.report(tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version)
 
@@ -43,7 +41,8 @@ object Robot : LoggedRobot()
             var logPath: String? = null
             try {
                 logPath = LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or prompt the user)
-            } catch (_: java.util.NoSuchElementException) {}
+            } catch (_: java.util.NoSuchElementException) {
+            }
 
             if (logPath == null) {
                 // No replay log, so perform physics simulation
@@ -52,7 +51,14 @@ object Robot : LoggedRobot()
                 // Replay log exists, so replay data
                 setUseTiming(false) // Run as fast as possible
                 Logger.setReplaySource(WPILOGReader(logPath)) // Read replay log
-                Logger.addDataReceiver(WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))) // Save outputs to a new log
+                Logger.addDataReceiver(
+                    WPILOGWriter(
+                        LogFileUtil.addPathSuffix(
+                            logPath,
+                            "_sim"
+                        )
+                    )
+                ) // Save outputs to a new log
             }
         }
         Logger.start() // Start logging! No more data receivers, replay sources, or metadata values may be added.
@@ -63,61 +69,50 @@ object Robot : LoggedRobot()
     }
 
 
-    override fun robotPeriodic()
-    {
+    override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
     }
 
-    override fun disabledInit()
-    {
+    override fun disabledInit() {
 
     }
 
-    override fun disabledPeriodic()
-    {
+    override fun disabledPeriodic() {
 
     }
 
-    override fun autonomousInit()
-    {
+    override fun autonomousInit() {
         autonomousCommand = RobotContainer.getAutonomousCommand()
         autonomousCommand?.schedule()
     }
 
-    override fun autonomousPeriodic()
-    {
+    override fun autonomousPeriodic() {
 
     }
 
-    override fun teleopInit()
-    {
+    override fun teleopInit() {
         autonomousCommand?.cancel()
     }
 
     /** This method is called periodically during operator control.  */
-    override fun teleopPeriodic()
-    {
+    override fun teleopPeriodic() {
 
     }
 
-    override fun testInit()
-    {
+    override fun testInit() {
         // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll()
     }
 
-    override fun testPeriodic()
-    {
+    override fun testPeriodic() {
 
     }
 
-    override fun simulationInit()
-    {
+    override fun simulationInit() {
 
     }
 
-    override fun simulationPeriodic()
-    {
+    override fun simulationPeriodic() {
 
     }
 }
