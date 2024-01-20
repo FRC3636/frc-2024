@@ -20,18 +20,16 @@ interface ClimberIO {
 }
 class ClimberIOReal: ClimberIO {
     companion object {
-        const val ARM_GEAR_RATIO = 1.0
+        const val CLIMBER_GEAR_RATIO = 1.0
     }
 
 
-    private var climberMotor = CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless)
-    private val climberEncoder = climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle)
-
-    init {
-        climberEncoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ARM_GEAR_RATIO / 60
-        climberEncoder.positionConversionFactor = Units.rotationsToRadians(1.0) * ARM_GEAR_RATIO
-
-        climberMotor.burnFlash()
+    private var climberMotor = CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless).apply{
+        burnFlash()
+    }
+    private val climberEncoder = climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
+        velocityConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO / 60
+        positionConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO
     }
 
     override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
