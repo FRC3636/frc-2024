@@ -1,8 +1,6 @@
 package com.frcteam3636.frc2024.utils.math
 
 import com.ctre.phoenix6.configs.SlotConfigs
-import com.ctre.phoenix6.configs.TalonFXConfiguration
-import com.ctre.phoenix6.hardware.TalonFX
 import com.revrobotics.SparkPIDController
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.SimpleMotorFeedforward

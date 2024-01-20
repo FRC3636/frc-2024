@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import com.frcteam3636.frc2024.can.*
+import com.frcteam3636.frc2024.can.CANSparkMax
+import com.frcteam3636.frc2024.can.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 
 

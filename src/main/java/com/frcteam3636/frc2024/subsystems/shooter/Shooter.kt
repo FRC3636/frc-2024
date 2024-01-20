@@ -4,10 +4,10 @@ import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 
-object Shooter: Subsystem {
+object Shooter : Subsystem {
     private val io: ShooterIO = if (RobotBase.isReal()) {
         ShooterIOReal()
-    }  else {
+    } else {
         TODO()
     }
 

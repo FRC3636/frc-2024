@@ -4,12 +4,14 @@ import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.SlotConfigs
 import com.ctre.phoenix6.controls.VelocityVoltage
 import com.frcteam3636.frc2024.Robot
-import com.frcteam3636.frc2024.can.*
+import com.frcteam3636.frc2024.can.CANSparkMax
+import com.frcteam3636.frc2024.can.CTREMotorControllerId
+import com.frcteam3636.frc2024.can.REVMotorControllerId
+import com.frcteam3636.frc2024.can.TalonFX
 import com.frcteam3636.frc2024.utils.math.*
 import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
 import com.revrobotics.SparkAbsoluteEncoder
-import edu.wpi.first.math.controller.SimpleMotorFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
