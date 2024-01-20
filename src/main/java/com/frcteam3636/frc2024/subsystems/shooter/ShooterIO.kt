@@ -1,12 +1,18 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import org.littletonrobotics.junction.AutoLog
+import org.littletonrobotics.junction.LogTable
+import org.littletonrobotics.junction.inputs.LoggableInputs
 
 
 interface ShooterIO {
-    @AutoLog
-    class ShooterIOInputs {
+    class ShooterIOInputs: LoggableInputs {
+        override fun fromLog(table: LogTable?) {
 
+        }
+
+        override fun toLog(table: LogTable?) {
+
+        }
     }
 
     /** Updates the set of loggable inputs.  */

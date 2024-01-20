@@ -6,12 +6,19 @@ import com.revrobotics.CANSparkLowLevel
 import com.revrobotics.SparkAbsoluteEncoder
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
-import org.littletonrobotics.junction.AutoLog
+import org.littletonrobotics.junction.LogTable
+import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface ClimberIO {
-    @AutoLog
-    class ClimberInputs {
+    class ClimberInputs: LoggableInputs {
         var climberPosition = Rotation2d()
+        override fun toLog(table: LogTable?) {
+            table?.put("Climber Position", climberPosition)
+        }
+
+        override fun fromLog(table: LogTable) {
+            climberPosition = table.get("Climber Position", climberPosition)!![0]
+        }
     }
 
     fun updateInputs(inputs: ClimberInputs)
