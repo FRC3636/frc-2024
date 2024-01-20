@@ -1,14 +1,10 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
-import com.frcteam3636.frc2024.CANDevice
 import com.frcteam3636.frc2024.Robot
-import com.revrobotics.CANSparkFlex
 import com.frcteam3636.frc2024.can.CANSparkFlex
 import com.frcteam3636.frc2024.can.CANSparkMax
 import com.frcteam3636.frc2024.can.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
-import com.revrobotics.CANSparkMax
-import com.revrobotics.SparkAbsoluteEncoder
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
@@ -21,13 +17,13 @@ interface IntakeIO {
         var underTheBumperRollersVelocityHz = Rotation2d()
 
         override fun toLog(table: LogTable?) {
-            table?.put("OTB Feed Velocity", overTheBumperFeedVelocityHz.radians)
-            table?.put("UTB Roller Velocity", underTheBumperRollersVelocityHz.radians)
+            table?.put("OTB Feed Velocity", overTheBumperFeedVelocityHz)
+            table?.put("UTB Roller Velocity", underTheBumperRollersVelocityHz)
         }
 
-        override fun fromLog(table: LogTable?) {
-            table?.get("OTB Feed Velocity", 0.0)?.let { overTheBumperFeedVelocityHz = Rotation2d.fromRadians(it) }
-            table?.get("UTB Roller Velocity", 0.0)?.let { underTheBumperRollersVelocityHz = Rotation2d.fromRadians(it) }
+        override fun fromLog(table: LogTable) {
+            overTheBumperFeedVelocityHz = table.get("OTB Feed Velocity",  overTheBumperFeedVelocityHz)!![0]
+            underTheBumperRollersVelocityHz = table.get("UTB Roller Velocity", underTheBumperRollersVelocityHz)!![0]
         }
     }
 
