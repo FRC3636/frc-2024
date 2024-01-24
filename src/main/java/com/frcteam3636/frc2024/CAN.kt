@@ -12,12 +12,12 @@ enum class REVMotorControllerId(val num: Int) {
     BackLeftTurningMotor(2),
     BackRightTurningMotor(3),
     FrontRightTurningMotor(4),
-    LeftShooterFlywheel(7),
-    RightShooterFlywheel(15),
-    OverTheBumperIntakeArm(0),
-    OverTheBumperIntakeFeed(0),
-    UnderTheBumperIntakeRoller(0),
-    ClimberMotor(0),
+    LeftShooterFlywheel(15),
+    RightShooterFlywheel(7),
+    OverTheBumperIntakeArm(31),
+    OverTheBumperIntakeFeed(32),
+    UnderTheBumperIntakeRoller(33),
+    ClimberMotor(34),
 
 }
 
