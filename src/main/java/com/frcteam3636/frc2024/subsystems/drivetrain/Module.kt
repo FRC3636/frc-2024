@@ -3,11 +3,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.SlotConfigs
 import com.ctre.phoenix6.controls.VelocityVoltage
-import com.frcteam3636.frc2024.Robot
-import com.frcteam3636.frc2024.can.CANSparkMax
-import com.frcteam3636.frc2024.can.CTREMotorControllerId
-import com.frcteam3636.frc2024.can.REVMotorControllerId
-import com.frcteam3636.frc2024.can.TalonFX
+import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
 import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel

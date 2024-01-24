@@ -1,7 +1,7 @@
 package com.frcteam3636.frc2024.subsystems.drivetrain
 
-import com.frcteam3636.frc2024.can.CTREMotorControllerId
-import com.frcteam3636.frc2024.can.REVMotorControllerId
+import com.frcteam3636.frc2024.CTREMotorControllerId
+import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates

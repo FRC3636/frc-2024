@@ -1,9 +1,9 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
+import com.frcteam3636.frc2024.CANSparkFlex
+import com.frcteam3636.frc2024.CANSparkMax
+import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
-import com.frcteam3636.frc2024.can.CANSparkFlex
-import com.frcteam3636.frc2024.can.CANSparkMax
-import com.frcteam3636.frc2024.can.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor

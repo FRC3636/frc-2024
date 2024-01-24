@@ -1,4 +1,4 @@
-package com.frcteam3636.frc2024.can
+package com.frcteam3636.frc2024
 
 import com.ctre.phoenix6.hardware.TalonFX
 import com.revrobotics.CANSparkFlex
@@ -12,8 +12,10 @@ enum class REVMotorControllerId(val num: Int) {
     BackLeftTurningMotor(2),
     BackRightTurningMotor(3),
     FrontRightTurningMotor(4),
+    // fixme: these can ids should probably be updated in hardware because 15 and 7 are pretty random
     LeftShooterFlywheel(15),
     RightShooterFlywheel(7),
+    // todo: the following `3x` CAN ids are placeholders
     OverTheBumperIntakeArm(31),
     OverTheBumperIntakeFeed(32),
     UnderTheBumperIntakeRoller(33),

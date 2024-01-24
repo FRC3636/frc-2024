@@ -1,7 +1,7 @@
 package com.frcteam3636.frc2024.subsystems.climber
 
-import com.frcteam3636.frc2024.can.CANSparkMax
-import com.frcteam3636.frc2024.can.REVMotorControllerId
+import com.frcteam3636.frc2024.CANSparkMax
+import com.frcteam3636.frc2024.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 import com.revrobotics.SparkAbsoluteEncoder
 import edu.wpi.first.math.geometry.Rotation2d
