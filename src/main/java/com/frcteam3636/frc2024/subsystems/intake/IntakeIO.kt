@@ -1,12 +1,12 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
-import com.frcteam3636.frc2024.CANSparkFlex
 import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -34,8 +34,15 @@ interface IntakeIO {
 }
 
 class IntakeIOReal: IntakeIO {
-    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless)
-    private var underTheBumperRoller = CANSparkFlex(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless)
+    companion object {
+        const val ROLLER_GEAR_RATIO = 0.5
+    }
+    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless).apply {
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) / 60
+    }
+    private var underTheBumperRoller = CANSparkMax(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless).apply {
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ROLLER_GEAR_RATIO / 60
+    }
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
         inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.encoder.velocity)
@@ -57,7 +64,7 @@ class IntakeIOSim: IntakeIO {
     }
 
     private var overTheBumperFeed = FlywheelSim(DCMotor.getNEO(1), 1.0, ROLLER_INERTIA)
-    private var underTheBumperRoller = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, ROLLER_INERTIA)
+    private var underTheBumperRoller = FlywheelSim(DCMotor.getNEO(1), 1.0, ROLLER_INERTIA)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
         overTheBumperFeed.update(Robot.period)
