@@ -28,9 +28,9 @@ class ShooterIOReal : ShooterIO {
         inputs.rightSpeed = Rotation2d(right.encoder.velocity)
     }
 
-    override fun shoot(speed: Double) {
+    override fun shoot(speed: Double, spin: Boolean) {
         left.set(speed)
-        right.set(speed)
+        right.set(speed * if (spin) { 0.75 } else { 1.0 })
     }
 
     override fun intake(speed: Double) {

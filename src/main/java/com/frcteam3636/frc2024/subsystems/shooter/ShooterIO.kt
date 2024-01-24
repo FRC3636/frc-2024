@@ -25,7 +25,7 @@ interface ShooterIO {
     fun updateInputs(inputs: ShooterIOInputs) {}
 
     /** Run the launcher flywheel at the specified percent speed.  */
-    fun shoot(speed: Double) {}
+    fun shoot(speed: Double, spin: Boolean) {}
 
     /** Run the launcher flywheels in reverse to intake at the specified percent speed. */
     fun intake(speed: Double) {}
