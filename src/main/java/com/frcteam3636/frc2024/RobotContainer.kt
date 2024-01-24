@@ -1,10 +1,11 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
-
-
 
 
 /**
@@ -18,17 +19,24 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController
  * to the various subsystems in this container to pass into to commands. The commands can just
  * directly reference the (single instance of the) object.
  */
-object RobotContainer  {
+object RobotContainer {
+    private val controller = CommandXboxController(0)
+    private val joystickLeft = Joystick(0)
+    private val joystickRight = Joystick(1)
+
     init {
         configureBindings()
-        Shooter
+        Shooter.register()
+        Drivetrain.register()
+        Intake.register()
     }
-
-    private val controller = CommandXboxController(0)
 
     /** Use this method to define your `trigger->command` mappings. */
     private fun configureBindings() {
-        controller.b().whileTrue(Shooter.shootCommand())
+        controller.x().whileTrue(Shooter.shootCommand())
+        controller.b().whileTrue(Intake.intakeCommand())
+        Drivetrain.defaultCommand =
+            Drivetrain.driveWithJoysticks(translationJoystick = joystickLeft, rotationJoystick = joystickRight)
     }
 
     fun getAutonomousCommand(): Command? {

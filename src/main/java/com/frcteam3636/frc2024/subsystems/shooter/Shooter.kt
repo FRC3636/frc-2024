@@ -6,8 +6,9 @@ import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
+import org.littletonrobotics.junction.Logger
 
-object Shooter: Subsystem {
+object Shooter : Subsystem {
     private val io: ShooterIO = if (RobotBase.isReal()) {
         ShooterIOReal()
     }  else {
@@ -28,6 +29,7 @@ object Shooter: Subsystem {
 
     override fun periodic() {
         io.updateInputs(inputs)
+        Logger.processInputs("Shooter", inputs)
         //TODO set pivot angle
     }
 
