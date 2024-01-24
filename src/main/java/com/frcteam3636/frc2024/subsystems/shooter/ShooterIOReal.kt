@@ -5,6 +5,7 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
+import org.littletonrobotics.junction.Logger
 
 
 class ShooterIOReal : ShooterIO {
@@ -30,11 +31,16 @@ class ShooterIOReal : ShooterIO {
 
     override fun shoot(speed: Double, spin: Boolean) {
         left.set(speed)
-        right.set(speed * if (spin) { 0.75 } else { 1.0 })
+        Logger.recordOutput("Shooter/Left Power", speed)
+        val rSpeed = speed * if (spin) { 0.75 } else { 1.0 }
+        right.set(rSpeed)
+        Logger.recordOutput("Shooter/Right Power", rSpeed)
     }
 
     override fun intake(speed: Double) {
         left.set(-speed)
         right.set(-speed)
+        Logger.recordOutput("Shooter/Left Power", -speed)
+        Logger.recordOutput("Shooter/Right Power", -speed)
     }
 }
