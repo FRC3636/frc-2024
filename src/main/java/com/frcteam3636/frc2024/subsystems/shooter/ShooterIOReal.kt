@@ -2,7 +2,6 @@ package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.can.CANSparkMax
 import com.frcteam3636.frc2024.can.REVMotorControllerId
-import com.frcteam3636.frc2024.subsystems.climber.ClimberIOReal
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
@@ -16,11 +15,11 @@ class ShooterIOReal : ShooterIO {
 
     private val left = CANSparkMax(REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
         inverted = true
-        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ClimberIOReal.CLIMBER_GEAR_RATIO / 60
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
     }
 
     private val right = CANSparkMax(REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
-        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ClimberIOReal.CLIMBER_GEAR_RATIO / 60
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
     }
 
     init {
