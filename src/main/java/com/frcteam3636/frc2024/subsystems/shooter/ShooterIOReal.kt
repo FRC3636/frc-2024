@@ -20,10 +20,7 @@ class ShooterIOReal : ShooterIO {
 
     private val right = CANSparkMax(REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
         encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
-    }
-
-    init {
-        left.inverted = true
+        inverted = false
     }
 
     override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
