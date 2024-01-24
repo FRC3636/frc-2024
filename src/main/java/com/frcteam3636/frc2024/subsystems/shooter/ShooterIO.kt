@@ -1,8 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import edu.wpi.first.math.geometry.Rotation2d
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import edu.wpi.first.math.geometry.Rotation2d
 
 
 interface ShooterIO {
@@ -22,7 +22,7 @@ interface ShooterIO {
     }
 
     /** Updates the set of loggable inputs.  */
-    fun updateInputs(inputs: ShooterIOInputs?) {}
+    fun updateInputs(inputs: ShooterIOInputs) {}
 
     /** Run the launcher flywheel at the specified percent speed.  */
     fun shoot(speed: Double) {}

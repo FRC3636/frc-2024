@@ -26,9 +26,9 @@ class ShooterIOReal : ShooterIO {
         left.inverted = true
     }
 
-    override fun updateInputs(inputs: ShooterIO.ShooterIOInputs?) {
-        inputs?.leftSpeed = Rotation2d(left.encoder.velocity)
-        inputs?.rightSpeed = Rotation2d(right.encoder.velocity)
+    override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
+        inputs.leftSpeed = Rotation2d(left.encoder.velocity)
+        inputs.rightSpeed = Rotation2d(right.encoder.velocity)
     }
 
     override fun shoot(speed: Double) {
