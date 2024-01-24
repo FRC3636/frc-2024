@@ -2,16 +2,22 @@ package com.frcteam3636.frc2024.subsystems.shooter
 
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import edu.wpi.first.math.geometry.Rotation2d
 
 
 interface ShooterIO {
     class ShooterIOInputs: LoggableInputs {
-        override fun fromLog(table: LogTable?) {
+        var leftSpeed = Rotation2d()
+        var rightSpeed = Rotation2d()
 
+        override fun toLog(table: LogTable) {
+            table.put("Left Speed", leftSpeed)
+            table.put("Right Speed", rightSpeed)
         }
 
-        override fun toLog(table: LogTable?) {
-
+        override fun fromLog(table: LogTable) {
+            leftSpeed = table.get("Left Speed", leftSpeed)[0]
+            rightSpeed = table.get("Right Speed", rightSpeed)[0]
         }
     }
 
