@@ -21,10 +21,10 @@ object Intake: Subsystem {
 
     fun intakeCommand(): Command {
         return startEnd({
-            io.setOverBumperFeed(1.0)
+//            io.setOverBumperFeed(1.0)
             io.setUnderBumperRoller(1.0)
         }, {
-            io.setOverBumperFeed(0.0)
+//            io.setOverBumperFeed(0.0)
             io.setUnderBumperRoller(0.0)
         })
     }

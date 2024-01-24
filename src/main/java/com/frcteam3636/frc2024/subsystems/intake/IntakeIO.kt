@@ -37,20 +37,20 @@ class IntakeIOReal: IntakeIO {
     companion object {
         const val ROLLER_GEAR_RATIO = 0.5
     }
-    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless).apply {
-        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) / 60
-    }
+//    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless).apply {
+//        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) / 60
+//    }
     private var underTheBumperRoller = CANSparkMax(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless).apply {
         encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * ROLLER_GEAR_RATIO / 60
     }
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
-        inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.encoder.velocity)
+//        inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.encoder.velocity)
         inputs.underTheBumperRollersVelocityHz = Rotation2d(underTheBumperRoller.encoder.velocity)
     }
 
     override fun setOverBumperFeed(speed: Double) {
-        overTheBumperFeed.set(speed)
+//        overTheBumperFeed.set(speed)
     }
 
     override fun setUnderBumperRoller(speed: Double) {
