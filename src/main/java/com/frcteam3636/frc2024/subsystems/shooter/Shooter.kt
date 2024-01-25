@@ -7,7 +7,10 @@ import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.Subsystem
+import edu.wpi.first.wpilibj2.command.PIDCommand
 import org.littletonrobotics.junction.Logger
+import com.frcteam3636.frc2024.utils.math.*
+import edu.wpi.first.math.filter.SlewRateLimiter
 
 object Shooter : Subsystem {
     private val io: ShooterIO = if (RobotBase.isReal()) {
@@ -16,14 +19,20 @@ object Shooter : Subsystem {
         TODO()
     }
 
+    private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
+
+
     val inputs = ShooterIO.ShooterIOInputs()
 
     val tab = Shuffleboard.getTab("Shooter")
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
-    val revTime = tab.add("Rev Seconds", 1.0)
-        .withWidget(BuiltInWidgets.kNumberSlider)
-        .withProperties(mapOf(Pair("min", 1.0), Pair("max", 5.0)))
-        .entry
+
+    val targetVelocity = tab.add("Target Velocity", 0.0)
+    .withWidget(BuiltInWidgets.kNumberSlider)
+    .withProperties(mapOf(Pair("min", 0.0), Pair("max", 5000.0))) // Adjust min and max as needed.
+    .entry
+
+    private val rateLimiter = SlewRateLimiter(1.0);
 
     override fun periodic() {
         io.updateInputs(inputs)
@@ -31,16 +40,15 @@ object Shooter : Subsystem {
     }
 
     fun shootCommand(): Command {
-        val accelTimer = Timer()
-        return FunctionalCommand({
-            accelTimer.start()
-        }, {
-            io.shoot((accelTimer.get() * revTime.getDouble(1.0)).coerceIn(0.0, 1.0), shouldSpin.getBoolean(true))
-        }, {
-            io.shoot(0.0, shouldSpin.getBoolean(true))
-            accelTimer.stop()
-            accelTimer.reset()
-        }, { false}, this)
+        return PIDCommand(
+            pidController, 
+            { inputs.leftSpeed.radians },
+            { targetVelocity.getDouble(0.0) },
+            { output ->
+                val limitedOutput = rateLimiter.calculate(output)
+                io.shoot(limitedOutput, shouldSpin.getBoolean(true))
+            }
+        ).also { it.addRequirements(this) }
     }
 
     fun intakeCommand(): Command {
