@@ -8,46 +8,64 @@ import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
+import edu.wpi.first.wpilibj.DigitalInput
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface IntakeIO {
     class IntakeInputs: LoggableInputs {
-        var overTheBumperFeedVelocityHz = Rotation2d()
-        var underTheBumperRollersVelocityHz = Rotation2d()
+        var otbRollerVelocity = Rotation2d()
+        var utbRollerVelocity = Rotation2d()
+        var otbCurrent: Double = 0.0
+        var utbCurrent: Double = 0.0
+        var beamBreak: Boolean = false
 
         override fun toLog(table: LogTable?) {
-            table?.put("OTB Feed Velocity", overTheBumperFeedVelocityHz)
-            table?.put("UTB Roller Velocity", underTheBumperRollersVelocityHz)
+            table?.put("OTB Roller Velocity", otbRollerVelocity)
+            table?.put("UTB Roller Velocity", utbRollerVelocity)
         }
 
         override fun fromLog(table: LogTable) {
-            overTheBumperFeedVelocityHz = table.get("OTB Feed Velocity",  overTheBumperFeedVelocityHz)!![0]
-            underTheBumperRollersVelocityHz = table.get("UTB Roller Velocity", underTheBumperRollersVelocityHz)!![0]
+            otbRollerVelocity = table.get("OTB Roller Velocity",  otbRollerVelocity)!![0]
+            utbRollerVelocity = table.get("UTB Roller Velocity", utbRollerVelocity)!![0]
         }
     }
 
     fun updateInputs(inputs: IntakeInputs)
 
-    fun setOverBumperFeed(speed: Double) {}
+    fun setOverBumperRoller(speed: Double) {}
     fun setUnderBumperRoller(speed: Double) {}
+    fun isIntaking(): Boolean
 }
 
 class IntakeIOReal: IntakeIO {
-    private var overTheBumperFeed = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless)
-    private var underTheBumperRoller = CANSparkFlex(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless)
+    private var otbRollers = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless)
+    private var utbRollers = CANSparkFlex(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless)
+    private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
-        inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.encoder.velocity)
-        inputs.underTheBumperRollersVelocityHz = Rotation2d(underTheBumperRoller.encoder.velocity)
+        inputs.otbRollerVelocity = Rotation2d(otbRollers.encoder.velocity)
+        inputs.utbRollerVelocity = Rotation2d(utbRollers.encoder.velocity)
+        inputs.otbCurrent = otbRollers.outputCurrent
+        inputs.utbCurrent = utbRollers.outputCurrent
+        inputs.beamBreak = beamBreakSensor.get()
     }
 
-    override fun setOverBumperFeed(speed: Double) {
-        overTheBumperFeed.set(speed)
+    override fun setOverBumperRoller(speed: Double) {
+        otbRollers.set(speed)
     }
 
     override fun setUnderBumperRoller(speed: Double) {
-        underTheBumperRoller.set(speed)
+        utbRollers.set(speed)
+    }
+
+    override fun isIntaking(): Boolean {
+        return beamBreakSensor.get() && utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD
+    }
+
+    internal companion object Constants {
+        const val BEAM_BREAK_PORT = 0
+        const val BEAM_BREAK_CURRENT_THRESHOLD = 10.0
     }
 }
 
@@ -56,23 +74,27 @@ class IntakeIOSim: IntakeIO {
         const val ROLLER_INERTIA = 0.0002
     }
 
-    private var overTheBumperFeed = FlywheelSim(DCMotor.getNEO(1), 1.0, ROLLER_INERTIA)
-    private var underTheBumperRoller = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, ROLLER_INERTIA)
+    private var otbRollers = FlywheelSim(DCMotor.getNEO(1), 1.0, ROLLER_INERTIA)
+    private var utbRollers = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, ROLLER_INERTIA)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
-        overTheBumperFeed.update(Robot.period)
-        underTheBumperRoller.update(Robot.period)
-        inputs.overTheBumperFeedVelocityHz = Rotation2d(overTheBumperFeed.angularVelocityRadPerSec)
-        inputs.underTheBumperRollersVelocityHz = Rotation2d(underTheBumperRoller.angularVelocityRadPerSec)
+        otbRollers.update(Robot.period)
+        utbRollers.update(Robot.period)
+        inputs.otbRollerVelocity = Rotation2d(otbRollers.angularVelocityRadPerSec)
+        inputs.utbRollerVelocity = Rotation2d(utbRollers.angularVelocityRadPerSec)
     }
 
-    override fun setOverBumperFeed(speed: Double) {
+    override fun setOverBumperRoller(speed: Double) {
         val volts = (speed * 12.0).coerceIn(-12.0, 12.0)
-        overTheBumperFeed.setInputVoltage(volts)
+        otbRollers.setInputVoltage(volts)
     }
 
     override fun setUnderBumperRoller(speed: Double) {
         val volts = (speed * 12.0).coerceIn(-12.0, 12.0)
-        underTheBumperRoller.setInputVoltage(volts)
+        utbRollers.setInputVoltage(volts)
+    }
+    
+    override fun isIntaking(): Boolean {
+        return false
     }
 }
