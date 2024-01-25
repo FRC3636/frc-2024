@@ -5,29 +5,22 @@ import com.revrobotics.SparkPIDController
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.SimpleMotorFeedforward
 
-data class MotorFFGains(
-    val s: Double = 0.0, val v: Double = 0.0, val a: Double = 0.0
-)
+data class MotorFFGains(val s: Double = 0.0, val v: Double = 0.0, val a: Double = 0.0)
 
 fun SimpleMotorFeedforward(gains: MotorFFGains) = SimpleMotorFeedforward(gains.s, gains.v, gains.a)
 
 val SimpleMotorFeedforward.gains: MotorFFGains
-    get() = MotorFFGains(
-        s = ks, v = kv, a = ka
-    )
+    get() = MotorFFGains(s = ks, v = kv, a = ka)
 
-fun SlotConfigs.withMotorFFGains(gains: MotorFFGains) = withKS(gains.s).withKV(gains.v).withKA(gains.a)
+fun SlotConfigs.withMotorFFGains(gains: MotorFFGains) =
+        withKS(gains.s).withKV(gains.v).withKA(gains.a)
 
-data class PIDGains(
-    val p: Double = 0.0, val i: Double = 0.0, val d: Double = 0.0
-)
+data class PIDGains(val p: Double = 0.0, val i: Double = 0.0, val d: Double = 0.0)
 
 fun PIDController(gains: PIDGains) = PIDController(gains.p, gains.i, gains.d)
 
 var PIDController.gains: PIDGains
-    get() = PIDGains(
-        p = p, i = i, d = d
-    )
+    get() = PIDGains(p = p, i = i, d = d)
     set(gains) {
         p = gains.p
         i = gains.i
@@ -35,11 +28,12 @@ var PIDController.gains: PIDGains
     }
 
 var SparkPIDController.pidGains: PIDGains
-    get() = PIDGains(
-        p = p,
-        i = i,
-        d = d,
-    )
+    get() =
+            PIDGains(
+                    p = p,
+                    i = i,
+                    d = d,
+            )
     set(gains) {
         p = gains.p
         i = gains.i

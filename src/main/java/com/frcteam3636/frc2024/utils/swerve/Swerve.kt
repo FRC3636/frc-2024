@@ -6,26 +6,30 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModuleState
 
 enum class DrivetrainCorner {
-    FRONT_LEFT, BACK_LEFT, BACK_RIGHT, FRONT_RIGHT
+    FRONT_LEFT,
+    BACK_LEFT,
+    BACK_RIGHT,
+    FRONT_RIGHT
 }
 
-data class PerCorner<T>(
-    val frontLeft: T, val backLeft: T, val backRight: T, val frontRight: T
-) : Collection<T> {
-    operator fun get(corner: DrivetrainCorner): T = when (corner) {
-        DrivetrainCorner.FRONT_LEFT -> frontLeft
-        DrivetrainCorner.BACK_LEFT -> backLeft
-        DrivetrainCorner.BACK_RIGHT -> backRight
-        DrivetrainCorner.FRONT_RIGHT -> frontRight
-    }
-
+data class PerCorner<T>(val frontLeft: T, val backLeft: T, val backRight: T, val frontRight: T) :
+        Collection<T> {
+    operator fun get(corner: DrivetrainCorner): T =
+            when (corner) {
+                DrivetrainCorner.FRONT_LEFT -> frontLeft
+                DrivetrainCorner.BACK_LEFT -> backLeft
+                DrivetrainCorner.BACK_RIGHT -> backRight
+                DrivetrainCorner.FRONT_RIGHT -> frontRight
+            }
 
     fun <U> map(block: (T) -> U): PerCorner<U> = mapWithCorner { x, _ -> block(x) }
-    fun <U> mapWithCorner(block: (T, DrivetrainCorner) -> U): PerCorner<U> =
-        generate { corner -> block(this[corner], corner) }
+    fun <U> mapWithCorner(block: (T, DrivetrainCorner) -> U): PerCorner<U> = generate { corner ->
+        block(this[corner], corner)
+    }
 
-
-    fun <U> zip(second: PerCorner<U>): PerCorner<Pair<T, U>> = generate { corner -> Pair(this[corner], second[corner]) }
+    fun <U> zip(second: PerCorner<U>): PerCorner<Pair<T, U>> = generate { corner ->
+        Pair(this[corner], second[corner])
+    }
 
     private fun sequence(): Sequence<T> = sequenceOf(frontLeft, backLeft, backRight, frontRight)
     override fun iterator(): Iterator<T> = sequence().iterator()
@@ -38,32 +42,35 @@ data class PerCorner<T>(
 
     override fun contains(element: T): Boolean = sequence().contains(element)
 
-
     companion object {
-        fun <T> generate(block: (DrivetrainCorner) -> T): PerCorner<T> = PerCorner(
-            frontLeft = block(DrivetrainCorner.FRONT_LEFT),
-            backLeft = block(DrivetrainCorner.BACK_LEFT),
-            backRight = block(DrivetrainCorner.BACK_RIGHT),
-            frontRight = block(DrivetrainCorner.FRONT_RIGHT),
-        )
+        fun <T> generate(block: (DrivetrainCorner) -> T): PerCorner<T> =
+                PerCorner(
+                        frontLeft = block(DrivetrainCorner.FRONT_LEFT),
+                        backLeft = block(DrivetrainCorner.BACK_LEFT),
+                        backRight = block(DrivetrainCorner.BACK_RIGHT),
+                        frontRight = block(DrivetrainCorner.FRONT_RIGHT),
+                )
 
         internal fun <T> fromConventionalArray(array: Array<T>): PerCorner<T> =
-            PerCorner<T>(
-                frontLeft = array[0],
-                backLeft = array[1],
-                backRight = array[2],
-                frontRight = array[3],
-            )
+                PerCorner<T>(
+                        frontLeft = array[0],
+                        backLeft = array[1],
+                        backRight = array[2],
+                        frontRight = array[3],
+                )
     }
 }
 
-fun SwerveModuleState.toTranslation2dPerSecond(): Translation2d = Translation2d(this.speedMetersPerSecond, this.angle)
+fun SwerveModuleState.toTranslation2dPerSecond(): Translation2d =
+        Translation2d(this.speedMetersPerSecond, this.angle)
 
-fun SwerveDriveKinematics.toCornerSwerveModuleStates(speeds: ChassisSpeeds): PerCorner<SwerveModuleState> =
-    PerCorner.fromConventionalArray(toSwerveModuleStates(speeds))
+fun SwerveDriveKinematics.toCornerSwerveModuleStates(
+        speeds: ChassisSpeeds
+): PerCorner<SwerveModuleState> = PerCorner.fromConventionalArray(toSwerveModuleStates(speeds))
 
-fun SwerveDriveKinematics.cornerStatesToChassisSpeeds(states: PerCorner<SwerveModuleState>): ChassisSpeeds =
-    toChassisSpeeds(*states.toList().toTypedArray())
+fun SwerveDriveKinematics.cornerStatesToChassisSpeeds(
+        states: PerCorner<SwerveModuleState>
+): ChassisSpeeds = toChassisSpeeds(*states.toList().toTypedArray())
 
 fun SwerveDriveKinematics(translations: PerCorner<Translation2d>) =
-    SwerveDriveKinematics(*translations.toList().toTypedArray())
+        SwerveDriveKinematics(*translations.toList().toTypedArray())

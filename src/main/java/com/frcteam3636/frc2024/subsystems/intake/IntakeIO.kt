@@ -7,13 +7,13 @@ import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
-import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import edu.wpi.first.wpilibj.DigitalInput
+import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface IntakeIO {
-    class IntakeInputs: LoggableInputs {
+    class IntakeInputs : LoggableInputs {
         var otbRollerVelocity = Rotation2d()
         var utbRollerVelocity = Rotation2d()
         var otbCurrent: Double = 0.0
@@ -26,7 +26,7 @@ interface IntakeIO {
         }
 
         override fun fromLog(table: LogTable) {
-            otbRollerVelocity = table.get("OTB Roller Velocity",  otbRollerVelocity)!![0]
+            otbRollerVelocity = table.get("OTB Roller Velocity", otbRollerVelocity)!![0]
             utbRollerVelocity = table.get("UTB Roller Velocity", utbRollerVelocity)!![0]
         }
     }
@@ -38,9 +38,17 @@ interface IntakeIO {
     fun isIntaking(): Boolean
 }
 
-class IntakeIOReal: IntakeIO {
-    private var otbRollers = CANSparkMax(REVMotorControllerId.OverTheBumperIntakeFeed, CANSparkLowLevel.MotorType.kBrushless)
-    private var utbRollers = CANSparkFlex(REVMotorControllerId.UnderTheBumperIntakeRoller, CANSparkLowLevel.MotorType.kBrushless)
+class IntakeIOReal : IntakeIO {
+    private var otbRollers =
+            CANSparkMax(
+                    REVMotorControllerId.OverTheBumperIntakeFeed,
+                    CANSparkLowLevel.MotorType.kBrushless
+            )
+    private var utbRollers =
+            CANSparkFlex(
+                    REVMotorControllerId.UnderTheBumperIntakeRoller,
+                    CANSparkLowLevel.MotorType.kBrushless
+            )
     private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
@@ -60,7 +68,8 @@ class IntakeIOReal: IntakeIO {
     }
 
     override fun isIntaking(): Boolean {
-        return beamBreakSensor.get() && utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD
+        return beamBreakSensor.get() &&
+                utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD
     }
 
     internal companion object Constants {
@@ -69,7 +78,7 @@ class IntakeIOReal: IntakeIO {
     }
 }
 
-class IntakeIOSim: IntakeIO {
+class IntakeIOSim : IntakeIO {
     companion object {
         const val ROLLER_INERTIA = 0.0002
     }
@@ -93,7 +102,7 @@ class IntakeIOSim: IntakeIO {
         val volts = (speed * 12.0).coerceIn(-12.0, 12.0)
         utbRollers.setInputVoltage(volts)
     }
-    
+
     override fun isIntaking(): Boolean {
         return false
     }

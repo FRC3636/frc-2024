@@ -10,7 +10,7 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface ClimberIO {
-    class ClimberInputs: LoggableInputs {
+    class ClimberInputs : LoggableInputs {
         var climberPosition = Rotation2d()
         override fun toLog(table: LogTable?) {
             table?.put("Climber Position", climberPosition)
@@ -25,24 +25,24 @@ interface ClimberIO {
 
     fun moveClimber(speed: Double) {}
 }
-class ClimberIOReal: ClimberIO {
+
+class ClimberIOReal : ClimberIO {
     companion object {
         const val CLIMBER_GEAR_RATIO = 1.0
     }
 
-
-    private var climberMotor = CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless).apply{
-        burnFlash()
-    }
-    private val climberEncoder = climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
-        velocityConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO / 60
-        positionConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO
-    }
+    private var climberMotor =
+            CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless)
+                    .apply { burnFlash() }
+    private val climberEncoder =
+            climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
+                velocityConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO / 60
+                positionConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO
+            }
 
     override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
         inputs.climberPosition = Rotation2d(climberEncoder.position)
     }
-
 
     override fun moveClimber(speed: Double) {
         climberMotor.set(speed)
