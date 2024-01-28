@@ -15,9 +15,9 @@ import edu.wpi.first.math.geometry.Rotation2d
 
 object Shooter : Subsystem {
 
-    val ACCELERATION_PROFILE = 0.0
-    val VELOCITY_PROFILE = 0.0
-    val JERK_PROFILE = 0.0
+    const val ACCELERATION_PROFILE = 0.0
+    const val VELOCITY_PROFILE = 0.0
+    const val JERK_PROFILE = 0.0
     
     private val io: ShooterIO  =
             if (RobotBase.isReal()) {

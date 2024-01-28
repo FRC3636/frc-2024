@@ -27,12 +27,14 @@ interface ShooterIO {
             table.put("Left Speed", leftSpeed)
             table.put("Right Speed", rightSpeed)
             table.put("Position", position)
+            table.put("Acceleration", pivotAcceleration)
         }
 
         override fun fromLog(table: LogTable) {
             leftSpeed = table.get("Left Speed", leftSpeed)[0]
             rightSpeed = table.get("Right Speed", rightSpeed)[0]
             position = table.get("Position", position)!![0]
+            pivotAcceleration = table.get("Acceleration", pivotAcceleration)!![0]
         }
     }
 
@@ -50,9 +52,19 @@ interface ShooterIO {
 
 class ShooterIOReal : ShooterIO {
 
-    companion object {
+    internal companion object Constants{
         const val FLYWHEEL_GEAR_RATIO = 1.0
         const val PIVOT_GEAR_RATIO = 1 / 90.0
+        const val kS = 0.0
+        const val kV = 0.0
+        const val kA = 0.0
+        const val kG = 0.0
+        const val kP = 0.0
+        const val kI = 0.0
+        const val kD = 0.0
+
+        const val MOTION_MAGIC_ACCELERATION = 0.0
+        const val MOTION_MAGIC_JERK = 4000.0
     }
 
 
@@ -82,25 +94,25 @@ class ShooterIOReal : ShooterIO {
     val pivotMotorConfigs = TalonFXConfiguration()
     .apply{
        
-        Feedback.SensorToMechanismRatio = 1/90.0
+        Feedback.SensorToMechanismRatio = Constants.PIVOT_GEAR_RATIO
         
     }
     
     val slot0Configs = pivotMotorConfigs.Slot0
         .apply { 
-            kS = 0.0
-            kV = 0.0
-            kA = 0.0
-            kG = 0.0
-            kP = 0.0
-            kI = 0.0
-            kD = 0.0
+            kS = Constants.kS
+            kV = Constants.kV
+            kA = Constants.kA
+            kG = Constants.kG
+            kP = Constants.kP
+            kI = Constants.kI
+            kD = Constants.kD
         }
     
     val motionProfileConfigs: MotionMagicConfigs = pivotMotorConfigs.MotionMagic
         .apply {
-            MotionMagicAcceleration = 0.0
-            MotionMagicJerk = 4000.0
+            MotionMagicAcceleration = Constants.MOTION_MAGIC_ACCELERATION
+            MotionMagicJerk = Constants.MOTION_MAGIC_JERK
         }
 
     private val pivotLeftKraken = TalonFX(CTREMotorControllerId.LeftPivotMotor)
@@ -117,9 +129,9 @@ class ShooterIOReal : ShooterIO {
         inputs.leftSpeed = Rotation2d(left.encoder.velocity)
         inputs.rightSpeed = Rotation2d(right.encoder.velocity)
 
-        inputs.position = Rotation2d(pivotLeftKraken.position.value * PIVOT_GEAR_RATIO)
-        inputs.pivotAngularVelocity = Rotation2d(pivotLeftKraken.velocity.value * PIVOT_GEAR_RATIO)
-        inputs.pivotAcceleration = Rotation2d(pivotLeftKraken.acceleration.value * PIVOT_GEAR_RATIO)
+        inputs.position = Rotation2d(pivotLeftKraken.position.value * Constants.PIVOT_GEAR_RATIO)
+        inputs.pivotAngularVelocity = Rotation2d(pivotLeftKraken.velocity.value * Constants.PIVOT_GEAR_RATIO)
+        inputs.pivotAcceleration = Rotation2d(pivotLeftKraken.acceleration.value * Constants.PIVOT_GEAR_RATIO)
     }
 
     override fun shoot(speed: Double, spin: Boolean) {
@@ -138,6 +150,7 @@ class ShooterIOReal : ShooterIO {
 
     override fun setPivotControlRequest(control: ControlRequest) {
         pivotLeftKraken.setControl(control)
+        pivotRightKraken.setControl(control)
     }
 
     override fun intake(speed: Double) {
