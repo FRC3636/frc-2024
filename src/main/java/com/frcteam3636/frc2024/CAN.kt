@@ -21,7 +21,6 @@ enum class REVMotorControllerId(val num: Int) {
     OverTheBumperIntakeFeed(32),
     UnderTheBumperIntakeRoller(33),
     ClimberMotor(34),
-
     RightPivotMotor(35),
     LeftPivotMotor(36),
 }
