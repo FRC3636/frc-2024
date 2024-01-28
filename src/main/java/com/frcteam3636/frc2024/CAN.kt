@@ -21,6 +21,9 @@ enum class REVMotorControllerId(val num: Int) {
     OverTheBumperIntakeFeed(32),
     UnderTheBumperIntakeRoller(33),
     ClimberMotor(34),
+
+    RightPivotMotor(35),
+    LeftPivotMotor(36),
 }
 
 fun CANSparkMax(id: REVMotorControllerId, type: CANSparkLowLevel.MotorType) =
@@ -34,6 +37,8 @@ enum class CTREMotorControllerId(val num: Int, val bus: String) {
     BackLeftDrivingMotor(2, "*"),
     BackRightDrivingMotor(3, "*"),
     FrontRightDrivingMotor(4, "*"),
+    RightPivotMotor(5, "*"),
+    LeftPivotMotor(6, "*"),
 }
 
 fun TalonFX(id: CTREMotorControllerId) = TalonFX(id.num, id.bus)
