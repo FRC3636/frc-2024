@@ -141,8 +141,8 @@ class ShooterIOReal : ShooterIO {
     }
 
     override fun doneWithMotionProfile(): Boolean {
-        return pivotLeftKraken.closedLoopError.value > Constants.MOTION_PROFILE_ERROR_THREHOLD ||
-                pivotRightKraken.closedLoopError.value > Constants.MOTION_PROFILE_ERROR_THREHOLD
+        return pivotLeftKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THREHOLD &&
+                pivotRightKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THREHOLD
     }
 
     override fun shoot(speed: Double, spin: Boolean) {
