@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.math.geometry.Rotation2d
@@ -33,13 +34,8 @@ object Shooter : Subsystem {
     val tab = Shuffleboard.getTab("Shooter")
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
 
-    val dynamicMotionMagicTorqueCurrentFOCRequest =
-            DynamicMotionMagicTorqueCurrentFOC(
-                    0.0,
-                    ACCELERATION_PROFILE,
-                    VELOCITY_PROFILE,
-                    JERK_PROFILE
-            )
+    val motionMagicTorqueCurrentFOCRequest =
+            MotionMagicTorqueCurrentFOC(0.0)
 
     val targetVelocity =
             tab.add("Target Velocity", 0.0)
@@ -70,9 +66,7 @@ object Shooter : Subsystem {
     fun startPivotingTo(setpoint: Rotation2d): Command {
         return InstantCommand({
                     io.setPivotControlRequest(
-                            dynamicMotionMagicTorqueCurrentFOCRequest.withPosition(
-                                    setpoint.rotations
-                            )
+                            motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
                     )
                 })
                 .also { it.addRequirements(this) }
@@ -81,7 +75,7 @@ object Shooter : Subsystem {
     fun pivotTo(setpoint: Rotation2d): Command {
         return run {
             io.setPivotControlRequest(
-                    dynamicMotionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
+                    motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
             )
         }
                 .until(io::doneWithMotionProfile)
