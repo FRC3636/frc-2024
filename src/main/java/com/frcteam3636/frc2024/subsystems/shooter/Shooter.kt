@@ -1,8 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
-import com.frcteam3636.frc2024.utils.math.*
+import com.frcteam3636.frc2024.utils.math.PIDController
+import com.frcteam3636.frc2024.utils.math.PIDGains
 import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.wpilibj.RobotBase
@@ -21,11 +21,11 @@ object Shooter : Subsystem {
     const val JERK_PROFILE = 0.0
 
     private val io: ShooterIO =
-            if (RobotBase.isReal()) {
-                ShooterIOReal()
-            } else {
-                TODO()
-            }
+        if (RobotBase.isReal()) {
+            ShooterIOReal()
+        } else {
+            TODO()
+        }
 
     private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
 
@@ -35,13 +35,13 @@ object Shooter : Subsystem {
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
 
     val motionMagicTorqueCurrentFOCRequest =
-            MotionMagicTorqueCurrentFOC(0.0)
+        MotionMagicTorqueCurrentFOC(0.0)
 
     val targetVelocity =
-            tab.add("Target Velocity", 0.0)
-                    .withWidget(BuiltInWidgets.kNumberSlider)
-                    .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0)))
-                    .entry
+        tab.add("Target Velocity", 0.0)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0)))
+            .entry
 
     private val rateLimiter = SlewRateLimiter(1.0)
 
@@ -52,34 +52,34 @@ object Shooter : Subsystem {
 
     fun shootCommand(): Command {
         return PIDCommand(
-                        pidController,
-                        { inputs.leftSpeed.radians },
-                        { targetVelocity.getDouble(0.0) },
-                        { output ->
-                            val limitedOutput = rateLimiter.calculate(output)
-                            io.shoot(limitedOutput, shouldSpin.getBoolean(true))
-                        }
-                )
-                .also { it.addRequirements(this) }
+            pidController,
+            { inputs.leftSpeed.radians },
+            { targetVelocity.getDouble(0.0) },
+            { output ->
+                val limitedOutput = rateLimiter.calculate(output)
+                io.shoot(limitedOutput, shouldSpin.getBoolean(true))
+            }
+        )
+            .also { it.addRequirements(this) }
     }
 
     fun startPivotingTo(setpoint: Rotation2d): Command {
         return InstantCommand({
-                    io.setPivotControlRequest(
-                            motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
-                    )
-                })
-                .also { it.addRequirements(this) }
+            io.setPivotControlRequest(
+                motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
+            )
+        })
+            .also { it.addRequirements(this) }
     }
 
     fun pivotTo(setpoint: Rotation2d): Command {
         return run {
             io.setPivotControlRequest(
-                    motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
+                motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
             )
         }
-                .until(io::doneWithMotionProfile)
-                .also { it.addRequirements(this) }
+            .until(io::doneWithMotionProfile)
+            .also { it.addRequirements(this) }
     }
 
     fun intakeCommand(): Command {

@@ -27,27 +27,27 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
     private val io =
-            if (RobotBase.isReal()) {
-                DrivetrainIOReal()
-            } else {
-                DrivetrainIOSim()
-            }
+        if (RobotBase.isReal()) {
+            DrivetrainIOReal()
+        } else {
+            DrivetrainIOSim()
+        }
     private val inputs = DrivetrainIO.Inputs()
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
-            SwerveDriveKinematics(
-                    *MODULE_POSITIONS.map(Pose2d::getTranslation).toList().toTypedArray()
-            )
+        SwerveDriveKinematics(
+            *MODULE_POSITIONS.map(Pose2d::getTranslation).toList().toTypedArray()
+        )
 
     private val poseEstimator =
-            SwerveDrivePoseEstimator(
-                    kinematics, // swerve drive kinematics
-                    inputs.gyroRotation.toRotation2d(), // initial gyro rotation
-                    inputs.measuredPositions.toTypedArray(), // initial module positions
-                    Pose2d() // initial pose
-                    // TODO: add odometry standard deviation
-                    )
+        SwerveDrivePoseEstimator(
+            kinematics, // swerve drive kinematics
+            inputs.gyroRotation.toRotation2d(), // initial gyro rotation
+            inputs.measuredPositions.toTypedArray(), // initial module positions
+            Pose2d() // initial pose
+            // TODO: add odometry standard deviation
+        )
 
     init {
         CommandScheduler.getInstance().registerSubsystem(this)
@@ -58,8 +58,8 @@ object Drivetrain : Subsystem {
         Logger.processInputs("Drivetrain", inputs)
 
         poseEstimator.update(
-                inputs.gyroRotation.toRotation2d(),
-                inputs.measuredPositions.toTypedArray()
+            inputs.gyroRotation.toRotation2d(),
+            inputs.measuredPositions.toTypedArray()
         )
 
         Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
@@ -101,7 +101,7 @@ object Drivetrain : Subsystem {
     fun brake() {
         // set the modules to radiate outwards from the chassis origin
         moduleStates =
-                MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.rotation) }
+            MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.rotation) }
     }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
@@ -109,15 +109,15 @@ object Drivetrain : Subsystem {
         get() = poseEstimator.estimatedPosition
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
-            run {
-                chassisSpeeds =
-                        ChassisSpeeds.fromFieldRelativeSpeeds(
-                                translationJoystick.y,
-                                translationJoystick.x,
-                                rotationJoystick.x,
-                                gyroRotation.toRotation2d()
-                        )
-            }
+        run {
+            chassisSpeeds =
+                ChassisSpeeds.fromFieldRelativeSpeeds(
+                    translationJoystick.y,
+                    translationJoystick.x,
+                    rotationJoystick.x,
+                    gyroRotation.toRotation2d()
+                )
+        }
 }
 
 abstract class DrivetrainIO {
@@ -127,20 +127,20 @@ abstract class DrivetrainIO {
     class Inputs : LoggableInputs {
         var gyroRotation: Rotation3d = Rotation3d()
         var measuredStates: PerCorner<SwerveModuleState> =
-                PerCorner.generate { SwerveModuleState() }
+            PerCorner.generate { SwerveModuleState() }
         var measuredPositions: PerCorner<SwerveModulePosition> =
-                PerCorner.generate { SwerveModulePosition() }
+            PerCorner.generate { SwerveModulePosition() }
 
         override fun fromLog(table: LogTable?) {
             gyroRotation = table?.get("GyroRotation", gyroRotation)!![0]
             measuredStates =
-                    PerCorner.fromConventionalArray(
-                            table.get("MeasuredStates", *measuredStates.toTypedArray())
-                    )
+                PerCorner.fromConventionalArray(
+                    table.get("MeasuredStates", *measuredStates.toTypedArray())
+                )
             measuredPositions =
-                    PerCorner.fromConventionalArray(
-                            table.get("MeasuredPositions", *measuredPositions.toTypedArray())
-                    )
+                PerCorner.fromConventionalArray(
+                    table.get("MeasuredPositions", *measuredPositions.toTypedArray())
+                )
         }
 
         override fun toLog(table: LogTable?) {
@@ -171,10 +171,10 @@ abstract class DrivetrainIO {
 class DrivetrainIOReal : DrivetrainIO() {
     override val gyro = GyroNavX()
     override val modules =
-            MODULE_CAN_IDS.zip(MODULE_POSITIONS).map { (can, pose) ->
-                val (driving, turning) = can
-                MAXSwerveModule(driving, turning, pose.rotation)
-            }
+        MODULE_CAN_IDS.zip(MODULE_POSITIONS).map { (can, pose) ->
+            val (driving, turning) = can
+            MAXSwerveModule(driving, turning, pose.rotation)
+        }
 }
 
 class DrivetrainIOSim : DrivetrainIO() {
@@ -187,49 +187,49 @@ internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
 
 internal val MODULE_POSITIONS =
-        PerCorner(
-                frontLeft =
-                        Pose2d(
-                                Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
-                                Rotation2d.fromDegrees(-90.0)
-                        ),
-                frontRight =
-                        Pose2d(
-                                Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-                                Rotation2d.fromDegrees(180.0)
-                        ),
-                backRight =
-                        Pose2d(
-                                Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
-                                Rotation2d.fromDegrees(0.0)
-                        ),
-                backLeft =
-                        Pose2d(
-                                Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-                                Rotation2d.fromDegrees(90.0)
-                        )
+    PerCorner(
+        frontLeft =
+        Pose2d(
+            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(-90.0)
+        ),
+        frontRight =
+        Pose2d(
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(180.0)
+        ),
+        backRight =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(0.0)
+        ),
+        backLeft =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(90.0)
         )
+    )
 
 internal val MODULE_CAN_IDS =
-        PerCorner(
-                frontLeft =
-                        Pair(
-                                CTREMotorControllerId.FrontLeftDrivingMotor,
-                                REVMotorControllerId.FrontLeftTurningMotor
-                        ),
-                frontRight =
-                        Pair(
-                                CTREMotorControllerId.FrontRightDrivingMotor,
-                                REVMotorControllerId.FrontRightTurningMotor
-                        ),
-                backRight =
-                        Pair(
-                                CTREMotorControllerId.BackRightDrivingMotor,
-                                REVMotorControllerId.BackRightTurningMotor
-                        ),
-                backLeft =
-                        Pair(
-                                CTREMotorControllerId.BackLeftDrivingMotor,
-                                REVMotorControllerId.BackLeftTurningMotor
-                        ),
-        )
+    PerCorner(
+        frontLeft =
+        Pair(
+            CTREMotorControllerId.FrontLeftDrivingMotor,
+            REVMotorControllerId.FrontLeftTurningMotor
+        ),
+        frontRight =
+        Pair(
+            CTREMotorControllerId.FrontRightDrivingMotor,
+            REVMotorControllerId.FrontRightTurningMotor
+        ),
+        backRight =
+        Pair(
+            CTREMotorControllerId.BackRightDrivingMotor,
+            REVMotorControllerId.BackRightTurningMotor
+        ),
+        backLeft =
+        Pair(
+            CTREMotorControllerId.BackLeftDrivingMotor,
+            REVMotorControllerId.BackLeftTurningMotor
+        ),
+    )

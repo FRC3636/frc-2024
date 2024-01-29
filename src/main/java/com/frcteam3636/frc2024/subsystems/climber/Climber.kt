@@ -6,11 +6,11 @@ import org.littletonrobotics.junction.Logger
 
 class Climber : Subsystem {
     private var io: ClimberIO =
-            if (RobotBase.isReal()) {
-                ClimberIOReal()
-            } else {
-                TODO()
-            }
+        if (RobotBase.isReal()) {
+            ClimberIOReal()
+        } else {
+            TODO()
+        }
     var inputs = ClimberIO.ClimberInputs()
 
     override fun periodic() {

@@ -13,7 +13,7 @@ val SimpleMotorFeedforward.gains: MotorFFGains
     get() = MotorFFGains(s = ks, v = kv, a = ka)
 
 fun SlotConfigs.withMotorFFGains(gains: MotorFFGains) =
-        withKS(gains.s).withKV(gains.v).withKA(gains.a)
+    withKS(gains.s).withKV(gains.v).withKA(gains.a)
 
 data class PIDGains(val p: Double = 0.0, val i: Double = 0.0, val d: Double = 0.0)
 
@@ -29,11 +29,11 @@ var PIDController.gains: PIDGains
 
 var SparkPIDController.pidGains: PIDGains
     get() =
-            PIDGains(
-                    p = p,
-                    i = i,
-                    d = d,
-            )
+        PIDGains(
+            p = p,
+            i = i,
+            d = d,
+        )
     set(gains) {
         p = gains.p
         i = gains.i
