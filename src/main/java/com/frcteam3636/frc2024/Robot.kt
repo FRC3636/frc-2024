@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024
 
+import com.pathplanner.lib.pathfinding.Pathfinding
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
@@ -64,6 +65,9 @@ object Robot : LoggedRobot() {
                 ) // Save outputs to a new log
             }
         }
+
+        //TODO add field object constraints
+        Pathfinding.setPathfinder(RemoteADStarAK())
         Logger.start() // Start logging! No more data receivers, replay sources, or metadata values
         // may be added.
 
