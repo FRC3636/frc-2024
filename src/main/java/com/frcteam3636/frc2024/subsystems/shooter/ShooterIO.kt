@@ -4,7 +4,6 @@ import com.ctre.phoenix6.configs.MotionMagicConfigs
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.ControlRequest
 import com.ctre.phoenix6.hardware.TalonFX
-import com.ctre.phoenix6.signals.MotionMagicIsRunningValue
 import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
@@ -70,6 +69,10 @@ class ShooterIOReal : ShooterIO {
 
         const val MOTION_MAGIC_ACCELERATION = 0.0
         const val MOTION_MAGIC_JERK = 4000.0
+
+        const val MOTION_PROFILE_ERROR_THREHOLD =
+                2.0 // i have no idea what units these are in, we'll have to just fuck around and
+        // find out
     }
 
     private val left =
@@ -138,9 +141,8 @@ class ShooterIOReal : ShooterIO {
     }
 
     override fun doneWithMotionProfile(): Boolean {
-        return !(pivotRightKraken.motionMagicIsRunning.value.equals(
-                MotionMagicIsRunningValue.Enabled
-        ) || pivotLeftKraken.motionMagicIsRunning.value.equals(MotionMagicIsRunningValue.Enabled))
+        return pivotLeftKraken.closedLoopError.value > Constants.MOTION_PROFILE_ERROR_THREHOLD ||
+                pivotRightKraken.closedLoopError.value > Constants.MOTION_PROFILE_ERROR_THREHOLD
     }
 
     override fun shoot(speed: Double, spin: Boolean) {
