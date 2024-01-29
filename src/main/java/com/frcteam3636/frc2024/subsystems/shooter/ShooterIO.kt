@@ -19,21 +19,26 @@ interface ShooterIO {
     class ShooterIOInputs : LoggableInputs {
         var leftSpeed = Rotation2d()
         var rightSpeed = Rotation2d()
-        var position = Rotation2d()
-        var pivotAngularVelocity = Rotation2d()
+        var pivotPosition = Rotation2d()
+        var pivotVelocity = Rotation2d()
         var pivotAcceleration = Rotation2d()
+        var atSetpoint = true
 
         override fun toLog(table: LogTable) {
+            table.put("At setpoint", atSetpoint)
             table.put("Left Speed", leftSpeed)
             table.put("Right Speed", rightSpeed)
-            table.put("Position", position)
+            table.put("Position", pivotPosition)
+            table.put("Velocity", pivotVelocity)
             table.put("Acceleration", pivotAcceleration)
         }
 
         override fun fromLog(table: LogTable) {
+
             leftSpeed = table.get("Left Speed", leftSpeed)[0]
             rightSpeed = table.get("Right Speed", rightSpeed)[0]
-            position = table.get("Position", position)!![0]
+            pivotPosition = table.get("Position", pivotPosition)!![0]
+            pivotVelocity = table.get("Velocity", pivotVelocity)!![0]
             pivotAcceleration = table.get("Acceleration", pivotAcceleration)!![0]
         }
     }
@@ -133,11 +138,13 @@ class ShooterIOReal : ShooterIO {
         inputs.leftSpeed = Rotation2d(left.encoder.velocity)
         inputs.rightSpeed = Rotation2d(right.encoder.velocity)
 
-        inputs.position = Rotation2d(pivotLeftKraken.position.value * Constants.PIVOT_GEAR_RATIO)
-        inputs.pivotAngularVelocity =
+        inputs.pivotPosition = Rotation2d(pivotLeftKraken.position.value * Constants.PIVOT_GEAR_RATIO)
+        inputs.pivotVelocity =
                 Rotation2d(pivotLeftKraken.velocity.value * Constants.PIVOT_GEAR_RATIO)
         inputs.pivotAcceleration =
                 Rotation2d(pivotLeftKraken.acceleration.value * Constants.PIVOT_GEAR_RATIO)
+
+        inputs.atSetpoint = doneWithMotionProfile()
     }
 
     override fun doneWithMotionProfile(): Boolean {
