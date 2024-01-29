@@ -5,8 +5,11 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
+import edu.wpi.first.math.Matrix
+import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Translation2d
@@ -14,6 +17,8 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
+import edu.wpi.first.math.numbers.N1
+import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj.RobotBase
@@ -24,6 +29,17 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
+class DrivetrainOdometryThread : Runnable {
+
+    override fun run() {
+        while (!Thread.interrupted()) {
+            Drivetrain.updateInputs()
+            Drivetrain.updateOdometry()
+        }
+    }
+}
+
+data class VisionMeasurement(val stddev: Matrix<N3, N1>, val pose: Pose3d, val timestamp: Double)
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
     private val io =
@@ -45,63 +61,85 @@ object Drivetrain : Subsystem {
                     kinematics, // swerve drive kinematics
                     inputs.gyroRotation.toRotation2d(), // initial gyro rotation
                     inputs.measuredPositions.toTypedArray(), // initial module positions
-                    Pose2d() // initial pose
-                    // TODO: add odometry standard deviation
-                    )
+                    Pose2d(), // initial pose
+                    ODOMETRY_STD_DEV,
+                    VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
+            )
 
     init {
         CommandScheduler.getInstance().registerSubsystem(this)
     }
 
-    override fun periodic() {
+    fun updateInputs() {
         io.updateInputs(inputs)
+    }
+
+    fun updateOdometry() {
+        synchronized(this) {
+            poseEstimator.update(
+                    inputs.gyroRotation.toRotation2d(),
+                    inputs.measuredPositions.toTypedArray()
+            )
+        }
+    }
+
+    fun addVisionMeasurement(measurement: VisionMeasurement) {
+        synchronized(this) {
+            poseEstimator.addVisionMeasurement(
+                    measurement.pose.toPose2d(),
+                    measurement.timestamp,
+                    measurement.stddev
+            )
+        }
+    }
+
+    override fun periodic() {
         Logger.processInputs("Drivetrain", inputs)
-
-        poseEstimator.update(
-                inputs.gyroRotation.toRotation2d(),
-                inputs.measuredPositions.toTypedArray()
-        )
-
         Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
     }
 
     // The rotation of the robot as measured by the gyro.
     var gyroRotation
-        get() = inputs.gyroRotation
-        set(value) {
-            io.resetGyro(value)
-        }
+        get(): Rotation3d = inputs.gyroRotation
+        set(value) = io.resetGyro(value)
 
     private var moduleStates: PerCorner<SwerveModuleState>
         // Get the measured module states from the inputs.
-        get() = inputs.measuredStates
+        get() {
+            synchronized(this) {
+                return inputs.measuredStates
+            }
+        }
         // Set the desired module states.
         set(value) {
-            io.setDesiredStates(value)
-            Logger.recordOutput("Drivetrain/DesiredStates", *value.toTypedArray())
+            synchronized(this) {
+                io.setDesiredStates(value)
+                Logger.recordOutput("Drivetrain/DesiredStates", *value.toTypedArray())
+            }
         }
 
     // The current speed of chassis relative to the ground, assuming that the wheels have perfect
     // traction with the ground.
     var chassisSpeeds: ChassisSpeeds
         // Get the chassis speeds from the measured module states.
-        get() = kinematics.cornerStatesToChassisSpeeds(inputs.measuredStates)
+        get(): ChassisSpeeds = kinematics.cornerStatesToChassisSpeeds(inputs.measuredStates)
         // Set the drivetrain to move with the given chassis speeds.
         //
         // Note that the speeds are relative to the chassis, not the field.
         set(value) {
+
             val states = kinematics.toCornerSwerveModuleStates(value)
-
             // TODO: desaturate states
-
             moduleStates = states
         }
 
     // Set the drivetrain to an X-formation to passively prevent movement in any direction.
     fun brake() {
-        // set the modules to radiate outwards from the chassis origin
+
         moduleStates =
                 MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.rotation) }
+
+        // set the modules to radiate outwards from the chassis origin
     }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
@@ -109,14 +147,16 @@ object Drivetrain : Subsystem {
         get() = poseEstimator.estimatedPosition
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
-            run {
-                chassisSpeeds =
-                        ChassisSpeeds.fromFieldRelativeSpeeds(
-                                translationJoystick.y,
-                                translationJoystick.x,
-                                rotationJoystick.x,
-                                gyroRotation.toRotation2d()
-                        )
+            synchronized(this) {
+                run {
+                    chassisSpeeds =
+                            ChassisSpeeds.fromFieldRelativeSpeeds(
+                                    translationJoystick.y,
+                                    translationJoystick.x,
+                                    rotationJoystick.x,
+                                    gyroRotation.toRotation2d()
+                            )
+                }
             }
 }
 
@@ -126,6 +166,9 @@ abstract class DrivetrainIO {
 
     class Inputs : LoggableInputs {
         var gyroRotation: Rotation3d = Rotation3d()
+            set(value: Rotation3d) {
+                synchronized(this) { field = value }
+            }
         var measuredStates: PerCorner<SwerveModuleState> =
                 PerCorner.generate { SwerveModuleState() }
         var measuredPositions: PerCorner<SwerveModulePosition> =
@@ -185,6 +228,8 @@ class DrivetrainIOSim : DrivetrainIO() {
 // Constants
 internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
+
+internal val ODOMETRY_STD_DEV: Matrix<N3, N1> = VecBuilder.fill(0.0, 0.0, 0.0)
 
 internal val MODULE_POSITIONS =
         PerCorner(

@@ -10,6 +10,7 @@ import edu.wpi.first.wpilibj2.command.PIDCommand
 import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
 import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.math.geometry.Rotation2d
 
@@ -33,13 +34,7 @@ object Shooter : Subsystem {
     val tab = Shuffleboard.getTab("Shooter")
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
 
-    val dynamicMotionMagicTorqueCurrentFOCRequest = 
-        DynamicMotionMagicTorqueCurrentFOC(
-            0.0,
-            ACCELERATION_PROFILE,
-            VELOCITY_PROFILE,
-            JERK_PROFILE
-        )
+    val motionMagicTorqueCurrentFOCRequest = MotionMagicTorqueCurrentFOC(0.0)
 
     val targetVelocity =
             tab.add("Target Velocity", 0.0)
@@ -71,7 +66,7 @@ object Shooter : Subsystem {
 
     fun runWithSetpoint(setpoint: Rotation2d): Command {
         return InstantCommand({
-            io.setPivotControlRequest(dynamicMotionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations))
+            io.setPivotControlRequest(motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations))
         })
     }
 
