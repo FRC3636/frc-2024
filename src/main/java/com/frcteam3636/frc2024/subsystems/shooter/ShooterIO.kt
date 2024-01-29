@@ -50,7 +50,9 @@ interface ShooterIO {
 
     fun setPivotControlRequest(control: ControlRequest) {}
 
-    fun doneWithMotionProfile(): Boolean { return false}
+    fun doneWithMotionProfile(): Boolean {
+        return false
+    }
 }
 
 class ShooterIOReal : ShooterIO {
@@ -136,9 +138,9 @@ class ShooterIOReal : ShooterIO {
     }
 
     override fun doneWithMotionProfile(): Boolean {
-        return pivotRightKraken.motionMagicIsRunning.value.equals(
+        return !(pivotRightKraken.motionMagicIsRunning.value.equals(
                 MotionMagicIsRunningValue.Enabled
-        ) || pivotLeftKraken.motionMagicIsRunning.value.equals(MotionMagicIsRunningValue.Enabled)
+        ) || pivotLeftKraken.motionMagicIsRunning.value.equals(MotionMagicIsRunningValue.Enabled))
     }
 
     override fun shoot(speed: Double, spin: Boolean) {
