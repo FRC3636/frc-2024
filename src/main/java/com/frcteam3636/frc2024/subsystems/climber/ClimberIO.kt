@@ -23,7 +23,7 @@ interface ClimberIO {
 
     fun updateInputs(inputs: ClimberInputs)
 
-    fun moveClimber(speed: Double) {}
+    fun moveClimber(speed: Double)
 }
 
 class ClimberIOReal : ClimberIO {

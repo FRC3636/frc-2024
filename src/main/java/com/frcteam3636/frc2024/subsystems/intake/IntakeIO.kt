@@ -33,8 +33,8 @@ interface IntakeIO {
 
     fun updateInputs(inputs: IntakeInputs)
 
-    fun setOverBumperRoller(speed: Double) {}
-    fun setUnderBumperRoller(speed: Double) {}
+    fun setOverBumperRoller(speed: Double)
+    fun setUnderBumperRoller(speed: Double)
     fun isIntaking(): Boolean
 }
 

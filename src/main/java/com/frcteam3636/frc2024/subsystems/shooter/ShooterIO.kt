@@ -43,19 +43,17 @@ interface ShooterIO {
     }
 
     /** Updates the set of loggable inputs. */
-    fun updateInputs(inputs: ShooterIOInputs) {}
+    fun updateInputs(inputs: ShooterIOInputs)
 
     /** Run the launcher flywheel at the specified percent speed. */
-    fun shoot(speed: Double, spin: Boolean) {}
+    fun shoot(speed: Double, spin: Boolean)
 
     /** Run the launcher flywheels in reverse to intake at the specified percent speed. */
-    fun intake(speed: Double) {}
+    fun intake(speed: Double)
 
-    fun setPivotControlRequest(control: ControlRequest) {}
+    fun setPivotControlRequest(control: ControlRequest)
 
-    fun doneWithMotionProfile(): Boolean {
-        return false
-    }
+    fun doneWithMotionProfile(): Boolean
 }
 
 class ShooterIOReal : ShooterIO {
