@@ -104,29 +104,31 @@ class MAXSwerveModule(
     override var desiredState: SwerveModuleState = SwerveModuleState(0.0, -chassisAngle)
         get() = SwerveModuleState(field.speedMetersPerSecond, field.angle + chassisAngle)
         set(value) {
-            val corrected =
-                    SwerveModuleState(value.speedMetersPerSecond, value.angle - chassisAngle)
-            // optimize the state to avoid rotating more than 90 degrees
-            val optimized =
-                    SwerveModuleState.optimize(
-                            corrected,
-                            Rotation2d.fromRadians(turningEncoder.position)
-                    )
+            synchronized(this) {
+                val corrected =
+                        SwerveModuleState(value.speedMetersPerSecond, value.angle - chassisAngle)
+                // optimize the state to avoid rotating more than 90 degrees
+                val optimized =
+                        SwerveModuleState.optimize(
+                                corrected,
+                                Rotation2d.fromRadians(turningEncoder.position)
+                        )
 
-            drivingTalon.setControl(
-                    VelocityVoltage(
-                                    optimized.speedMetersPerSecond /
-                                            DRIVING_MOTOR_TRAVEL_PER_REVOLUTION
-                            )
-                            .withSlot(0)
-            )
+                drivingTalon.setControl(
+                        VelocityVoltage(
+                                        optimized.speedMetersPerSecond /
+                                                DRIVING_MOTOR_TRAVEL_PER_REVOLUTION
+                                )
+                                .withSlot(0)
+                )
 
-            turningPIDController.setReference(
-                    optimized.angle.radians,
-                    CANSparkBase.ControlType.kPosition
-            )
+                turningPIDController.setReference(
+                        optimized.angle.radians,
+                        CANSparkBase.ControlType.kPosition
+                )
 
-            field = optimized
+                field = optimized
+            }
         }
 
     internal companion object Constants {

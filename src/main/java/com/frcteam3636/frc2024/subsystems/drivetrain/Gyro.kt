@@ -29,7 +29,7 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
                                 )
                         )
         set(value) {
-            offset = value - rotation
+            synchronized(this) { offset = value - rotation }
         }
 }
 

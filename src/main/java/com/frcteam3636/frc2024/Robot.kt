@@ -13,6 +13,8 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import java.lang.Thread
+import com.frcteam3636.frc2024.subsystems.drivetrain.DrivetrainOdometryThread
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -28,6 +30,7 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
 object Robot : LoggedRobot() {
 
     private var autonomousCommand: Command? = null
+    private val drivetrainThread: Thread = Thread(DrivetrainOdometryThread())
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -67,16 +70,21 @@ object Robot : LoggedRobot() {
         Logger.start() // Start logging! No more data receivers, replay sources, or metadata values
         // may be added.
 
+        drivetrainThread.start()
+        
         // Access the RobotContainer object so that it is initialized. This will perform all our
         // button bindings, and put our autonomous chooser on the dashboard.
         RobotContainer
+
     }
+
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
     }
 
-    override fun disabledInit() {}
+    override fun disabledInit() {
+    }
 
     override fun disabledPeriodic() {}
 
