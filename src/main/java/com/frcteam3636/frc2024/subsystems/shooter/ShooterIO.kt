@@ -70,7 +70,7 @@ class ShooterIOReal : ShooterIO {
         const val MOTION_MAGIC_ACCELERATION = 0.0
         const val MOTION_MAGIC_JERK = 4000.0
 
-        const val MOTION_PROFILE_ERROR_THREHOLD =
+        const val MOTION_PROFILE_ERROR_THRESHOLD =
             2.0 // i have no idea what units these are in, we'll have to just fuck around and
         // find out
     }
@@ -140,7 +140,7 @@ class ShooterIOReal : ShooterIO {
             Rotation2d(pivotLeftKraken.acceleration.value * Constants.PIVOT_GEAR_RATIO)
 
         inputs.atSetpoint =
-            pivotLeftKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THREHOLD && pivotRightKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THREHOLD
+            pivotLeftKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THRESHOLD && pivotRightKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THRESHOLD
     }
 
     override fun shoot(speed: Double, spin: Boolean) {
