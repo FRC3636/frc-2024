@@ -1,25 +1,25 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
 import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.filter.SlewRateLimiter
+import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
 import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.PIDCommand
 import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
-import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
-import edu.wpi.first.wpilibj2.command.InstantCommand
-import edu.wpi.first.math.geometry.Rotation2d
 
 object Shooter : Subsystem {
 
     const val ACCELERATION_PROFILE = 0.0
     const val VELOCITY_PROFILE = 0.0
     const val JERK_PROFILE = 0.0
-    
-    private val io: ShooterIO  =
+
+    private val io: ShooterIO =
             if (RobotBase.isReal()) {
                 ShooterIOReal()
             } else {
@@ -33,20 +33,18 @@ object Shooter : Subsystem {
     val tab = Shuffleboard.getTab("Shooter")
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
 
-    val dynamicMotionMagicTorqueCurrentFOCRequest = 
-        DynamicMotionMagicTorqueCurrentFOC(
-            0.0,
-            ACCELERATION_PROFILE,
-            VELOCITY_PROFILE,
-            JERK_PROFILE
-        )
+    val dynamicMotionMagicTorqueCurrentFOCRequest =
+            DynamicMotionMagicTorqueCurrentFOC(
+                    0.0,
+                    ACCELERATION_PROFILE,
+                    VELOCITY_PROFILE,
+                    JERK_PROFILE
+            )
 
     val targetVelocity =
             tab.add("Target Velocity", 0.0)
                     .withWidget(BuiltInWidgets.kNumberSlider)
-                    .withProperties(
-                            mapOf(Pair("min", 0.0), Pair("max", 6000.0))
-                    ) 
+                    .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0)))
                     .entry
 
     private val rateLimiter = SlewRateLimiter(1.0)
@@ -69,14 +67,28 @@ object Shooter : Subsystem {
                 .also { it.addRequirements(this) }
     }
 
-    fun runWithSetpoint(setpoint: Rotation2d): Command {
+    fun startPivotingTo(setpoint: Rotation2d): Command {
         return InstantCommand({
-            io.setPivotControlRequest(dynamicMotionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations))
-        })
+                    io.setPivotControlRequest(
+                            dynamicMotionMagicTorqueCurrentFOCRequest.withPosition(
+                                    setpoint.rotations
+                            )
+                    )
+                })
+                .also { it.addRequirements(this) }
+    }
+
+    fun pivotTo(setpoint: Rotation2d): Command {
+        return run {
+            io.setPivotControlRequest(
+                    dynamicMotionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
+            )
+        }
+                .until(io::doneWithMotionProfile)
+                .also { it.addRequirements(this) }
     }
 
     fun intakeCommand(): Command {
         return startEnd({ io.intake(1.0) }, { io.intake(0.0) })
     }
-
 }
