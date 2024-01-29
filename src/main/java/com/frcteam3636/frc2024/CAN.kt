@@ -12,28 +12,34 @@ enum class REVMotorControllerId(val num: Int) {
     BackLeftTurningMotor(2),
     BackRightTurningMotor(3),
     FrontRightTurningMotor(4),
+
     // fixme: these can ids should probably be updated in hardware because 15 and 7 are pretty
     // random
     LeftShooterFlywheel(15),
     RightShooterFlywheel(7),
+
     // todo: the following `3x` CAN ids are placeholders
     OverTheBumperIntakeArm(31),
     OverTheBumperIntakeFeed(32),
     UnderTheBumperIntakeRoller(33),
     ClimberMotor(34),
+    RightPivotMotor(35),
+    LeftPivotMotor(36),
 }
 
 fun CANSparkMax(id: REVMotorControllerId, type: CANSparkLowLevel.MotorType) =
-        CANSparkMax(id.num, type)
+    CANSparkMax(id.num, type)
 
 fun CANSparkFlex(id: REVMotorControllerId, type: CANSparkLowLevel.MotorType) =
-        CANSparkFlex(id.num, type)
+    CANSparkFlex(id.num, type)
 
 enum class CTREMotorControllerId(val num: Int, val bus: String) {
     FrontLeftDrivingMotor(1, "*"),
     BackLeftDrivingMotor(2, "*"),
     BackRightDrivingMotor(3, "*"),
     FrontRightDrivingMotor(4, "*"),
+    RightPivotMotor(5, "*"),
+    LeftPivotMotor(6, "*"),
 }
 
 fun TalonFX(id: CTREMotorControllerId) = TalonFX(id.num, id.bus)

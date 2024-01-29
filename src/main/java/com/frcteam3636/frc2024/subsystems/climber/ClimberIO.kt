@@ -23,7 +23,7 @@ interface ClimberIO {
 
     fun updateInputs(inputs: ClimberInputs)
 
-    fun moveClimber(speed: Double) {}
+    fun moveClimber(speed: Double)
 }
 
 class ClimberIOReal : ClimberIO {
@@ -32,13 +32,13 @@ class ClimberIOReal : ClimberIO {
     }
 
     private var climberMotor =
-            CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless)
-                    .apply { burnFlash() }
+        CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless)
+            .apply { burnFlash() }
     private val climberEncoder =
-            climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
-                velocityConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO / 60
-                positionConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO
-            }
+        climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
+            velocityConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO / 60
+            positionConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO
+        }
 
     override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
         inputs.climberPosition = Rotation2d(climberEncoder.position)
