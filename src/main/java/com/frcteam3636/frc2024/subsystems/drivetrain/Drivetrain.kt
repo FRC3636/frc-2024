@@ -359,7 +359,6 @@ internal const val FIELD_WIDTH = 0.0
 
 internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> = listOf()
 
-
 internal val MODULE_POSITIONS =
     PerCorner(
         frontLeft =
