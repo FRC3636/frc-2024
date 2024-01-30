@@ -18,6 +18,9 @@ import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Distance
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
@@ -40,105 +43,6 @@ class DrivetrainOdometryThread : Runnable {
             Drivetrain.updateOdometry()
         }
     }
-}
-
-data class VisionMeasurement(val stddev: Matrix<N3, N1>, val pose: Pose3d, val timestamp: Double)
-interface VisionBackend {
-    fun getMeasurement(): Optional<VisionMeasurement>
-}
-
-class PhotonAprilTagCamera(name: String, cameraTransform: Transform3d) : VisionBackend {
-    private val io =
-        if (RobotBase.isReal()) {
-            AprilTagPhotonVisionIOReal(name, cameraTransform)
-        } else {
-            throw NotImplementedError()
-        }
-
-    override fun getMeasurement(): Optional<VisionMeasurement> {
-        return io.result.flatMap { result ->
-            {
-                if (result.targetsUsed.first().bestCameraToTarget.translation.norm > APRIL_TAG_DISTANCE_FILTER
-                    || result.targetsUsed.first().poseAmbiguity > APRIL_TAG_DISTANCE_FILTER
-                ) {
-                    Optional.empty<VisionMeasurement>()
-                }
-
-                if (result.estimatedPose.x < 0 || result.estimatedPose.x > FIELD_LENGTH ||
-                    result.estimatedPose.y < 0 || result.estimatedPose.y > FIELD_WIDTH
-                ) {
-
-                    Optional.empty<VisionMeasurement>()
-                }
-
-
-                Optional.of(
-                    VisionMeasurement(
-                        APRIL_TAG_STD_DEV(result.targetsUsed.first().bestCameraToTarget.x, result.targetsUsed.size),
-                        result.estimatedPose,
-                        result.timestampSeconds
-                    )
-                )
-            }()
-        }
-    }
-}
-
-class AprilTagPhotonVisionIOReal(private val name: String, private val cameraTransform: Transform3d) :
-    AprilTagPhotonVisionIO() {
-    override val camera = PhotonCamera(name).apply {
-        driverMode = false
-        pipelineIndex = 0
-    }
-
-    val fieldLayout = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile)
-
-    override val poseEstimator: PhotonPoseEstimator = PhotonPoseEstimator(
-        fieldLayout,
-        PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-        camera,
-        cameraTransform
-    )
-
-    override fun updateInputs(inputs: Inputs) {
-        inputs.targetCorners = result.get().targetsUsed
-            .flatMap { target ->
-                target.detectedCorners
-            }.map { corner ->
-                Translation2d(corner.x, corner.y)
-            }
-
-        inputs.targetIDs = result.get().targetsUsed
-            .map { target ->
-                target.fiducialId
-            }
-    }
-
-}
-
-abstract class AprilTagPhotonVisionIO {
-
-    abstract val camera: PhotonCamera
-    abstract val poseEstimator: PhotonPoseEstimator
-    val result: Optional<EstimatedRobotPose>
-        get() = poseEstimator.update()
-
-    class Inputs : LoggableInputs {
-        var targetCorners: List<Translation2d> = mutableListOf() //unordered
-        var targetIDs: List<Int> = mutableListOf()
-
-        override fun toLog(table: LogTable?) {
-            table?.put("Target Corners Used", *targetCorners.toTypedArray())
-            table?.put("Target IDs Used", targetIDs.toIntArray())
-        }
-
-        override fun fromLog(table: LogTable?) {
-            targetCorners = table?.get("Target Corners Used", *targetCorners.toTypedArray())!!.toList()
-            targetIDs = table?.get("Target IDs Used", targetIDs.toIntArray())!!.toList()
-        }
-    }
-
-    abstract fun updateInputs(inputs: Inputs)
 }
 
 // A singleton object representing the drivetrain.
@@ -334,28 +238,13 @@ class DrivetrainIOSim : DrivetrainIO() {
 }
 
 // Constants
-internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
-internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
-
-
-internal val ODOMETRY_STD_DEV: Matrix<N3, N1> = VecBuilder.fill(0.0, 0.0, 0.0)
-internal const val APRIL_TAG_DISTANCE_FILTER = 0.0
-internal const val APRIL_TAG_AMBIGUITY_FILTER = 0.0
-internal val APRIL_TAG_STD_DEV = { distance: Double, count: Int ->
-    val distanceMultiplier = Math.pow(distance - ((count - 1) * 2), 2.0)
-    val translationalStdDev = (0.05 / (count)) * distanceMultiplier + 0.0
-    val rotationalStdDev = 0.2 * distanceMultiplier + 0.1
-    VecBuilder.fill(
-        translationalStdDev,
-        translationalStdDev,
-        rotationalStdDev
-    )
-}
+internal val WHEEL_BASE: Measure<Distance> = Inches.of(13.0)
+internal val TRACK_WIDTH: Measure<Distance> = Inches.of(14.0)
 
 
 //field constants
-internal const val FIELD_LENGTH = 0.0
-internal const val FIELD_WIDTH = 0.0
+internal val FIELD_LENGTH: Measure<Distance> = Inches.of(651.25)
+internal val FIELD_WIDTH: Measure<Distance> = Inches.of(323.25)
 
 internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> = listOf()
 
@@ -368,17 +257,17 @@ internal val MODULE_POSITIONS =
         ),
         frontRight =
         Pose2d(
-            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Translation2d(WHEEL_BASE, TRACK_WIDTH.negate()) / 2.0,
             Rotation2d.fromDegrees(180.0)
         ),
         backRight =
         Pose2d(
-            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Translation2d(WHEEL_BASE.negate(), TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(0.0)
         ),
         backLeft =
         Pose2d(
-            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Translation2d(WHEEL_BASE.negate(), TRACK_WIDTH.negate()) / 2.0,
             Rotation2d.fromDegrees(90.0)
         )
     )
