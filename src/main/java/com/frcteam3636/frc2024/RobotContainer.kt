@@ -35,10 +35,10 @@ object RobotContainer {
         controller.x().whileTrue(Shooter.shootCommand())
         controller.b().whileTrue(Intake.intakeCommand())
         Drivetrain.defaultCommand =
-                Drivetrain.driveWithJoysticks(
-                        translationJoystick = joystickLeft,
-                        rotationJoystick = joystickRight
-                )
+            Drivetrain.driveWithJoysticks(
+                translationJoystick = joystickLeft,
+                rotationJoystick = joystickRight
+            )
     }
 
     fun getAutonomousCommand(): Command? {

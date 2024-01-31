@@ -40,15 +40,15 @@ interface IntakeIO {
 
 class IntakeIOReal : IntakeIO {
     private var otbRollers =
-            CANSparkMax(
-                    REVMotorControllerId.OverTheBumperIntakeFeed,
-                    CANSparkLowLevel.MotorType.kBrushless
-            )
+        CANSparkMax(
+            REVMotorControllerId.OverTheBumperIntakeFeed,
+            CANSparkLowLevel.MotorType.kBrushless
+        )
     private var utbRollers =
-            CANSparkFlex(
-                    REVMotorControllerId.UnderTheBumperIntakeRoller,
-                    CANSparkLowLevel.MotorType.kBrushless
-            )
+        CANSparkFlex(
+            REVMotorControllerId.UnderTheBumperIntakeRoller,
+            CANSparkLowLevel.MotorType.kBrushless
+        )
     private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {

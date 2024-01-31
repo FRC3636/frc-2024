@@ -33,25 +33,26 @@ object Robot : LoggedRobot() {
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
         HAL.report(
-                tResourceType.kResourceType_Language,
-                tInstances.kLanguage_Kotlin,
-                0,
-                WPILibVersion.Version
+            tResourceType.kResourceType_Language,
+            tInstances.kLanguage_Kotlin,
+            0,
+            WPILibVersion.Version
         )
 
         if (isReal()) {
             Logger.addDataReceiver(WPILOGWriter("/U")) // Log to a USB stick
             Logger.addDataReceiver(NT4Publisher()) // Publish data to NetworkTables
             PowerDistribution(
-                    1,
-                    PowerDistribution.ModuleType.kRev
+                1,
+                PowerDistribution.ModuleType.kRev
             ) // Enables power distribution logging
         } else {
             var logPath: String? = null
             try {
                 logPath = LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or
                 // prompt the user)
-            } catch (_: java.util.NoSuchElementException) {}
+            } catch (_: java.util.NoSuchElementException) {
+            }
 
             if (logPath == null) {
                 // No replay log, so perform physics simulation
@@ -61,7 +62,7 @@ object Robot : LoggedRobot() {
                 setUseTiming(false) // Run as fast as possible
                 Logger.setReplaySource(WPILOGReader(logPath)) // Read replay log
                 Logger.addDataReceiver(
-                        WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))
+                    WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))
                 ) // Save outputs to a new log
             }
         }

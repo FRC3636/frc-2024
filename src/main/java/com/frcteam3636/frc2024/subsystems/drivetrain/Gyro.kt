@@ -19,15 +19,15 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
 
     override var rotation: Rotation3d
         get() =
-                offset +
-                        Rotation3d(
-                                Quaternion(
-                                        ahrs.quaternionW.toDouble(),
-                                        ahrs.quaternionX.toDouble(),
-                                        ahrs.quaternionY.toDouble(),
-                                        ahrs.quaternionZ.toDouble()
-                                )
+            offset +
+                    Rotation3d(
+                        Quaternion(
+                            ahrs.quaternionW.toDouble(),
+                            ahrs.quaternionX.toDouble(),
+                            ahrs.quaternionY.toDouble(),
+                            ahrs.quaternionZ.toDouble()
                         )
+                    )
         set(value) {
             offset = value - rotation
         }
@@ -38,12 +38,12 @@ class GyroSim(private val modules: PerCorner<SwerveModule>) : Gyro {
 
     override fun periodic() {
         val moduleVelocities =
-                modules.map { Translation2d(it.state.speedMetersPerSecond, it.state.angle) }
+            modules.map { Translation2d(it.state.speedMetersPerSecond, it.state.angle) }
         val translationVelocity = moduleVelocities.reduce(Translation2d::plus) / 4.0
         val rotationalVelocities = moduleVelocities.map { it - translationVelocity }
         val yawVelocity =
-                sign(rotationalVelocities.frontLeft.y) * rotationalVelocities.frontLeft.norm /
-                        MODULE_POSITIONS.frontLeft.translation.norm
+            sign(rotationalVelocities.frontLeft.y) * rotationalVelocities.frontLeft.norm /
+                    MODULE_POSITIONS.frontLeft.translation.norm
 
         rotation += Rotation3d(0.0, 0.0, yawVelocity) * Robot.period
     }

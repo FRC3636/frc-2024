@@ -42,26 +42,26 @@ class ShooterIOReal : ShooterIO {
     }
 
     private val left =
-            CANSparkMax(
-                            REVMotorControllerId.LeftShooterFlywheel,
-                            CANSparkLowLevel.MotorType.kBrushless
-                    )
-                    .apply {
-                        inverted = true
-                        encoder.velocityConversionFactor =
-                                Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
-                    }
+        CANSparkMax(
+            REVMotorControllerId.LeftShooterFlywheel,
+            CANSparkLowLevel.MotorType.kBrushless
+        )
+            .apply {
+                inverted = true
+                encoder.velocityConversionFactor =
+                    Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
+            }
 
     private val right =
-            CANSparkMax(
-                            REVMotorControllerId.RightShooterFlywheel,
-                            CANSparkLowLevel.MotorType.kBrushless
-                    )
-                    .apply {
-                        encoder.velocityConversionFactor =
-                                Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
-                        inverted = false
-                    }
+        CANSparkMax(
+            REVMotorControllerId.RightShooterFlywheel,
+            CANSparkLowLevel.MotorType.kBrushless
+        )
+            .apply {
+                encoder.velocityConversionFactor =
+                    Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
+                inverted = false
+            }
 
     override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
         inputs.leftSpeed = Rotation2d(left.encoder.velocity)
@@ -72,12 +72,12 @@ class ShooterIOReal : ShooterIO {
         left.set(speed)
         Logger.recordOutput("Shooter/Left Power", speed)
         val rSpeed =
-                speed *
-                        if (spin) {
-                            0.75
-                        } else {
-                            1.0
-                        }
+            speed *
+                    if (spin) {
+                        0.75
+                    } else {
+                        1.0
+                    }
         right.set(rSpeed)
         Logger.recordOutput("Shooter/Right Power", rSpeed)
     }

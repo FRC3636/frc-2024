@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import com.frcteam3636.frc2024.utils.math.*
+import com.frcteam3636.frc2024.utils.math.PIDController
+import com.frcteam3636.frc2024.utils.math.PIDGains
 import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets
@@ -12,11 +13,11 @@ import org.littletonrobotics.junction.Logger
 
 object Shooter : Subsystem {
     private val io: ShooterIO =
-            if (RobotBase.isReal()) {
-                ShooterIOReal()
-            } else {
-                TODO()
-            }
+        if (RobotBase.isReal()) {
+            ShooterIOReal()
+        } else {
+            TODO()
+        }
 
     private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
 
@@ -26,12 +27,12 @@ object Shooter : Subsystem {
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
 
     val targetVelocity =
-            tab.add("Target Velocity", 0.0)
-                    .withWidget(BuiltInWidgets.kNumberSlider)
-                    .withProperties(
-                            mapOf(Pair("min", 0.0), Pair("max", 5000.0))
-                    ) // Adjust min and max as needed.
-                    .entry
+        tab.add("Target Velocity", 0.0)
+            .withWidget(BuiltInWidgets.kNumberSlider)
+            .withProperties(
+                mapOf(Pair("min", 0.0), Pair("max", 5000.0))
+            ) // Adjust min and max as needed.
+            .entry
 
     private val rateLimiter = SlewRateLimiter(1.0)
 
@@ -42,15 +43,15 @@ object Shooter : Subsystem {
 
     fun shootCommand(): Command {
         return PIDCommand(
-                        pidController,
-                        { inputs.leftSpeed.radians },
-                        { targetVelocity.getDouble(0.0) },
-                        { output ->
-                            val limitedOutput = rateLimiter.calculate(output)
-                            io.shoot(limitedOutput, shouldSpin.getBoolean(true))
-                        }
-                )
-                .also { it.addRequirements(this) }
+            pidController,
+            { inputs.leftSpeed.radians },
+            { targetVelocity.getDouble(0.0) },
+            { output ->
+                val limitedOutput = rateLimiter.calculate(output)
+                io.shoot(limitedOutput, shouldSpin.getBoolean(true))
+            }
+        )
+            .also { it.addRequirements(this) }
     }
 
     fun intakeCommand(): Command {
