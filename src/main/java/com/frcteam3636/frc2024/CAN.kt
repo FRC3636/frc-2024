@@ -12,11 +12,15 @@ enum class REVMotorControllerId(val num: Int) {
     BackLeftTurningMotor(2),
     BackRightTurningMotor(3),
     FrontRightTurningMotor(4),
+    FrontLeftDrivingMotor(5),
+    BackLeftDrivingMotor(6),
+    BackRightDrivingMotor(7),
+    FrontRightDrivingMotor(8),
 
     // fixme: these can ids should probably be updated in hardware because 15 and 7 are pretty
     // random
-    LeftShooterFlywheel(15),
-    RightShooterFlywheel(7),
+    LeftShooterFlywheel(29),
+    RightShooterFlywheel(30),
 
     // todo: the following `3x` CAN ids are placeholders
     OverTheBumperIntakeArm(31),

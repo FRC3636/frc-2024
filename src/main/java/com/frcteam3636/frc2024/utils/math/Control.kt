@@ -15,6 +15,8 @@ val SimpleMotorFeedforward.gains: MotorFFGains
 fun SlotConfigs.withMotorFFGains(gains: MotorFFGains) =
     withKS(gains.s).withKV(gains.v).withKA(gains.a)
 
+fun SlotConfigs.withPIDGains(gains: PIDGains) =
+    withKP(gains.p).withKI(gains.i).withKD(gains.d)
 data class PIDGains(val p: Double = 0.0, val i: Double = 0.0, val d: Double = 0.0)
 
 fun PIDController(gains: PIDGains) = PIDController(gains.p, gains.i, gains.d)
