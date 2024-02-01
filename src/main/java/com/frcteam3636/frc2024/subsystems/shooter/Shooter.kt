@@ -1,11 +1,11 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
+import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
 import edu.wpi.first.wpilibj2.command.Command
@@ -15,14 +15,10 @@ import org.littletonrobotics.junction.Logger
 
 object Shooter : Subsystem {
 
-    const val ACCELERATION_PROFILE = 0.0
-    const val VELOCITY_PROFILE = 0.0
-    const val JERK_PROFILE = 0.0
-
-    private val io: ShooterIO = if (RobotBase.isReal()) {
-        ShooterIOReal()
-    } else {
-        TODO()
+    private val io: ShooterIO = when (Robot.model) {
+        Robot.Model.SIMULATION -> TODO()
+        Robot.Model.COMPETITION -> ShooterIOComp()
+        Robot.Model.PRACTICE -> TODO()
     }
 
     private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
@@ -67,3 +63,8 @@ object Shooter : Subsystem {
     fun intakeCommand(): Command =
         startEnd({ io.intake(1.0) }, { io.intake(0.0) })
 }
+
+internal const val ACCELERATION_PROFILE = 0.0
+internal const val VELOCITY_PROFILE = 0.0
+internal const val JERK_PROFILE = 0.0
+

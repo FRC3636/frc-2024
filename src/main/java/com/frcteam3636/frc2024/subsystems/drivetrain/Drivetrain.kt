@@ -2,6 +2,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
+import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -26,12 +27,11 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
-    private val io =
-        if (RobotBase.isReal()) {
-            DrivetrainIOReal()
-        } else {
-            DrivetrainIOSim()
-        }
+    private val io = when (Robot.model) {
+        Robot.Model.SIMULATION -> DrivetrainIOSim()
+        Robot.Model.COMPETITION -> DrivetrainIOComp()
+        Robot.Model.PRACTICE -> TODO()
+    }
     private val inputs = DrivetrainIO.Inputs()
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
@@ -168,7 +168,7 @@ abstract class DrivetrainIO {
     }
 }
 
-class DrivetrainIOReal : DrivetrainIO() {
+class DrivetrainIOComp : DrivetrainIO() {
     override val gyro = GyroNavX()
     override val modules =
         MODULE_CAN_IDS.zip(MODULE_POSITIONS).map { (can, pose) ->

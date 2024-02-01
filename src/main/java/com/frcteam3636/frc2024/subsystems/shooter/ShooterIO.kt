@@ -54,7 +54,7 @@ interface ShooterIO {
     fun setPivotControlRequest(control: ControlRequest)
 }
 
-class ShooterIOReal : ShooterIO {
+class ShooterIOComp : ShooterIO {
 
     internal companion object Constants {
         const val FLYWHEEL_GEAR_RATIO = 1.0
