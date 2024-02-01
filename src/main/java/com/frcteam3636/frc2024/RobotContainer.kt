@@ -7,6 +7,7 @@ import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import com.frcteam3636.frc2024.subsystems.shooter.PivotPosition
+import com.frcteam3636.frc2024.subsystems.shooter.TargetPosition
 import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -52,6 +53,10 @@ object RobotContainer {
                     Shooter.intakeCommand()
                 ),
             )
+        )
+
+        controller.leftBumper().whileTrue(
+            Shooter.aimAtStatic(TargetPosition.Speaker.position, Drivetrain.estimatedPose.translation)
         )
 
         //Drive if triggered joystickLeft input

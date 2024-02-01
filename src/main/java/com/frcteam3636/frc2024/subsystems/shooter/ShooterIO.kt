@@ -168,4 +168,8 @@ class ShooterIOReal : ShooterIO {
         Logger.recordOutput("Shooter/Left Power", -speed)
         Logger.recordOutput("Shooter/Right Power", -speed)
     }
+
+
+
+
 }
