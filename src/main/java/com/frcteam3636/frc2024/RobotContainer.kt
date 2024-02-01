@@ -1,11 +1,15 @@
 package com.frcteam3636.frc2024
 
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import com.frcteam3636.frc2024.subsystems.shooter.PivotPosition
+import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.button.JoystickButton
+import edu.wpi.first.wpilibj2.command.button.Trigger
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -34,6 +38,43 @@ object RobotContainer {
     private fun configureBindings() {
         controller.x().whileTrue(Shooter.shootCommand())
         controller.b().whileTrue(Intake.intakeCommand())
+
+        controller.a().whileTrue(
+            SequentialCommandGroup(
+                ParallelCommandGroup(
+                    Intake.intakeCommand(),
+                    Shooter.pivotTo(
+                        PivotPosition.Handoff.position
+                    ),
+                ),
+                ParallelRaceGroup(
+                    Intake.indexCommand(),
+                    Shooter.intakeCommand()
+                ),
+            )
+        )
+
+        //Drive if triggered joystickLeft input
+
+       JoystickButton(joystickLeft, 7).onTrue(
+           InstantCommand ({
+               Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
+                        joystickLeft,
+                        OrientationTarget.SPEAKER.position
+                    )
+           })
+       ).onFalse(
+           InstantCommand ({
+               Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+                   translationJoystick = joystickLeft,
+                   rotationJoystick = joystickRight
+               )
+           })
+       )
+
+
+
+
         Drivetrain.defaultCommand =
             Drivetrain.driveWithJoysticks(
                 translationJoystick = joystickLeft,
@@ -45,3 +86,7 @@ object RobotContainer {
         return null
     }
 }
+
+
+
+private const val MAGNITUDE_THRESHOLD = 0.1

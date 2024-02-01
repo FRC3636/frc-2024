@@ -67,3 +67,11 @@ object Shooter : Subsystem {
     fun intakeCommand(): Command =
         startEnd({ io.intake(1.0) }, { io.intake(0.0) })
 }
+
+//0 degrees = pivot pointing horizontally outwards
+enum class PivotPosition(val position: Rotation2d) {
+    Horizontal(Rotation2d(0.0)),
+    Vertical(Rotation2d.fromDegrees(90.0)),
+    Handoff(Rotation2d.fromDegrees(190.0)),
+    Amps(Rotation2d.fromDegrees(80.0))
+}
