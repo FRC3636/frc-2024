@@ -56,7 +56,7 @@ object RobotContainer {
         )
 
         controller.leftBumper().whileTrue(
-            Shooter.aimAtStatic(TargetPosition.Speaker.position, Drivetrain.estimatedPose.translation)
+            Shooter.aimAtStatic(TargetPosition.Speaker, Drivetrain.estimatedPose.translation)
         )
 
         //Drive if triggered joystickLeft input

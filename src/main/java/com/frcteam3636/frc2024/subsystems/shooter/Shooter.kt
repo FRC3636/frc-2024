@@ -50,7 +50,6 @@ object Shooter : Subsystem {
     val targetVelocity = tab.add("Target Velocity", 0.0).withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0))).entry
 
-
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Shooter", inputs)
@@ -67,8 +66,6 @@ object Shooter : Subsystem {
             shouldSpin.getBoolean(false)
         )
     }
-
-
 
     /**
      * Start pivoting to the setpoint, and arrive with velocity (angle / sec)
@@ -124,7 +121,6 @@ object Shooter : Subsystem {
     fun intakeCommand(): Command =
         startEnd({ io.intake(1.0) }, { io.intake(0.0) })
 
-
     /**
      * Return the two dimensional angle to the target (x horizontal against z) based on the position of the robot
      *
@@ -161,9 +157,8 @@ object Shooter : Subsystem {
      * @param targetHeight the height of the target
      */
     fun getAccelerationToTarget(distance: Double, targetHeight: Double): Rotation2d {
-
         val radPerSecSquared =
-            (2 * targetHeight * distance ) / (targetHeight.pow(2) + distance.pow(2)).pow(2)
+            (2 * targetHeight * distance) / (targetHeight.pow(2) + distance.pow(2)).pow(2)
         return Rotation2d(radPerSecSquared)
     }
 
@@ -179,7 +174,9 @@ enum class PivotPosition(val position: Rotation2d) {
 
 enum class TargetPosition(val position: Translation3d) {
     Speaker(Translation3d()),
+    //this shit prolly never gonna happen lol
     Trap1(Translation3d()),
     Trap2(Translation3d()),
     Trap3(Translation3d()),
+    Amp(Translation3d())
 }
