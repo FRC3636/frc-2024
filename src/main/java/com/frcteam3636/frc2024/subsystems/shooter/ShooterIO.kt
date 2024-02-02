@@ -2,7 +2,6 @@ package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.ctre.phoenix6.configs.MotionMagicConfigs
 import com.ctre.phoenix6.configs.TalonFXConfiguration
-import com.ctre.phoenix6.controls.ControlRequest
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.frcteam3636.frc2024.CANSparkMax
@@ -77,10 +76,11 @@ class ShooterIOPractice : ShooterIO {
 
     private val profile: TrapezoidProfile =
         TrapezoidProfile(
-        TrapezoidProfile.Constraints(
-            ACCELERATION_PROFILE,
-            VELOCITY_PROFILE
-        ))
+            TrapezoidProfile.Constraints(
+                ACCELERATION_PROFILE,
+                VELOCITY_PROFILE
+            )
+        )
 
 
     private val leftFlywheels =
@@ -105,22 +105,24 @@ class ShooterIOPractice : ShooterIO {
     private val leftPivot =
         CANSparkMax(
             REVMotorControllerId.LeftPivotMotor,
-            CANSparkLowLevel.MotorType.kBrushless)
-        .apply {
-            inverted = true
-            encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
-            encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
-        }
+            CANSparkLowLevel.MotorType.kBrushless
+        )
+            .apply {
+                inverted = true
+                encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+                encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+            }
 
     private val rightPivot =
         CANSparkMax(
             REVMotorControllerId.RightPivotMotor,
-            CANSparkLowLevel.MotorType.kBrushless)
-        .apply {
-            inverted = true
-            encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
-            encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
-        }
+            CANSparkLowLevel.MotorType.kBrushless
+        )
+            .apply {
+                inverted = true
+                encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+                encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+            }
 
     private val timer: Timer = Timer()
 
@@ -161,11 +163,13 @@ class ShooterIOPractice : ShooterIO {
                 Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO / 60).radians
             )
             val goal = profile.calculate(timer.get(), current, goalState)
-            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(current.position, goal.position)
+            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(
+                current.position,
+                goal.position
+            )
             leftPivot.setVoltage(voltage)
             rightPivot.setVoltage(voltage)
-        }
-        while(!( (abs(leftPivot.encoder.position -  setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1 ))
+        } while (!((abs(leftPivot.encoder.position - setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1))
 
         timer.stop()
         timer.reset()
@@ -180,11 +184,13 @@ class ShooterIOPractice : ShooterIO {
                 Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO / 60).radians
             )
             val goal = profile.calculate(timer.get(), current, goalState)
-            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(current.position, goal.position)
+            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(
+                current.position,
+                goal.position
+            )
             leftPivot.setVoltage(voltage)
             rightPivot.setVoltage(voltage)
-        }
-        while(!( (abs(leftPivot.encoder.position -  setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1 ))
+        } while (!((abs(leftPivot.encoder.position - setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1))
 
         timer.stop()
         timer.reset()

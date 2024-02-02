@@ -23,7 +23,6 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import kotlin.Exception
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -115,14 +114,14 @@ object Robot : LoggedRobot() {
         //Drive if triggered joystickLeft input
 
         JoystickButton(joystickLeft, 7).onTrue(
-            InstantCommand ({
+            InstantCommand({
                 Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft,
                     OrientationTarget.SPEAKER.position
                 )
             })
         ).onFalse(
-            InstantCommand ({
+            InstantCommand({
                 Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
                     translationJoystick = joystickLeft,
                     rotationJoystick = joystickRight
