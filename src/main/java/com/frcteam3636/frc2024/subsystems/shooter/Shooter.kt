@@ -4,6 +4,7 @@ import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.ctre.phoenix6.controls.TorqueCurrentFOC
+import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import edu.wpi.first.math.filter.SlewRateLimiter
@@ -75,15 +76,19 @@ object Shooter : Subsystem {
      */
     fun aimAtAndTrack(position: Translation2d, targetPosition: TargetPosition): Command {
         val setpoint = getAngleTo(targetPosition.position, position)
-        val distance = targetPosition.position.toTranslation2d().minus(position).norm
+        val distanceVector = targetPosition.position.toTranslation2d().minus(position)
         val targetHeight = targetPosition.position.z
+        val distance = distanceVector.norm
+        val normalizedDistanceVector = distanceVector.div(distance)
+        val derivativeDistance = Drivetrain.chassisSpeeds.vxMetersPerSecond * normalizedDistanceVector.x +
+                Drivetrain.chassisSpeeds.vyMetersPerSecond * normalizedDistanceVector.y
+
 
         return runOnce {
             io.setPivotControlRequest(
                 PositionTorqueCurrentFOC(0.0).withSlot(0).apply {
                     Position = setpoint.rotations
-                    Velocity = getVelocityToTarget(distance, targetHeight).rotations
-
+                    Velocity = getVelocityToTarget(distance, targetHeight).rotations * derivativeDistance
                 }
             )
         }
