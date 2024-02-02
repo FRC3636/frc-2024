@@ -1,12 +1,18 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.ctre.phoenix6.controls.DynamicMotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
+import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
+import edu.wpi.first.math.trajectory.TrapezoidProfile
+import edu.wpi.first.units.Units.Radians
+import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
@@ -44,6 +50,7 @@ object Shooter : Subsystem {
     val targetVelocity = tab.add("Target Velocity", 0.0).withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0))).entry
 
+
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Shooter", inputs)
@@ -66,6 +73,47 @@ object Shooter : Subsystem {
             motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
         )
     }
+
+    /**
+     * Start pivoting to the setpoint, and arrive with velocity (angle / sec)
+     */
+    fun startPivotingToAndTrack(setpoint: Rotation2d, position: Translation2d, targetPosition: TargetPosition): Command {
+        val distance = targetPosition.position.toTranslation2d().minus(position).norm
+        val targetHeight = targetPosition.position.z
+
+        return runOnce {
+            io.setPivotControlRequest(
+                PositionTorqueCurrentFOC(0.0).withSlot(0).apply {
+                    Position = setpoint.rotations
+                    Velocity = getVelocityToTarget(distance, targetHeight).rotations
+
+                }
+            )
+        }
+    }
+
+
+    /**
+     * Return the velocity, in radians per second,
+     * for the pivot to track the correct angle to the target based on distance away from the target
+     *
+     * keep units of distance and height consistent or it won't worky
+     *
+     * @param distance the distance from the target
+     * @param targetHeight the height of the target
+     */
+    fun getVelocityToTarget(distance: Double, targetHeight: Double): Rotation2d {
+        val radPerSec = -targetHeight / targetHeight.pow(2) + distance.pow(2)
+        return Rotation2d(radPerSec)
+    }
+
+    fun getAccelerationToTarget(distance: Double, targetHeight: Double): Rotation2d {
+
+        val radPerSecSquared =
+            (2 * targetHeight * distance ) / (targetHeight.pow(2) + distance.pow(2)).pow(2)
+        return Rotation2d(radPerSecSquared)
+    }
+
 
 
 

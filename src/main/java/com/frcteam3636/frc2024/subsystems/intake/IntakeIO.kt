@@ -6,11 +6,13 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import kotlin.math.pow
 
 interface IntakeIO {
     class IntakeInputs : LoggableInputs {
@@ -65,7 +67,7 @@ class IntakeIOReal : IntakeIO {
         inputs.otbCurrent = otbRollers.outputCurrent
         inputs.utbCurrent = utbRollers.outputCurrent
         inputs.isIntaking = isIntaking()
-    //      inputs.beamBreak = beamBreakSensor.get()
+        //      inputs.beamBreak = beamBreakSensor.get()
     }
 
     override fun setOverBumperRoller(speed: Double) {
@@ -78,13 +80,18 @@ class IntakeIOReal : IntakeIO {
 
     override fun isIntaking(): Boolean {
 //        return beamBreakSensor.get() &&
-                return utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD
+        return utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD
     }
 
     internal companion object Constants {
         const val BEAM_BREAK_PORT = 0
         const val BEAM_BREAK_CURRENT_THRESHOLD = 10.0
     }
+
+
+
+
+
 }
 
 class IntakeIOSim : IntakeIO {
