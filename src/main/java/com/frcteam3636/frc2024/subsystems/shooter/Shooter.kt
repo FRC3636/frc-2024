@@ -5,6 +5,7 @@ import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.dot
@@ -29,14 +30,10 @@ import kotlin.math.sqrt
 
 object Shooter : Subsystem {
 
-    const val ACCELERATION_PROFILE = 0.0
-    const val VELOCITY_PROFILE = 0.0
-    const val JERK_PROFILE = 0.0
-
-    private val io: ShooterIO = if (RobotBase.isReal()) {
-        ShooterIORealTalon()
-    } else {
-        TODO()
+    private val io: ShooterIO = when (Robot.model) {
+        Robot.Model.SIMULATION -> TODO()
+        Robot.Model.COMPETITION -> ShooterIOComp()
+        Robot.Model.PRACTICE -> ShooterIOPractice()
     }
 
     private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
@@ -190,3 +187,8 @@ enum class TargetPosition(val position: Translation3d) {
     Trap3(Translation3d()),
     Amp(Translation3d())
 }
+
+internal const val ACCELERATION_PROFILE = 0.0
+internal const val VELOCITY_PROFILE = 0.0
+internal const val JERK_PROFILE = 0.0
+

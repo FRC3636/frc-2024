@@ -4,6 +4,7 @@ import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -18,7 +19,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.InstantCommand
@@ -31,12 +31,25 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
-    private val io =
-        if (RobotBase.isReal()) {
-            DrivetrainIOReal()
-        } else {
-            DrivetrainIOSim()
-        }
+    private val io = when (Robot.model) {
+        Robot.Model.SIMULATION -> DrivetrainIOSim()
+        Robot.Model.COMPETITION -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_COMP).map { (position, ids) ->
+            val (driveId, turnId) = ids
+            MAXSwerveModule(
+                DrivingTalon(driveId),
+                turnId,
+                position.rotation
+            )
+        })
+        Robot.Model.PRACTICE -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_PRACTICE).map { (position, ids) ->
+            val (driveId, turnId) = ids
+            MAXSwerveModule(
+                DrivingSparkMAX(driveId),
+                turnId,
+                position.rotation
+            )
+        })
+    }
     private val inputs = DrivetrainIO.Inputs()
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
@@ -188,13 +201,8 @@ abstract class DrivetrainIO {
     }
 }
 
-class DrivetrainIOReal : DrivetrainIO() {
+class DrivetrainIOReal(override val modules: PerCorner<out SwerveModule>) : DrivetrainIO() {
     override val gyro = GyroNavX()
-    override val modules =
-        MODULE_CAN_IDS.zip(MODULE_POSITIONS).map { (can, pose) ->
-            val (driving, turning) = can
-            MAXSwerveModule(driving, turning, pose.rotation)
-        }
 }
 
 class DrivetrainIOSim : DrivetrainIO() {
@@ -233,7 +241,7 @@ internal val MODULE_POSITIONS =
         )
     )
 
-internal val MODULE_CAN_IDS =
+internal val MODULE_CAN_IDS_COMP =
     PerCorner(
         frontLeft =
         Pair(
@@ -253,6 +261,29 @@ internal val MODULE_CAN_IDS =
         backLeft =
         Pair(
             CTREMotorControllerId.BackLeftDrivingMotor,
+            REVMotorControllerId.BackLeftTurningMotor
+        ),
+    )
+internal val MODULE_CAN_IDS_PRACTICE =
+    PerCorner(
+        frontLeft =
+        Pair(
+            REVMotorControllerId.FrontLeftDrivingMotor,
+            REVMotorControllerId.FrontLeftTurningMotor
+        ),
+        frontRight =
+        Pair(
+            REVMotorControllerId.FrontRightDrivingMotor,
+            REVMotorControllerId.FrontRightTurningMotor
+        ),
+        backRight =
+        Pair(
+            REVMotorControllerId.BackRightDrivingMotor,
+            REVMotorControllerId.BackRightTurningMotor
+        ),
+        backLeft =
+        Pair(
+            REVMotorControllerId.BackLeftDrivingMotor,
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )

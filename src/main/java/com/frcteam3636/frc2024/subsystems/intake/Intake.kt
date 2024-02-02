@@ -1,16 +1,15 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
-import edu.wpi.first.wpilibj.RobotBase
+import com.frcteam3636.frc2024.Robot
 import edu.wpi.first.wpilibj2.command.*
 import org.littletonrobotics.junction.Logger
 
 object Intake : Subsystem {
-    private var io: IntakeIO =
-        if (RobotBase.isReal()) {
-            IntakeIOReal()
-        } else {
-            IntakeIOSim()
-        }
+    private var io: IntakeIO = when (Robot.model) {
+        Robot.Model.SIMULATION -> IntakeIOSim()
+        Robot.Model.COMPETITION -> IntakeIOReal()
+        Robot.Model.PRACTICE -> IntakeIOReal()
+    }
 
     var inputs = IntakeIO.IntakeInputs()
 
@@ -37,9 +36,9 @@ object Intake : Subsystem {
 
     fun indexCommand(): Command {
         return SequentialCommandGroup(
-            runOnce({ io.setUnderBumperRoller(1.0) }),
+            runOnce { io.setUnderBumperRoller(1.0) },
             WaitCommand(1.0),
-            runOnce({ io.setUnderBumperRoller(0.0) })
+            runOnce { io.setUnderBumperRoller(0.0) }
         )
     }
 }

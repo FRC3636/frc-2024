@@ -66,7 +66,7 @@ interface ShooterIO {
 }
 
 
-class ShooterIORealSparkMax : ShooterIO {
+class ShooterIOPractice : ShooterIO {
     internal companion object Constants {
         val ACCELERATION_PROFILE = 0.0
         val VELOCITY_PROFILE = 0.0
@@ -191,7 +191,8 @@ class ShooterIORealSparkMax : ShooterIO {
     }
 }
 
-class ShooterIORealTalon : ShooterIO {
+
+class ShooterIOComp : ShooterIO {
 
     internal companion object Constants {
         const val FLYWHEEL_GEAR_RATIO = 1.0
@@ -317,6 +318,4 @@ class ShooterIORealTalon : ShooterIO {
         Logger.recordOutput("Shooter/Left Power", -speed)
         Logger.recordOutput("Shooter/Right Power", -speed)
     }
-
-
 }

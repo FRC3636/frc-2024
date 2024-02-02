@@ -39,124 +39,124 @@ interface SwerveModule {
 }
 
 class MAXSwerveModule(
-    drivingId: CTREMotorControllerId,
-    turningId: REVMotorControllerId,
-    private val chassisAngle: Rotation2d
+    private val drivingMotor: DrivingMotor, turningId: REVMotorControllerId, private val chassisAngle: Rotation2d
 ) : SwerveModule {
-    private val drivingTalon =
-        TalonFX(drivingId).apply {
-            configurator.apply(SlotConfigs().withMotorFFGains(DRIVING_FF_GAINS))
-            configurator.apply(
-                CurrentLimitsConfigs().withSupplyCurrentLimit(DRIVING_CURRENT_LIMIT)
-            )
-        }
+    private val turningSpark = CANSparkMax(turningId, CANSparkLowLevel.MotorType.kBrushless).apply {
+        restoreFactoryDefaults()
 
-    private val turningSpark =
-        CANSparkMax(turningId, CANSparkLowLevel.MotorType.kBrushless).apply {
-            restoreFactoryDefaults()
-
-            idleMode = CANSparkBase.IdleMode.kBrake
-            setSmartCurrentLimit(TURNING_CURRENT_LIMIT.roundToInt())
-        }
+        idleMode = CANSparkBase.IdleMode.kBrake
+        setSmartCurrentLimit(TURNING_CURRENT_LIMIT.roundToInt())
+    }
 
     // whereas the turning encoder must be absolute so that
     // we know where the wheel is pointing
-    private val turningEncoder =
-        turningSpark.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
-            // invert the encoder because the output shaft rotates opposite to the motor itself
-            inverted = true
+    private val turningEncoder = turningSpark.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
+        // invert the encoder because the output shaft rotates opposite to the motor itself
+        inverted = true
 
-            // convert native units of rotations and RPM to radians and radians per second
-            // tau = 2 * pi = circumference / radius
-            positionConversionFactor = TAU
-            velocityConversionFactor = TAU / 60
-        }
+        // convert native units of rotations and RPM to radians and radians per second
+        // tau = 2 * pi = circumference / radius
+        positionConversionFactor = TAU
+        velocityConversionFactor = TAU / 60
+    }
 
-    private val turningPIDController =
-        turningSpark.pidController.apply {
-            setFeedbackDevice(turningEncoder)
-            pidGains = TURNING_PID_GAINS
+    private val turningPIDController = turningSpark.pidController.apply {
+        setFeedbackDevice(turningEncoder)
+        pidGains = TURNING_PID_GAINS
 
-            // enable PID wrapping so that the controller will go across zero to the setpoint
-            positionPIDWrappingEnabled = true
-            positionPIDWrappingMinInput = 0.0
-            positionPIDWrappingMaxInput = TAU
-        }
+        // enable PID wrapping so that the controller will go across zero to the setpoint
+        positionPIDWrappingEnabled = true
+        positionPIDWrappingMinInput = 0.0
+        positionPIDWrappingMaxInput = TAU
+    }
 
     init {
         turningSpark.burnFlash()
     }
 
     override val state: SwerveModuleState
-        get() =
-            SwerveModuleState(
-                drivingTalon.velocity.value * DRIVING_MOTOR_TRAVEL_PER_REVOLUTION,
-                Rotation2d.fromRadians(turningEncoder.position) + chassisAngle
-            )
+        get() = SwerveModuleState(
+            drivingMotor.velocity, Rotation2d.fromRadians(turningEncoder.position) + chassisAngle
+        )
 
     override val position: SwerveModulePosition
-        get() =
-            SwerveModulePosition(
-                drivingTalon.position.value * DRIVING_MOTOR_TRAVEL_PER_REVOLUTION,
-                Rotation2d.fromRadians(turningEncoder.position) + chassisAngle
-            )
+        get() = SwerveModulePosition(
+            drivingMotor.position, Rotation2d.fromRadians(turningEncoder.position) + chassisAngle
+        )
 
     override var desiredState: SwerveModuleState = SwerveModuleState(0.0, -chassisAngle)
         get() = SwerveModuleState(field.speedMetersPerSecond, field.angle + chassisAngle)
         set(value) {
-            val corrected =
-                SwerveModuleState(value.speedMetersPerSecond, value.angle - chassisAngle)
+            val corrected = SwerveModuleState(value.speedMetersPerSecond, value.angle - chassisAngle)
             // optimize the state to avoid rotating more than 90 degrees
-            val optimized =
-                SwerveModuleState.optimize(
-                    corrected,
-                    Rotation2d.fromRadians(turningEncoder.position)
-                )
-
-            drivingTalon.setControl(
-                VelocityVoltage(
-                    optimized.speedMetersPerSecond /
-                            DRIVING_MOTOR_TRAVEL_PER_REVOLUTION
-                )
-                    .withSlot(0)
+            val optimized = SwerveModuleState.optimize(
+                corrected, Rotation2d.fromRadians(turningEncoder.position)
             )
 
+            drivingMotor.velocity = optimized.speedMetersPerSecond
+
             turningPIDController.setReference(
-                optimized.angle.radians,
-                CANSparkBase.ControlType.kPosition
+                optimized.angle.radians, CANSparkBase.ControlType.kPosition
             )
 
             field = optimized
         }
+}
 
-    internal companion object Constants {
-        // MAXSwerve can be configured with different pinion gears to make the module faster or
-        // increase torque
-        val DRIVING_MOTOR_PINION_TEETH = 14
+interface DrivingMotor {
+    val position: Double
+    var velocity: Double
+}
 
-        // The gear ratio between the motor and the wheel.
-        // I.e. the wheel angle divided by the motor angle.
-        // Motor Pinion : Motor Spur Gear = x :
-        // Bevel Pinion : Wheel Bevel Gear = 15 : 45
-        val DRIVING_MOTOR_TO_WHEEL_GEARING =
-            (DRIVING_MOTOR_PINION_TEETH.toDouble() / 22.0) * (15.0 / 45.0)
-
-        // take the known wheel diameter, divide it by two to get the radius, then get the
-        // circumference
-        val WHEEL_RADIUS = Units.inchesToMeters(3.0) / 2
-        val WHEEL_CIRCUMFERENCE = WHEEL_RADIUS * TAU
-
-        // The distance travelled by one rotation of the driving motor.
-        val DRIVING_MOTOR_TRAVEL_PER_REVOLUTION =
-            WHEEL_CIRCUMFERENCE * DRIVING_MOTOR_TO_WHEEL_GEARING
-
-        val DRIVING_PID_GAINS: PIDGains = PIDGains()
-        val DRIVING_FF_GAINS: MotorFFGains = MotorFFGains()
-
-        val TURNING_PID_GAINS: PIDGains = PIDGains()
-        val DRIVING_CURRENT_LIMIT = 60.0
-        val TURNING_CURRENT_LIMIT = 20.0
+class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
+    private val inner = TalonFX(id).apply {
+        configurator.apply(SlotConfigs().withPIDGains(DRIVING_PID_GAINS_TALON).withMotorFFGains(DRIVING_FF_GAINS_TALON))
+        configurator.apply(
+            CurrentLimitsConfigs().withSupplyCurrentLimit(DRIVING_CURRENT_LIMIT)
+        )
     }
+
+    override val position: Double
+        get() = inner.position.value * DRIVING_MOTOR_TRAVEL_PER_REVOLUTION
+
+    override var velocity: Double
+        get() = inner.velocity.value
+        set(value) {
+            inner.setControl(VelocityVoltage(value).withSlot(0))
+        }
+}
+
+class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
+    private val inner = CANSparkMax(id, CANSparkLowLevel.MotorType.kBrushless).apply {
+        restoreFactoryDefaults()
+
+        idleMode = CANSparkBase.IdleMode.kBrake
+        setSmartCurrentLimit(DRIVING_CURRENT_LIMIT.roundToInt())
+    }
+
+    init {
+        inner.encoder.apply {
+            // convert native units of rotations and RPM to meters and meters per second
+            positionConversionFactor = DRIVING_MOTOR_TRAVEL_PER_REVOLUTION
+            velocityConversionFactor = DRIVING_MOTOR_TRAVEL_PER_REVOLUTION / 60
+        }
+
+        inner.pidController.apply {
+            setFeedbackDevice(inner.encoder)
+
+            pidGains = DRIVING_PID_GAINS_NEO
+            ff = DRIVING_FF_GAINS_NEO.v
+        }
+    }
+
+    override val position: Double
+        get() = inner.encoder.position
+
+    override var velocity: Double
+        get() = inner.encoder.velocity
+        set(value) {
+            inner.set(value)
+        }
 }
 
 class SimSwerveModule : SwerveModule {
@@ -168,15 +168,13 @@ class SimSwerveModule : SwerveModule {
     private val drivingFeedforward = SimpleMotorFeedforward(MotorFFGains(v = 3.33))
     private val drivingFeedback = PIDController(PIDGains(0.06))
 
-    private val turningFeedback =
-        PIDController(PIDGains(p = 2.0)).apply { enableContinuousInput(0.0, TAU) }
+    private val turningFeedback = PIDController(PIDGains(p = 2.0)).apply { enableContinuousInput(0.0, TAU) }
 
     override val state: SwerveModuleState
-        get() =
-            SwerveModuleState(
-                drivingMotor.angularVelocityRadPerSec * MAXSwerveModule.WHEEL_RADIUS,
-                Rotation2d.fromRadians(turningMotor.angularPositionRad)
-            )
+        get() = SwerveModuleState(
+            drivingMotor.angularVelocityRadPerSec * WHEEL_RADIUS,
+            Rotation2d.fromRadians(turningMotor.angularPositionRad)
+        )
 
     override var desiredState: SwerveModuleState = SwerveModuleState(0.0, Rotation2d())
         set(value) {
@@ -184,11 +182,9 @@ class SimSwerveModule : SwerveModule {
         }
 
     override val position: SwerveModulePosition
-        get() =
-            SwerveModulePosition(
-                drivingMotor.angularPositionRad * MAXSwerveModule.WHEEL_RADIUS,
-                Rotation2d.fromRadians(turningMotor.angularPositionRad)
-            )
+        get() = SwerveModulePosition(
+            drivingMotor.angularPositionRad * WHEEL_RADIUS, Rotation2d.fromRadians(turningMotor.angularPositionRad)
+        )
 
     override fun periodic() {
         turningMotor.update(Robot.period)
@@ -199,11 +195,36 @@ class SimSwerveModule : SwerveModule {
             turningFeedback.calculate(state.angle.radians, desiredState.angle.radians)
         )
         drivingMotor.setInputVoltage(
-            drivingFeedforward.calculate(desiredState.speedMetersPerSecond) +
-                    drivingFeedback.calculate(
-                        state.speedMetersPerSecond,
-                        desiredState.speedMetersPerSecond
-                    )
+            drivingFeedforward.calculate(desiredState.speedMetersPerSecond) + drivingFeedback.calculate(
+                state.speedMetersPerSecond, desiredState.speedMetersPerSecond
+            )
         )
     }
 }
+// MAXSwerve can be configured with different pinion gears to make the module faster or
+
+// increase torque
+internal val DRIVING_MOTOR_PINION_TEETH = 14
+
+// The gear ratio between the motor and the wheel.
+// I.e. the wheel angle divided by the motor angle.
+// Motor Pinion : Motor Spur Gear = x :
+// Bevel Pinion : Wheel Bevel Gear = 15 : 45
+internal val DRIVING_MOTOR_TO_WHEEL_GEARING = (DRIVING_MOTOR_PINION_TEETH.toDouble() / 22.0) * (15.0 / 45.0)
+
+// take the known wheel diameter, divide it by two to get the radius, then get the
+// circumference
+internal val WHEEL_RADIUS = Units.inchesToMeters(3.0) / 2
+internal val WHEEL_CIRCUMFERENCE = WHEEL_RADIUS * TAU
+
+// The distance travelled by one rotation of the driving motor.
+internal val DRIVING_MOTOR_TRAVEL_PER_REVOLUTION = WHEEL_CIRCUMFERENCE * DRIVING_MOTOR_TO_WHEEL_GEARING
+
+internal val DRIVING_PID_GAINS_TALON: PIDGains = PIDGains()
+internal val DRIVING_PID_GAINS_NEO: PIDGains = PIDGains()
+internal val DRIVING_FF_GAINS_TALON: MotorFFGains = MotorFFGains()
+internal val DRIVING_FF_GAINS_NEO: MotorFFGains = MotorFFGains()
+
+internal val TURNING_PID_GAINS: PIDGains = PIDGains()
+internal val DRIVING_CURRENT_LIMIT = 60.0
+internal val TURNING_CURRENT_LIMIT = 20.0
