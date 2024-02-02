@@ -3,16 +3,25 @@ package com.frcteam3636.frc2024.subsystems.shooter
 import com.ctre.phoenix6.configs.MotionMagicConfigs
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.ControlRequest
+import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
+import com.frcteam3636.frc2024.utils.math.PIDController
+import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.revrobotics.CANSparkLowLevel
+import edu.wpi.first.math.controller.ArmFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import kotlin.math.abs
+
 
 interface ShooterIO {
     class ShooterIOInputs : LoggableInputs {
@@ -51,10 +60,138 @@ interface ShooterIO {
     /** Run the launcher flywheels in reverse to intake at the specified percent speed. */
     fun intake(speed: Double)
 
-    fun setPivotControlRequest(control: ControlRequest)
+    fun setPivotPosition(setpoint: Rotation2d)
+
+    fun setPivotPositionWithVelocity(setpoint: Rotation2d, velocity: Rotation2d)
 }
 
-class ShooterIOReal : ShooterIO {
+
+class ShooterIORealSparkMax : ShooterIO {
+    internal companion object Constants {
+        val ACCELERATION_PROFILE = 0.0
+        val VELOCITY_PROFILE = 0.0
+
+        const val PIVOT_GEAR_RATIO = 1 / 90.0
+        const val FLYWHEEL_GEAR_RATIO = 1.0
+    }
+
+    private val profile: TrapezoidProfile =
+        TrapezoidProfile(
+        TrapezoidProfile.Constraints(
+            ACCELERATION_PROFILE,
+            VELOCITY_PROFILE
+        ))
+
+
+    private val leftFlywheels =
+        CANSparkMax(
+            REVMotorControllerId.LeftShooterFlywheel,
+            CANSparkLowLevel.MotorType.kBrushless
+        ).apply {
+            inverted = true
+            encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO
+            encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
+        }
+
+    private val rightFlywheels = CANSparkMax(
+        REVMotorControllerId.RightShooterFlywheel,
+        CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        inverted = true
+        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
+    }
+
+    private val leftPivot =
+        CANSparkMax(
+            REVMotorControllerId.LeftPivotMotor,
+            CANSparkLowLevel.MotorType.kBrushless)
+        .apply {
+            inverted = true
+            encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+            encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+        }
+
+    private val rightPivot =
+        CANSparkMax(
+            REVMotorControllerId.RightPivotMotor,
+            CANSparkLowLevel.MotorType.kBrushless)
+        .apply {
+            inverted = true
+            encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+            encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+        }
+
+    private val timer: Timer = Timer()
+
+    private val pivotPID = PIDController(PIDGains(0.0, 0.0, 0.0))
+    private val pivotFeedForward = ArmFeedforward(0.0, 0.0, 0.0, 0.0)
+
+
+    override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
+        inputs.leftSpeed = Rotation2d(leftFlywheels.encoder.velocity)
+        inputs.rightSpeed = Rotation2d(rightFlywheels.encoder.velocity)
+        inputs.pivotPosition = Rotation2d(leftPivot.encoder.position * PIVOT_GEAR_RATIO)
+        inputs.pivotVelocity = Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO)
+        inputs.pivotAcceleration = Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO)
+    }
+
+    override fun shoot(speed: Double, spin: Boolean) {
+        if (spin) {
+            leftFlywheels.set(speed)
+            rightFlywheels.set(speed)
+        } else {
+            leftFlywheels.set(speed)
+            rightFlywheels.set(speed * 0.75)
+        }
+    }
+
+    override fun intake(speed: Double) {
+        leftFlywheels.set(-speed)
+        rightFlywheels.set(-speed)
+    }
+
+    override fun setPivotPosition(setpoint: Rotation2d) {
+
+        val goalState = TrapezoidProfile.State(setpoint.radians, 0.0)
+        timer.start()
+        do {
+            val current = TrapezoidProfile.State(
+                Rotation2d(leftPivot.encoder.position * PIVOT_GEAR_RATIO).radians,
+                Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO / 60).radians
+            )
+            val goal = profile.calculate(timer.get(), current, goalState)
+            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(current.position, goal.position)
+            leftPivot.setVoltage(voltage)
+            rightPivot.setVoltage(voltage)
+        }
+        while(!( (abs(leftPivot.encoder.position -  setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1 ))
+
+        timer.stop()
+        timer.reset()
+    }
+
+    override fun setPivotPositionWithVelocity(setpoint: Rotation2d, velocity: Rotation2d) {
+        val goalState = TrapezoidProfile.State(setpoint.radians, velocity.radians)
+        timer.start()
+        do {
+            val current = TrapezoidProfile.State(
+                Rotation2d(leftPivot.encoder.position * PIVOT_GEAR_RATIO).radians,
+                Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO / 60).radians
+            )
+            val goal = profile.calculate(timer.get(), current, goalState)
+            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(current.position, goal.position)
+            leftPivot.setVoltage(voltage)
+            rightPivot.setVoltage(voltage)
+        }
+        while(!( (abs(leftPivot.encoder.position -  setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1 ))
+
+        timer.stop()
+        timer.reset()
+    }
+}
+
+class ShooterIORealTalon : ShooterIO {
 
     internal companion object Constants {
         const val FLYWHEEL_GEAR_RATIO = 1.0
@@ -157,7 +294,19 @@ class ShooterIOReal : ShooterIO {
         Logger.recordOutput("Shooter/Right Power", rSpeed)
     }
 
-    override fun setPivotControlRequest(control: ControlRequest) {
+    override fun setPivotPosition(setpoint: Rotation2d) {
+        val control = MotionMagicTorqueCurrentFOC(0.0).withPosition(setpoint.rotations)
+        pivotLeftKraken.setControl(control)
+        pivotRightKraken.setControl(control)
+    }
+
+    override fun setPivotPositionWithVelocity(setpoint: Rotation2d, velocity: Rotation2d) {
+
+        val control = PositionTorqueCurrentFOC(0.0).withSlot(0).apply {
+            Position = setpoint.rotations
+            Velocity = velocity.rotations
+        }
+
         pivotLeftKraken.setControl(control)
         pivotRightKraken.setControl(control)
     }
@@ -168,8 +317,6 @@ class ShooterIOReal : ShooterIO {
         Logger.recordOutput("Shooter/Left Power", -speed)
         Logger.recordOutput("Shooter/Right Power", -speed)
     }
-
-
 
 
 }

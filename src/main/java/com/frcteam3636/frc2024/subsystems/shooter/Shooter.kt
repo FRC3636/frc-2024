@@ -7,6 +7,7 @@ import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.dot
 import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
@@ -33,7 +34,7 @@ object Shooter : Subsystem {
     const val JERK_PROFILE = 0.0
 
     private val io: ShooterIO = if (RobotBase.isReal()) {
-        ShooterIOReal()
+        ShooterIORealTalon()
     } else {
         TODO()
     }
@@ -46,7 +47,6 @@ object Shooter : Subsystem {
     val tab = Shuffleboard.getTab("Shooter")
     val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
 
-    val motionMagicTorqueCurrentFOCRequest = MotionMagicTorqueCurrentFOC(0.0)
 
     val targetVelocity = tab.add("Target Velocity", 0.0).withWidget(BuiltInWidgets.kNumberSlider)
         .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0))).entry
@@ -75,23 +75,29 @@ object Shooter : Subsystem {
      * @param targetPosition the target to aim at
      */
     fun aimAtAndTrack(position: Translation2d, targetPosition: TargetPosition): Command {
+
         val setpoint = getAngleTo(targetPosition.position, position)
         val distanceVector = targetPosition.position.toTranslation2d().minus(position)
         val targetHeight = targetPosition.position.z
         val distance = distanceVector.norm
         val normalizedDistanceVector = distanceVector.div(distance)
-        val derivativeDistance = Drivetrain.chassisSpeeds.vxMetersPerSecond * normalizedDistanceVector.x +
-                Drivetrain.chassisSpeeds.vyMetersPerSecond * normalizedDistanceVector.y
-
+        val derivativeDistance =
+            Translation2d(Drivetrain.chassisSpeeds.vxMetersPerSecond, Drivetrain.chassisSpeeds.vyMetersPerSecond)
+                .dot(normalizedDistanceVector)
 
         return runOnce {
-            io.setPivotControlRequest(
-                PositionTorqueCurrentFOC(0.0).withSlot(0).apply {
-                    Position = setpoint.rotations
-                    Velocity = getVelocityToTarget(distance, targetHeight).rotations * derivativeDistance
-                }
+            io.setPivotPositionWithVelocity(
+                setpoint,
+                Rotation2d.fromRotations(
+                    Shooter.getVelocityToTarget(
+                        distance,
+                        targetHeight
+                    ).rotations * derivativeDistance
+                )
+
             )
         }
+
     }
 
     /**
@@ -101,9 +107,7 @@ object Shooter : Subsystem {
      */
 
     fun startPivotingTo(setpoint: Rotation2d): Command = runOnce {
-        io.setPivotControlRequest(
-            motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
-        )
+        io.setPivotPosition(setpoint)
     }
 
     /**
@@ -179,6 +183,7 @@ enum class PivotPosition(val position: Rotation2d) {
 
 enum class TargetPosition(val position: Translation3d) {
     Speaker(Translation3d()),
+
     //this shit prolly never gonna happen lol
     Trap1(Translation3d()),
     Trap2(Translation3d()),
