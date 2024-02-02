@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.ctre.phoenix6.configs.FeedbackConfigs
 import com.ctre.phoenix6.configs.MotionMagicConfigs
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
@@ -8,6 +9,7 @@ import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
+import com.frcteam3636.frc2024.utils.math.MotorFFGains
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.revrobotics.CANSparkLowLevel
@@ -41,7 +43,6 @@ interface ShooterIO {
         }
 
         override fun fromLog(table: LogTable) {
-
             leftSpeed = table.get("Left Speed", leftSpeed)[0]
             rightSpeed = table.get("Right Speed", rightSpeed)[0]
             pivotPosition = table.get("Position", pivotPosition)!![0]
@@ -66,63 +67,40 @@ interface ShooterIO {
 
 
 class ShooterIOPractice : ShooterIO {
-    internal companion object Constants {
-        val ACCELERATION_PROFILE = 0.0
-        val VELOCITY_PROFILE = 0.0
-
-        const val PIVOT_GEAR_RATIO = 1 / 90.0
-        const val FLYWHEEL_GEAR_RATIO = 1.0
-    }
-
-    private val profile: TrapezoidProfile =
-        TrapezoidProfile(
-            TrapezoidProfile.Constraints(
-                ACCELERATION_PROFILE,
-                VELOCITY_PROFILE
-            )
-        )
+    private val profile: TrapezoidProfile = TrapezoidProfile(PROFILE_CONSTRAINTS)
 
 
-    private val leftFlywheels =
-        CANSparkMax(
-            REVMotorControllerId.LeftShooterFlywheel,
-            CANSparkLowLevel.MotorType.kBrushless
-        ).apply {
-            inverted = true
-            encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO
-            encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
-        }
-
-    private val rightFlywheels = CANSparkMax(
-        REVMotorControllerId.RightShooterFlywheel,
-        CANSparkLowLevel.MotorType.kBrushless
+    private val leftFlywheels = CANSparkMax(
+        REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless
     ).apply {
         inverted = true
         encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO
         encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
     }
 
-    private val leftPivot =
-        CANSparkMax(
-            REVMotorControllerId.LeftPivotMotor,
-            CANSparkLowLevel.MotorType.kBrushless
-        )
-            .apply {
-                inverted = true
-                encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
-                encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
-            }
+    private val rightFlywheels = CANSparkMax(
+        REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        inverted = true
+        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
+    }
 
-    private val rightPivot =
-        CANSparkMax(
-            REVMotorControllerId.RightPivotMotor,
-            CANSparkLowLevel.MotorType.kBrushless
-        )
-            .apply {
-                inverted = true
-                encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
-                encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
-            }
+    private val leftPivot = CANSparkMax(
+        REVMotorControllerId.LeftPivotMotor, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        inverted = true
+        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+    }
+
+    private val rightPivot = CANSparkMax(
+        REVMotorControllerId.RightPivotMotor, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        inverted = true
+        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+    }
 
     private val timer: Timer = Timer()
 
@@ -154,25 +132,7 @@ class ShooterIOPractice : ShooterIO {
     }
 
     override fun setPivotPosition(setpoint: Rotation2d) {
-
-        val goalState = TrapezoidProfile.State(setpoint.radians, 0.0)
-        timer.start()
-        do {
-            val current = TrapezoidProfile.State(
-                Rotation2d(leftPivot.encoder.position * PIVOT_GEAR_RATIO).radians,
-                Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO / 60).radians
-            )
-            val goal = profile.calculate(timer.get(), current, goalState)
-            val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(
-                current.position,
-                goal.position
-            )
-            leftPivot.setVoltage(voltage)
-            rightPivot.setVoltage(voltage)
-        } while (!((abs(leftPivot.encoder.position - setpoint.radians) > 0.1) || abs(rightPivot.encoder.position - setpoint.radians) > 0.1))
-
-        timer.stop()
-        timer.reset()
+        setPivotPositionWithVelocity(setpoint, Rotation2d())
     }
 
     override fun setPivotPositionWithVelocity(setpoint: Rotation2d, velocity: Rotation2d) {
@@ -185,8 +145,7 @@ class ShooterIOPractice : ShooterIO {
             )
             val goal = profile.calculate(timer.get(), current, goalState)
             val voltage = pivotFeedForward.calculate(current.position, goal.velocity) + pivotPID.calculate(
-                current.position,
-                goal.position
+                current.position, goal.position
             )
             leftPivot.setVoltage(voltage)
             rightPivot.setVoltage(voltage)
@@ -195,116 +154,74 @@ class ShooterIOPractice : ShooterIO {
         timer.stop()
         timer.reset()
     }
+
+    internal companion object Constants {
+        val PROFILE_CONSTRAINTS = TrapezoidProfile.Constraints(0.0, 0.0)
+
+        const val PIVOT_GEAR_RATIO = 1 / 90.0
+        const val FLYWHEEL_GEAR_RATIO = 1.0
+    }
 }
 
 
 class ShooterIOComp : ShooterIO {
-
-    internal companion object Constants {
-        const val FLYWHEEL_GEAR_RATIO = 1.0
-        const val PIVOT_GEAR_RATIO = 1 / 90.0
-        const val kS = 0.0
-        const val kV = 0.0
-        const val kA = 0.0
-        const val kG = 0.0
-        const val kP = 0.0
-        const val kI = 0.0
-        const val kD = 0.0
-
-        const val MOTION_MAGIC_ACCELERATION = 0.0
-        const val MOTION_MAGIC_JERK = 4000.0
-
-        const val MOTION_PROFILE_ERROR_THRESHOLD =
-            2.0 // i have no idea what units these are in, we'll have to just fuck around and
-        // find out
+    private val flywheelLeft = CANSparkMax(
+        REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        inverted = false
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
+    }
+    private val flywheelRight = CANSparkMax(
+        REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        inverted = true
+        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
     }
 
-    private val left =
-        CANSparkMax(
-            REVMotorControllerId.LeftShooterFlywheel,
-            CANSparkLowLevel.MotorType.kBrushless
-        )
-            .apply {
-                inverted = true
-                encoder.velocityConversionFactor =
-                    Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
-            }
+    private val pivotLeft = TalonFX(CTREMotorControllerId.LeftPivotMotor)
+    private val pivotRight = TalonFX(CTREMotorControllerId.RightPivotMotor)
 
-    private val right =
-        CANSparkMax(
-            REVMotorControllerId.RightShooterFlywheel,
-            CANSparkLowLevel.MotorType.kBrushless
-        )
-            .apply {
-                encoder.velocityConversionFactor =
-                    Units.rotationsToRadians(1.0) * FLYWHEEL_GEAR_RATIO / 60
-                inverted = false
-            }
+    init {
+        val pivotConfig =
+            TalonFXConfiguration().withFeedback(FeedbackConfigs().withSensorToMechanismRatio(PIVOT_GEAR_RATIO))
+                .withMotionMagic(
+                    MotionMagicConfigs().withMotionMagicAcceleration(
+                        MOTION_MAGIC_ACCELERATION
+                    ).withMotionMagicJerk(MOTION_MAGIC_JERK)
+                )
 
-    val pivotMotorConfigs =
-        TalonFXConfiguration().apply {
-            Feedback.SensorToMechanismRatio = Constants.PIVOT_GEAR_RATIO
-        }
-
-    val slot0Configs =
-        pivotMotorConfigs.Slot0.apply {
-            kS = Constants.kS
-            kV = Constants.kV
-            kA = Constants.kA
-            kG = Constants.kG
-            kP = Constants.kP
-            kI = Constants.kI
-            kD = Constants.kD
-        }
-
-    val motionProfileConfigs: MotionMagicConfigs =
-        pivotMotorConfigs.MotionMagic.apply {
-            MotionMagicAcceleration = Constants.MOTION_MAGIC_ACCELERATION
-            MotionMagicJerk = Constants.MOTION_MAGIC_JERK
-        }
-
-    private val pivotLeftKraken =
-        TalonFX(CTREMotorControllerId.LeftPivotMotor).apply {
-            configurator.apply(pivotMotorConfigs)
-        }
-
-    private val pivotRightKraken =
-        TalonFX(CTREMotorControllerId.RightPivotMotor).apply {
-            configurator.apply(pivotMotorConfigs)
-        }
+        pivotLeft.configurator.apply(pivotConfig)
+        pivotRight.configurator.apply(pivotConfig)
+    }
 
     override fun updateInputs(inputs: ShooterIO.ShooterIOInputs) {
-        inputs.leftSpeed = Rotation2d(left.encoder.velocity)
-        inputs.rightSpeed = Rotation2d(right.encoder.velocity)
+        inputs.leftSpeed = Rotation2d(flywheelLeft.encoder.velocity)
+        inputs.rightSpeed = Rotation2d(flywheelRight.encoder.velocity)
 
-        inputs.pivotPosition = Rotation2d(pivotLeftKraken.position.value * Constants.PIVOT_GEAR_RATIO)
-        inputs.pivotVelocity =
-            Rotation2d(pivotLeftKraken.velocity.value * Constants.PIVOT_GEAR_RATIO)
-        inputs.pivotAcceleration =
-            Rotation2d(pivotLeftKraken.acceleration.value * Constants.PIVOT_GEAR_RATIO)
+        inputs.pivotPosition = Rotation2d(pivotLeft.position.value * Constants.PIVOT_GEAR_RATIO)
+        inputs.pivotVelocity = Rotation2d(pivotLeft.velocity.value * Constants.PIVOT_GEAR_RATIO)
+        inputs.pivotAcceleration = Rotation2d(pivotLeft.acceleration.value * Constants.PIVOT_GEAR_RATIO)
 
         inputs.atSetpoint =
-            pivotLeftKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THRESHOLD && pivotRightKraken.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THRESHOLD
+            pivotLeft.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THRESHOLD && pivotRight.closedLoopError.value < Constants.MOTION_PROFILE_ERROR_THRESHOLD
     }
 
     override fun shoot(speed: Double, spin: Boolean) {
-        left.set(speed)
+        flywheelLeft.set(speed)
         Logger.recordOutput("Shooter/Left Power", speed)
-        val rSpeed =
-            speed *
-                    if (spin) {
-                        0.75
-                    } else {
-                        1.0
-                    }
-        right.set(rSpeed)
+        val rSpeed = speed * if (spin) {
+            0.75
+        } else {
+            1.0
+        }
+        flywheelRight.set(rSpeed)
         Logger.recordOutput("Shooter/Right Power", rSpeed)
     }
 
     override fun setPivotPosition(setpoint: Rotation2d) {
         val control = MotionMagicTorqueCurrentFOC(0.0).withPosition(setpoint.rotations)
-        pivotLeftKraken.setControl(control)
-        pivotRightKraken.setControl(control)
+        pivotLeft.setControl(control)
+        pivotRight.setControl(control)
     }
 
     override fun setPivotPositionWithVelocity(setpoint: Rotation2d, velocity: Rotation2d) {
@@ -314,14 +231,30 @@ class ShooterIOComp : ShooterIO {
             Velocity = velocity.rotations
         }
 
-        pivotLeftKraken.setControl(control)
-        pivotRightKraken.setControl(control)
+        pivotLeft.setControl(control)
+        pivotRight.setControl(control)
     }
 
     override fun intake(speed: Double) {
-        left.set(-speed)
-        right.set(-speed)
-        Logger.recordOutput("Shooter/Left Power", -speed)
-        Logger.recordOutput("Shooter/Right Power", -speed)
+        flywheelLeft.set(speed)
+        flywheelRight.set(speed)
+        Logger.recordOutput("Shooter/Left Power", speed)
+        Logger.recordOutput("Shooter/Right Power", speed)
+    }
+
+    internal companion object Constants {
+        const val FLYWHEEL_GEAR_RATIO = 1.0
+        const val PIVOT_GEAR_RATIO = 1 / 90.0
+
+        val PIVOT_FF_GAINS = MotorFFGains()
+        val PIVOT_PID_GAINS = PIDGains()
+        const val kG = 0.0
+
+        const val MOTION_MAGIC_ACCELERATION = 0.0
+        const val MOTION_MAGIC_JERK = 4000.0
+
+        const val MOTION_PROFILE_ERROR_THRESHOLD =
+            2.0 // i have no idea what units these are in, we'll have to just fuck around and
+        // find out
     }
 }
