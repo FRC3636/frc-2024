@@ -68,16 +68,16 @@ object Shooter : Subsystem {
         )
     }
 
-    fun startPivotingTo(setpoint: Rotation2d): Command = runOnce {
-        io.setPivotControlRequest(
-            motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
-        )
-    }
+
 
     /**
      * Start pivoting to the setpoint, and arrive with velocity (angle / sec)
+     *
+     * @param position the position of the robot
+     * @param targetPosition the target to aim at
      */
-    fun startPivotingToAndTrack(setpoint: Rotation2d, position: Translation2d, targetPosition: TargetPosition): Command {
+    fun aimAtAndTrack(position: Translation2d, targetPosition: TargetPosition): Command {
+        val setpoint = getAngleTo(targetPosition.position, position)
         val distance = targetPosition.position.toTranslation2d().minus(position).norm
         val targetHeight = targetPosition.position.z
 
@@ -92,12 +92,56 @@ object Shooter : Subsystem {
         }
     }
 
+    /**
+     * Start pivoting to the setpoint, command terminates instantly
+     *
+     * @param setpoint the position to pivot to
+     */
+
+    fun startPivotingTo(setpoint: Rotation2d): Command = runOnce {
+        io.setPivotControlRequest(
+            motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
+        )
+    }
+
+    /**
+     * Start pivoting to the setpoint, command terminates when the pivot arrives
+     *
+     * @param setpoint the position to pivot to
+     */
+    fun pivotTo(setpoint: Rotation2d): Command =
+        startPivotingTo(setpoint).andThen(WaitUntilCommand { inputs.atSetpoint })
+
+    /**
+     * Start aiming at a target to arrive with 0 velocity.
+     *
+     * @param position the position of the robot
+     * @param setpoint the position of the target
+     */
+    fun aimAtStatic(setpoint: TargetPosition, position: Translation2d): Command =
+        startPivotingTo(getAngleTo(setpoint.position, position))
+
+    fun intakeCommand(): Command =
+        startEnd({ io.intake(1.0) }, { io.intake(0.0) })
+
+
+    /**
+     * Return the two dimensional angle to the target (x horizontal against z) based on the position of the robot
+     *
+     * @param target the position of the target
+     * @param position the position of the robot
+     */
+    private fun getAngleTo(target: Translation3d, position: Translation2d): Rotation2d {
+        val distance = Translation2d(target.x, target.y).minus(position).norm
+        val angle = atan(target.z / distance)
+        return Rotation2d(angle)
+    }
 
     /**
      * Return the velocity, in radians per second,
      * for the pivot to track the correct angle to the target based on distance away from the target
      *
-     * keep units of distance and height consistent or it won't worky
+     * keep units of distance and height consistent or it won't work grr
      *
      * @param distance the distance from the target
      * @param targetHeight the height of the target
@@ -107,35 +151,20 @@ object Shooter : Subsystem {
         return Rotation2d(radPerSec)
     }
 
+    /**
+     * Return the acceleration, in radians per second squared,
+     * for the pivot to track the correct angle to the target based on distance away from the target
+     *
+     * keep units of distance and height consistent or it won't work grr
+     *
+     * @param distance the distance from the target
+     * @param targetHeight the height of the target
+     */
     fun getAccelerationToTarget(distance: Double, targetHeight: Double): Rotation2d {
 
         val radPerSecSquared =
             (2 * targetHeight * distance ) / (targetHeight.pow(2) + distance.pow(2)).pow(2)
         return Rotation2d(radPerSecSquared)
-    }
-
-
-
-
-    fun pivotTo(setpoint: Rotation2d): Command =
-        startPivotingTo(setpoint).andThen(WaitUntilCommand { inputs.atSetpoint })
-
-    /**
-     *translations in field space*
-     * @param position the position of the robot
-     * @param setpoint the position of the target
-     */
-    fun aimAtStatic(setpoint: Translation3d, position: Translation2d): Command =
-        startPivotingTo(getAngleTo(setpoint, position))
-
-    fun intakeCommand(): Command =
-        startEnd({ io.intake(1.0) }, { io.intake(0.0) })
-
-
-    private fun getAngleTo(target: Translation3d, position: Translation2d): Rotation2d {
-        val distance = Translation2d(target.x, target.y).minus(position).norm
-        val angle = atan(target.z / distance)
-        return Rotation2d(angle)
     }
 
 }
