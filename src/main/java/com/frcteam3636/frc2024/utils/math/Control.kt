@@ -1,6 +1,6 @@
 package com.frcteam3636.frc2024.utils.math
 
-import com.ctre.phoenix6.configs.SlotConfigs
+import com.ctre.phoenix6.configs.*
 import com.revrobotics.SparkPIDController
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.SimpleMotorFeedforward
@@ -12,11 +12,21 @@ fun SimpleMotorFeedforward(gains: MotorFFGains) = SimpleMotorFeedforward(gains.s
 val SimpleMotorFeedforward.gains: MotorFFGains
     get() = MotorFFGains(s = ks, v = kv, a = ka)
 
-fun SlotConfigs.withMotorFFGains(gains: MotorFFGains) =
-    withKS(gains.s).withKV(gains.v).withKA(gains.a)
+var SlotConfigs.motorFFGains: MotorFFGains
+    get() = MotorFFGains(s = kS, v = kV, a = kA)
+    set(gains) {
+        kS = gains.s
+        kV = gains.v
+        kA = gains.a
+    }
+var Slot0Configs.motorFFGains: MotorFFGains
+    get() = MotorFFGains(s = kS, v = kV, a = kA)
+    set(gains) {
+        kS = gains.s
+        kV = gains.v
+        kA = gains.a
+    }
 
-fun SlotConfigs.withPIDGains(gains: PIDGains) =
-    withKP(gains.p).withKI(gains.i).withKD(gains.d)
 data class PIDGains(val p: Double = 0.0, val i: Double = 0.0, val d: Double = 0.0)
 
 fun PIDController(gains: PIDGains) = PIDController(gains.p, gains.i, gains.d)
@@ -40,4 +50,19 @@ var SparkPIDController.pidGains: PIDGains
         p = gains.p
         i = gains.i
         d = gains.d
+    }
+
+var SlotConfigs.pidGains: PIDGains
+    get() = PIDGains(p = kP, i = kI, d = kD)
+    set(gains) {
+        kP = gains.p
+        kI = gains.i
+        kD = gains.d
+    }
+var Slot0Configs.pidGains: PIDGains
+    get() = PIDGains(p = kP, i = kI, d = kD)
+    set(gains) {
+        kP = gains.p
+        kI = gains.i
+        kD = gains.d
     }
