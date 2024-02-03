@@ -5,22 +5,51 @@ import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.Color8Bit
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
 
-object Shooter : Subsystem {
-    private val flywheelIO: FlywheelIO = when (Robot.model) {
-        Robot.Model.SIMULATION -> FlywheelIOSim()
-        Robot.Model.COMPETITION, Robot.Model.PRACTICE -> FlywheelIOReal()
-    }
-    private val flywheelInputs = FlywheelIO.Inputs()
+object Shooter {
+    object Flywheels : Subsystem {
+        private val io: FlywheelIO = when (Robot.model) {
+            Robot.Model.SIMULATION -> FlywheelIOSim()
+            Robot.Model.COMPETITION, Robot.Model.PRACTICE -> FlywheelIOReal()
+        }
+        private val inputs = FlywheelIO.Inputs()
 
-    private val pivotIO: PivotIO = when (Robot.model) {
-        Robot.Model.SIMULATION -> PivotIOSim()
-        Robot.Model.COMPETITION -> PivotIOKraken()
-        Robot.Model.PRACTICE -> TODO()
+        override fun periodic() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Shooter/Flywheels", inputs)
+
+            flywheelLigament.color = if (inputs.leftSpeed.rotations > 1.0) {
+                BLUE
+            } else {
+                WHITE
+            }
+        }
     }
-    private val pivotInputs = PivotIO.Inputs()
+
+    object Pivot : Subsystem {
+        private val io: PivotIO = when (Robot.model) {
+            Robot.Model.SIMULATION -> PivotIOSim()
+            Robot.Model.COMPETITION -> PivotIOKraken()
+            Robot.Model.PRACTICE -> TODO()
+        }
+        private val inputs = PivotIO.Inputs()
+
+        override fun periodic() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Shooter/Pivot", inputs)
+
+            armLigament.angle = inputs.position.degrees
+        }
+    }
+
+    // Register the two subsystems which together form the shooter.
+    fun register() {
+        Flywheels.register()
+        Pivot.register()
+    }
 
     private val mechanism = Mechanism2d(3.0, 3.0, BLACK)
     private val mechanismRoot = mechanism.getRoot("Shooter", 0.5, 0.5)
@@ -34,24 +63,8 @@ object Shooter : Subsystem {
             "Flywheel", 0.25, 0.0, 5.0, BLUE
         )
     )
-
     init {
         SmartDashboard.putData("Shooter", mechanism)
-    }
-
-    override fun periodic() {
-        flywheelIO.updateInputs(flywheelInputs)
-        Logger.processInputs("Shooter/Flywheels", flywheelInputs)
-
-        pivotIO.updateInputs(pivotInputs)
-        Logger.processInputs("Shooter/Pivot", pivotInputs)
-
-        armLigament.angle = pivotInputs.position.degrees
-        flywheelLigament.color = if (flywheelInputs.leftSpeed.rotations > 1.0) {
-            BLUE
-        } else {
-            WHITE
-        }
     }
 }
 
