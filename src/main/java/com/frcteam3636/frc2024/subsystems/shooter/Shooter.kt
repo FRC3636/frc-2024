@@ -14,57 +14,24 @@ import edu.wpi.first.wpilibj2.command.WaitUntilCommand
 import org.littletonrobotics.junction.Logger
 
 object Shooter : Subsystem {
+    private val flywheelIO: FlywheelIO = when (Robot.model) {
+        Robot.Model.SIMULATION -> FlywheelIOSim()
+        Robot.Model.COMPETITION, Robot.Model.PRACTICE -> FlywheelIOReal()
+    }
+    private val flywheelInputs = FlywheelIO.Inputs()
 
-    private val io: ShooterIO = when (Robot.model) {
-        Robot.Model.SIMULATION -> TODO()
-        Robot.Model.COMPETITION -> ShooterIOComp()
+    private val pivotIO: PivotIO = when (Robot.model) {
+        Robot.Model.SIMULATION -> PivotIOSim()
+        Robot.Model.COMPETITION -> PivotIOKraken()
         Robot.Model.PRACTICE -> TODO()
     }
-
-    private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
-    private val rateLimiter = SlewRateLimiter(1.0)
-
-    val inputs = ShooterIO.ShooterIOInputs()
-
-    val tab = Shuffleboard.getTab("Shooter")
-    val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
-
-    val motionMagicTorqueCurrentFOCRequest = MotionMagicTorqueCurrentFOC(0.0)
-
-    val targetVelocity = tab.add("Target Velocity", 0.0).withWidget(BuiltInWidgets.kNumberSlider)
-        .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0))).entry
+    private val pivotInputs = PivotIO.Inputs()
 
     override fun periodic() {
-        io.updateInputs(inputs)
-        Logger.processInputs("Shooter", inputs)
+        flywheelIO.updateInputs(flywheelInputs)
+        Logger.processInputs("Shooter/Flywheels", flywheelInputs)
+
+        pivotIO.updateInputs(pivotInputs)
+        Logger.processInputs("Shooter/Pivot", pivotInputs)
     }
-
-    fun shootCommand(): Command = run {
-        io.shoot(
-            rateLimiter.calculate(
-                pidController.calculate(
-                    inputs.leftSpeed.radians,
-                    targetVelocity.getDouble(0.0)
-                )
-            ),
-            shouldSpin.getBoolean(false)
-        )
-    }
-
-    fun startPivotingTo(setpoint: Rotation2d): Command = runOnce {
-        io.setPivotControlRequest(
-            motionMagicTorqueCurrentFOCRequest.withPosition(setpoint.rotations)
-        )
-    }
-
-    fun pivotTo(setpoint: Rotation2d): Command =
-        startPivotingTo(setpoint).andThen(WaitUntilCommand { inputs.atSetpoint })
-
-    fun intakeCommand(): Command =
-        startEnd({ io.intake(1.0) }, { io.intake(0.0) })
 }
-
-internal const val ACCELERATION_PROFILE = 0.0
-internal const val VELOCITY_PROFILE = 0.0
-internal const val JERK_PROFILE = 0.0
-

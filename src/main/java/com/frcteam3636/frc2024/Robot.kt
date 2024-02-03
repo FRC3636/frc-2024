@@ -86,7 +86,7 @@ object Robot : LoggedRobot() {
     }
 
     private fun configureBindings() {
-        controller.x().whileTrue(Shooter.shootCommand())
+//        controller.x().whileTrue(Shooter.shootCommand())
         controller.b().whileTrue(Intake.intakeCommand())
         Drivetrain.defaultCommand =
             Drivetrain.driveWithJoysticks(

@@ -62,10 +62,6 @@ object Drivetrain : Subsystem {
             // TODO: add odometry standard deviation
         )
 
-    init {
-        CommandScheduler.getInstance().registerSubsystem(this)
-    }
-
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
