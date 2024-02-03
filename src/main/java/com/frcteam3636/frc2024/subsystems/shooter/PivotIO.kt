@@ -4,14 +4,13 @@ import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.signals.GravityTypeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
+import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.TalonFX
-import com.frcteam3636.frc2024.utils.math.MotorFFGains
-import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.motorFFGains
-import com.frcteam3636.frc2024.utils.math.pidGains
+import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.wpilibj.Timer
+import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface PivotIO {
@@ -91,9 +90,9 @@ class PivotIOKraken : PivotIO {
         val FF_GAINS = MotorFFGains()
         val GRAVITY_GAIN = 0.0
 
-        val PROFILE_VELOCITY = 0.0
-        val PROFILE_ACCELERATION = 0.0
-        val PROFILE_JERK = 0.0
+        val PROFILE_VELOCITY = TAU
+        val PROFILE_ACCELERATION = TAU
+        val PROFILE_JERK = 10 * TAU
     }
 }
 
@@ -119,5 +118,8 @@ class PivotIOSim : PivotIO {
         start = profile.calculate(profileTimer.get(), start, goal)
         goal = TrapezoidProfile.State(position.radians, velocity.radians)
         profileTimer.reset()
+
+        Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
+        Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", velocity)
     }
 }
