@@ -3,8 +3,10 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
+
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
+
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -20,7 +22,6 @@ import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
@@ -64,10 +65,6 @@ object Drivetrain : Subsystem {
             Pose2d() // initial pose
             // TODO: add odometry standard deviation
         )
-
-    init {
-        CommandScheduler.getInstance().registerSubsystem(this)
-    }
 
     override fun periodic() {
         io.updateInputs(inputs)
@@ -287,7 +284,7 @@ internal val MODULE_CAN_IDS_PRACTICE =
     )
 
 enum class OrientationTarget(val position: Translation2d) {
-    SPEAKER(Translation2d()),
-    AMP(Translation2d()),
-    SOURCE(Translation2d())
+    Speaker(Translation2d()),
+    Amp(Translation2d()),
+    Source(Translation2d())
 }

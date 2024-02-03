@@ -110,9 +110,14 @@ interface DrivingMotor {
 
 class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
     private val inner = TalonFX(id).apply {
-        configurator.apply(SlotConfigs().withPIDGains(DRIVING_PID_GAINS_TALON).withMotorFFGains(DRIVING_FF_GAINS_TALON))
+        configurator.apply(SlotConfigs().apply {
+            pidGains = DRIVING_PID_GAINS_TALON
+            motorFFGains = DRIVING_FF_GAINS_TALON
+        })
         configurator.apply(
-            CurrentLimitsConfigs().withSupplyCurrentLimit(DRIVING_CURRENT_LIMIT)
+            CurrentLimitsConfigs().apply {
+                SupplyCurrentLimit = DRIVING_CURRENT_LIMIT
+            }
         )
     }
 

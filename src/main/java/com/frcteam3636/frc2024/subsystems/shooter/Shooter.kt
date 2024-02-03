@@ -1,184 +1,122 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.Robot
-import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
-import com.frcteam3636.frc2024.utils.math.PIDController
-import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.dot
-import edu.wpi.first.math.filter.SlewRateLimiter
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.geometry.Translation2d
-import edu.wpi.first.math.geometry.Translation3d
-import edu.wpi.first.wpilibj.shuffleboard.BuiltInWidgets
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
+import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
+import edu.wpi.first.wpilibj.util.Color8Bit
 import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.Subsystem
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand
 import org.littletonrobotics.junction.Logger
-import kotlin.math.atan
-import kotlin.math.pow
+import kotlin.math.abs
 
-object Shooter : Subsystem {
+object Shooter {
+    object Flywheels : Subsystem {
+        private val io: FlywheelIO = when (Robot.model) {
+            Robot.Model.SIMULATION -> FlywheelIOSim()
+            Robot.Model.COMPETITION, Robot.Model.PRACTICE -> FlywheelIOReal()
+        }
+        private val inputs = FlywheelIO.Inputs()
 
-    private val io: ShooterIO = when (Robot.model) {
-        Robot.Model.SIMULATION -> TODO()
-        Robot.Model.COMPETITION -> ShooterIOComp()
-        Robot.Model.PRACTICE -> ShooterIOPractice()
-    }
+        override fun periodic() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Shooter/Flywheels", inputs)
 
-    private val pidController = PIDController(PIDGains(0.1, 0.0, 0.0))
-    private val rateLimiter = SlewRateLimiter(1.0)
-
-    val inputs = ShooterIO.ShooterIOInputs()
-
-    val tab = Shuffleboard.getTab("Shooter")
-    val shouldSpin = tab.add("Should Spin", true).withWidget(BuiltInWidgets.kToggleSwitch).entry
-
-
-    val targetVelocity = tab.add("Target Velocity", 0.0).withWidget(BuiltInWidgets.kNumberSlider)
-        .withProperties(mapOf(Pair("min", 0.0), Pair("max", 6000.0))).entry
-
-    override fun periodic() {
-        io.updateInputs(inputs)
-        Logger.processInputs("Shooter", inputs)
-    }
-
-    fun shootCommand(): Command = run {
-        io.shoot(
-            rateLimiter.calculate(
-                pidController.calculate(
-                    inputs.leftSpeed.radians,
-                    targetVelocity.getDouble(0.0)
-                )
-            ),
-            shouldSpin.getBoolean(false)
-        )
-    }
-
-    /**
-     * Start pivoting to the setpoint, and arrive with velocity (angle / sec)
-     *
-     * @param position the position of the robot
-     * @param targetPosition the target to aim at
-     */
-    fun aimAtAndTrack(position: Translation2d, targetPosition: TargetPosition): Command {
-
-        val setpoint = getAngleTo(targetPosition.position, position)
-        val distanceVector = targetPosition.position.toTranslation2d().minus(position)
-        val targetHeight = targetPosition.position.z
-        val distance = distanceVector.norm
-        val normalizedDistanceVector = distanceVector.div(distance)
-        val derivativeDistance =
-            Translation2d(Drivetrain.chassisSpeeds.vxMetersPerSecond, Drivetrain.chassisSpeeds.vyMetersPerSecond)
-                .dot(normalizedDistanceVector)
-
-        return runOnce {
-            io.setPivotPositionWithVelocity(
-                setpoint,
-                Rotation2d.fromRotations(
-                    Shooter.getVelocityToTarget(
-                        distance,
-                        targetHeight
-                    ).rotations * derivativeDistance
-                )
-
-            )
+            flywheelLigament.color = if (inputs.leftSpeed.rotations > 1.0) {
+                BLUE
+            } else {
+                WHITE
+            }
+            Logger.recordOutput("Shooter", mechanism)
         }
 
+        /** Shoot a ball at a given velocity and spin (in rad/s). */
+        fun shoot(velocity: Double, spin: Double): Command =
+            runEnd(
+                {
+                    val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
+
+                    io.setSpeeds(
+                        (velocity - tangentialVelocity) / FLYWHEEL_RADIUS,
+                        (velocity + tangentialVelocity) / FLYWHEEL_RADIUS
+                    )
+
+                    // TODO: run rollers
+                },
+                {
+                    io.setSpeeds(0.0, 0.0)
+
+                    // TODO: stop rollers
+                }
+            )
     }
 
-    /**
-     * Start pivoting to the setpoint, command terminates instantly
-     *
-     * @param setpoint the position to pivot to
-     */
+    object Pivot : Subsystem {
+        private val io: PivotIO = when (Robot.model) {
+            Robot.Model.SIMULATION -> PivotIOSim()
+            Robot.Model.COMPETITION -> PivotIOKraken()
+            Robot.Model.PRACTICE -> TODO()
+        }
+        private val inputs = PivotIO.Inputs()
 
-    fun startPivotingTo(setpoint: Rotation2d): Command = runOnce {
-        io.setPivotPosition(setpoint)
+        override fun periodic() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Shooter/Pivot", inputs)
+
+            armLigament.angle = inputs.position.degrees
+            Logger.recordOutput("Shooter", mechanism)
+        }
+
+        fun pivotAndStop(goal: Rotation2d): Command =
+            Commands.sequence(
+                runOnce {
+                    io.pivotToAndStop(goal)
+                },
+                Commands.waitUntil {
+                    (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
+                            && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
+                }
+            )
+
+        fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command =
+            run {
+                io.pivotToAndMove(positionProfile(), velocityProfile())
+            }
+
+        enum class PositionPresets(position: Rotation2d) {
+            Handoff(Rotation2d()),
+            Amp(Rotation2d())
+        }
     }
 
-    /**
-     * Start pivoting to the setpoint, command terminates when the pivot arrives
-     *
-     * @param setpoint the position to pivot to
-     */
-    fun pivotTo(setpoint: Rotation2d): Command =
-        startPivotingTo(setpoint).andThen(WaitUntilCommand { inputs.atSetpoint })
-
-    /**
-     * Start aiming at a target to arrive with 0 velocity.
-     *
-     * @param position the position of the robot
-     * @param setpoint the position of the target
-     */
-    fun aimAtStatic(setpoint: TargetPosition, position: Translation2d): Command =
-        startPivotingTo(getAngleTo(setpoint.position, position))
-
-    fun intakeCommand(): Command =
-        startEnd({ io.intake(1.0) }, { io.intake(0.0) })
-
-    /**
-     * Return the two dimensional angle to the target (x horizontal against z) based on the position of the robot
-     *
-     * @param target the position of the target
-     * @param position the position of the robot
-     */
-    private fun getAngleTo(target: Translation3d, position: Translation2d): Rotation2d {
-        val distance = Translation2d(target.x, target.y).minus(position).norm
-        val angle = atan(target.z / distance)
-        return Rotation2d(angle)
+    // Register the two subsystems which together form the shooter.
+    fun register() {
+        Flywheels.register()
+        Pivot.register()
     }
 
-    /**
-     * Return the velocity, in radians per second,
-     * for the pivot to track the correct angle to the target based on distance away from the target
-     *
-     * keep units of distance and height consistent or it won't work grr
-     *
-     * @param distance the distance from the target
-     * @param targetHeight the height of the target
-     */
-    fun getVelocityToTarget(distance: Double, targetHeight: Double): Rotation2d {
-        val radPerSec = -targetHeight / targetHeight.pow(2) + distance.pow(2)
-        return Rotation2d(radPerSec)
-    }
-
-    /**
-     * Return the acceleration, in radians per second squared,
-     * for the pivot to track the correct angle to the target based on distance away from the target
-     *
-     * keep units of distance and height consistent or it won't work grr
-     *
-     * @param distance the distance from the target
-     * @param targetHeight the height of the target
-     */
-    fun getAccelerationToTarget(distance: Double, targetHeight: Double): Rotation2d {
-        val radPerSecSquared =
-            (2 * targetHeight * distance) / (targetHeight.pow(2) + distance.pow(2)).pow(2)
-        return Rotation2d(radPerSecSquared)
-    }
-
+    private val mechanism = Mechanism2d(3.0, 3.0, BLACK)
+    private val mechanismRoot = mechanism.getRoot("Shooter", 0.5, 0.5)
+    private val armLigament = mechanismRoot.append(
+        MechanismLigament2d(
+            "Arm", 2.0, 0.0, 10.0, WHITE,
+        )
+    )
+    private val flywheelLigament = armLigament.append(
+        MechanismLigament2d(
+            "Flywheel", 0.25, 0.0, 5.0, BLUE
+        )
+    )
 }
 
-//0 degrees = pivot pointing horizontally outwards
-enum class PivotPosition(val position: Rotation2d) {
-    Horizontal(Rotation2d(0.0)),
-    Vertical(Rotation2d.fromDegrees(90.0)),
-    Handoff(Rotation2d.fromDegrees(190.0)),
-    Amps(Rotation2d.fromDegrees(80.0))
-}
+internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
+internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 
-enum class TargetPosition(val position: Translation3d) {
-    Speaker(Translation3d()),
+internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
+internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)
 
-    //this shit prolly never gonna happen lol
-    Trap1(Translation3d()),
-    Trap2(Translation3d()),
-    Trap3(Translation3d()),
-    Amp(Translation3d())
-}
-
-internal const val ACCELERATION_PROFILE = 0.0
-internal const val VELOCITY_PROFILE = 0.0
-internal const val JERK_PROFILE = 0.0
-
+internal val BLACK = Color8Bit("#0a0a0a")
+internal val WHITE = Color8Bit("#ffffff")
+internal val BLUE = Color8Bit("#1d48a3")
