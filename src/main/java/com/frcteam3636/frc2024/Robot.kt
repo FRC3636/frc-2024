@@ -6,20 +6,22 @@ import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.PowerDistribution
-import edu.wpi.first.wpilibj.Preferences
-import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import kotlin.Exception
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -86,13 +88,18 @@ object Robot : LoggedRobot() {
     }
 
     private fun configureBindings() {
-//        controller.x().whileTrue(Shooter.shootCommand())
-        controller.b().whileTrue(Intake.intakeCommand())
         Drivetrain.defaultCommand =
             Drivetrain.driveWithJoysticks(
                 translationJoystick = joystickLeft,
                 rotationJoystick = joystickRight
             )
+
+        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
+
+        JoystickButton(joystickLeft, 2).whileTrue(Shooter.Pivot.followMotionProfile(
+            { Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
+            { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) }
+        ))
     }
 
     override fun robotPeriodic() {

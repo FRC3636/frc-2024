@@ -1,13 +1,16 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.Robot
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.Color8Bit
 import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
+import kotlin.math.abs
 
 object Shooter {
     object Flywheels : Subsystem {
@@ -26,7 +29,28 @@ object Shooter {
             } else {
                 WHITE
             }
+            Logger.recordOutput("Shooter", mechanism)
         }
+
+        /** Shoot a ball at a given velocity and spin (in rad/s). */
+        fun shoot(velocity: Double, spin: Double): Command =
+            runEnd(
+                {
+                    val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
+
+                    io.setSpeeds(
+                        (velocity - tangentialVelocity) / FLYWHEEL_RADIUS,
+                        (velocity + tangentialVelocity) / FLYWHEEL_RADIUS
+                    )
+
+                    // TODO: run rollers
+                },
+                {
+                    io.setSpeeds(0.0, 0.0)
+
+                    // TODO: stop rollers
+                }
+            )
     }
 
     object Pivot : Subsystem {
@@ -42,7 +66,27 @@ object Shooter {
             Logger.processInputs("Shooter/Pivot", inputs)
 
             armLigament.angle = inputs.position.degrees
+            Logger.recordOutput("Shooter", mechanism)
         }
+
+        fun pivotAndStop(goal: Rotation2d): Command =
+            Commands.sequence(
+                runOnce {
+                    io.setSetpoint(
+                        goal,
+                        Rotation2d()
+                    )
+                },
+                Commands.waitUntil {
+                    (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
+                            && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
+                }
+            )
+
+        fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command =
+            run {
+                io.setSetpoint(positionProfile(), velocityProfile())
+            }
     }
 
     // Register the two subsystems which together form the shooter.
@@ -63,10 +107,13 @@ object Shooter {
             "Flywheel", 0.25, 0.0, 5.0, BLUE
         )
     )
-    init {
-        SmartDashboard.putData("Shooter", mechanism)
-    }
 }
+
+internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
+internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
+
+internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
+internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)
 
 internal val BLACK = Color8Bit("#0a0a0a")
 internal val WHITE = Color8Bit("#ffffff")

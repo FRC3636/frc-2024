@@ -31,6 +31,7 @@ interface FlywheelIO {
 
     fun updateInputs(inputs: Inputs)
 
+    /** Set the speeds of the flywheels in rad/s. */
     fun setSpeeds(leftSpeed: Double, rightSpeed: Double)
 }
 
