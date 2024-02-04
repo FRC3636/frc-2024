@@ -9,7 +9,10 @@ import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
 import com.frcteam3636.frc2024.utils.math.*
+import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
+import com.revrobotics.SparkPIDController;
+import com.revrobotics.CANSparkMax;
 import edu.wpi.first.math.controller.ArmFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
@@ -46,6 +49,8 @@ interface PivotIO {
 
     fun pivotToAndStop(position: Rotation2d)
     fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d)
+
+    fun driveVoltage(volts: Double) {}
 }
 
 class PivotIOKraken : PivotIO {
@@ -106,6 +111,11 @@ class PivotIOKraken : PivotIO {
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", velocity)
     }
 
+    override fun driveVoltage(volts: Double) {
+        leftMotor.setVoltage(volts)
+        rightMotor.setVoltage(volts)
+    }
+
     internal companion object Constants {
         val GEAR_RATIO = 1.0 / 90.0
 
@@ -137,9 +147,28 @@ class PivotIONeo : PivotIO {
         inverted = true
         encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
         encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+        follow(leftPivot)
     }
 
-    private val timer: Timer = Timer()
+    private val pid = leftPivot.pidController.apply {
+        p = 0.0
+        i = 0.0
+        d = 0.0
+        ff = 0.0
+        iZone = 0.0
+        setOutputRange(0.0, 0.0)
+
+        setSmartMotionMaxVelocity(0.0, 0)
+        setSmartMotionMinOutputVelocity(0.0, 0)
+        setSmartMotionMaxAccel(0.0, 0)
+        setSmartMotionAllowedClosedLoopError(1.0, 0)
+        setSmartMotionAccelStrategy(SparkPIDController.AccelStrategy.kTrapezoidal, 0)
+    }
+
+    init {
+        leftPivot.burnFlash()
+        rightPivot.burnFlash()
+    }
 
     private val pivotPID = PIDController(PIDGains(0.0, 0.0, 0.0))
     private val pivotFeedForward = ArmFeedforward(0.0, 0.0, 0.0, 0.0)
@@ -156,14 +185,22 @@ class PivotIONeo : PivotIO {
     }
 
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
+        pid.setSmartMotionMinOutputVelocity(velocity.rotations, 0)
+        pid.setReference(
+            position.radians,
+            CANSparkBase.ControlType.kSmartMotion
+        )
+    }
 
+    override fun driveVoltage(volts: Double) {
+        leftPivot.setVoltage(volts)
+        rightPivot.setVoltage(volts)
     }
 
     internal companion object Constants {
         val PROFILE_CONSTRAINTS = TrapezoidProfile.Constraints(0.0, 0.0)
 
         const val PIVOT_GEAR_RATIO = 1 / 90.0
-        const val FLYWHEEL_GEAR_RATIO = 1.0
     }
 }
 
