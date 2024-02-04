@@ -15,7 +15,7 @@
         meta = {
           nixpkgs = import nixpkgs {
             system = "x86_64-linux";
-            overlays = [];
+            overlays = [ ];
           };
           specialArgs = {
             rk3588 = nixos-rk3588.inputs;

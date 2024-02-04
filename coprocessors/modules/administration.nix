@@ -1,4 +1,4 @@
-{ ... }:
+{ pkgs, ... }:
 
 {
   config = {
@@ -14,5 +14,10 @@
     };
 
     services.openssh.enable = true;
+
+    environment.systemPackages = with pkgs; [
+      neovim
+      htop
+    ];
   };
 }
