@@ -51,13 +51,21 @@ object Shooter {
                     // TODO: stop rollers
                 }
             )
+
+            fun intake() : Command{
+                return runEnd({
+                    io.setSpeeds(1.0, 1.0)
+                }, {
+                    io.setSpeeds(0.0, 0.0)
+                })
+            }
     }
 
     object Pivot : Subsystem {
         private val io: PivotIO = when (Robot.model) {
             Robot.Model.SIMULATION -> PivotIOSim()
             Robot.Model.COMPETITION -> PivotIOKraken()
-            Robot.Model.PRACTICE -> TODO()
+            Robot.Model.PRACTICE -> PivotIONeo()
         }
         private val inputs = PivotIO.Inputs()
 

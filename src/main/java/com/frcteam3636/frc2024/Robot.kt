@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024
 
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain.runOnce
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
@@ -37,7 +38,7 @@ import kotlin.math.sin
  * renaming the object or package, it will get changed everywhere.)
  */
 object Robot : LoggedRobot() {
-    private val controller = CommandXboxController(0)
+    private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
 
@@ -93,7 +94,13 @@ object Robot : LoggedRobot() {
 //        controller.x().whileTrue(Shooter.shootCommand())
 //        controller.b().whileTrue(Intake.intakeCommand())
 
-        controller.a().whileTrue(Intake.intakeCommand())
+        controller.a().whileTrue(Intake.intakeCommand().andThen(
+            runOnce {
+                println(":3 :3 :3")
+            }
+        )).also {
+            Shooter.Flywheels.intake()
+        }
 
 //        controller.leftBumper().whileTrue(
 //            Shooter.aimAtStatic(TargetPosition.Speaker, Drivetrain.estimatedPose.translation)

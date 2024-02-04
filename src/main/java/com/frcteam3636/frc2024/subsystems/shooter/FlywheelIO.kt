@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.frcteam3636.frc2024.CANSparkFlex
 import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.math.MotorFFGains
@@ -37,7 +38,7 @@ interface FlywheelIO {
 
 class FlywheelIOReal : FlywheelIO {
     private val leftSpark =
-        CANSparkMax(REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
+        CANSparkFlex(REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
             restoreFactoryDefaults()
 
             inverted = true
@@ -50,7 +51,7 @@ class FlywheelIOReal : FlywheelIO {
         }
 
     private val rightSpark =
-        CANSparkMax(REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
+        CANSparkFlex(REVMotorControllerId.RightShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
             restoreFactoryDefaults()
 
             inverted = false

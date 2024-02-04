@@ -29,9 +29,10 @@ object Intake : Subsystem {
                 io.setOverBumperRoller(0.0)
             }
         )
-            .until(inputs::isIntaking)
+
             .also { it.addRequirements(this) }
     }
+
 
 
     fun indexCommand(): Command {
