@@ -3,22 +3,35 @@ package com.frcteam3636.frc2024.subsystems.shooter
 import com.frcteam3636.frc2024.Robot
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units.*
+import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
+import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
 import edu.wpi.first.wpilibj.util.Color8Bit
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.Subsystem
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
 
 object Shooter {
+
+    private val shooterIdRoutine = SysIdRoutine(
+        SysIdRoutine.Config(), SysIdRoutine.Mechanism(
+            Pivot::setvoltage, Pivot::getState, Pivot
+        )
+    )
+
     object Flywheels : Subsystem {
         private val io: FlywheelIO = when (Robot.model) {
             Robot.Model.SIMULATION -> FlywheelIOSim()
             Robot.Model.COMPETITION, Robot.Model.PRACTICE -> FlywheelIOReal()
         }
         private val inputs = FlywheelIO.Inputs()
+
 
         override fun periodic() {
             io.updateInputs(inputs)
@@ -33,32 +46,27 @@ object Shooter {
         }
 
         /** Shoot a ball at a given velocity and spin (in rad/s). */
-        fun shoot(velocity: Double, spin: Double): Command =
-            runEnd(
-                {
-                    val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
+        fun shoot(velocity: Double, spin: Double): Command = runEnd({
+            val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
 
-                    io.setSpeeds(
-                        (velocity - tangentialVelocity) / FLYWHEEL_RADIUS,
-                        (velocity + tangentialVelocity) / FLYWHEEL_RADIUS
-                    )
-
-                    // TODO: run rollers
-                },
-                {
-                    io.setSpeeds(0.0, 0.0)
-
-                    // TODO: stop rollers
-                }
+            io.setSpeeds(
+                (velocity - tangentialVelocity) / FLYWHEEL_RADIUS, (velocity + tangentialVelocity) / FLYWHEEL_RADIUS
             )
 
-            fun intake() : Command{
-                return runEnd({
-                    io.setSpeeds(1.0, 1.0)
-                }, {
-                    io.setSpeeds(0.0, 0.0)
-                })
-            }
+            // TODO: run rollers
+        }, {
+            io.setSpeeds(0.0, 0.0)
+
+            // TODO: stop rollers
+        })
+
+        fun intake(): Command {
+            return runEnd({
+                io.setSpeeds(1.0, 1.0)
+            }, {
+                io.setSpeeds(0.0, 0.0)
+            })
+        }
     }
 
     object Pivot : Subsystem {
@@ -77,25 +85,40 @@ object Shooter {
             Logger.recordOutput("Shooter", mechanism)
         }
 
-        fun pivotAndStop(goal: Rotation2d): Command =
-            Commands.sequence(
-                runOnce {
-                    io.pivotToAndStop(goal)
-                },
-                Commands.waitUntil {
-                    (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
-                            && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
-                }
-            )
+        fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
+            io.pivotToAndStop(goal)
+        }, Commands.waitUntil {
+            (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
+                    && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
+        })
 
-        fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command =
-            run {
-                io.pivotToAndMove(positionProfile(), velocityProfile())
-            }
+        fun getState(log: SysIdRoutineLog) {
+            log.motor("pivot-left").voltage(
+                    Volts.of(inputs.voltageLeft)
+                ).linearPosition(
+                    Meters.of(inputs.rotorDistanceLeft)
+                ).linearVelocity(
+                    MetersPerSecond.of(inputs.rotorVelocityLeft)
+                )
+            log.motor("pivot-right").voltage(
+                    Volts.of(inputs.voltageRight)
+                ).linearPosition(
+                    Meters.of(inputs.rotorDistanceRight)
+                ).linearVelocity(
+                    MetersPerSecond.of(inputs.rotorVelocityRight)
+                )
+        }
+
+        fun setvoltage(volts: Measure<Voltage>): Command = runOnce {
+            io.driveVoltage(volts.magnitude())
+        }
+
+        fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command = run {
+            io.pivotToAndMove(positionProfile(), velocityProfile())
+        }
 
         enum class PositionPresets(position: Rotation2d) {
-            Handoff(Rotation2d()),
-            Amp(Rotation2d())
+            Handoff(Rotation2d()), Amp(Rotation2d())
         }
     }
 
