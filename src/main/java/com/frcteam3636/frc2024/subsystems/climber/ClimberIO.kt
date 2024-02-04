@@ -63,7 +63,7 @@ class ClimberIOReal : ClimberIO {
     companion object {
         const val CLIMBER_GEAR_RATIO = 1.0
         //TODO: Find this value
-        const val METERS_PER_ROTATION = 0.1;
+        const val METERS_PER_ROTATION = 0.003175;
     }
 
     private var climberMotor =
