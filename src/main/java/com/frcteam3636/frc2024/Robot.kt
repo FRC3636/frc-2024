@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.drivetrain.DrivetrainOdometryThread
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
@@ -13,8 +14,6 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import java.lang.Thread
-import com.frcteam3636.frc2024.subsystems.drivetrain.DrivetrainOdometryThread
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton

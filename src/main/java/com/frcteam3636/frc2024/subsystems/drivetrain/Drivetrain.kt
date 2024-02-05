@@ -5,9 +5,6 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
-import edu.wpi.first.apriltag.AprilTagFieldLayout
-import edu.wpi.first.apriltag.AprilTagFields
-import edu.wpi.first.math.Matrix
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.*
@@ -15,9 +12,6 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
-import edu.wpi.first.math.numbers.N1
-import edu.wpi.first.math.numbers.N3
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Inches
@@ -29,9 +23,6 @@ import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import org.photonvision.EstimatedRobotPose
-import org.photonvision.PhotonCamera
-import org.photonvision.PhotonPoseEstimator
 import java.util.*
 
 
@@ -55,7 +46,8 @@ object Drivetrain : Subsystem {
         }
     private val inputs = DrivetrainIO.Inputs()
 
-    private val cameras = PHOTON_CAMERAS.map { (name, transform) -> PhotonAprilTagCamera(name, transform) }
+    private val aprilTagCameras = PHOTON_CAMERAS.map { (name, transform) -> PhotonAprilTagCamera(name, transform) }
+    private val objectDetectorCamera = PhotonObjectDetectionCamera("ObjectDetector", Transform3d())
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
@@ -90,7 +82,7 @@ object Drivetrain : Subsystem {
         }
     }
 
-    fun addVisionMeasurement(measurement: Optional<VisionMeasurement>) {
+    fun addVisionMeasurement(measurement: Optional<VisionPoseMeasurement>) {
         synchronized(this) {
             if (measurement.isPresent) {
                 poseEstimator.addVisionMeasurement(
@@ -105,7 +97,9 @@ object Drivetrain : Subsystem {
     override fun periodic() {
         Logger.processInputs("Drivetrain", inputs)
         Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
-        for (camera in cameras) {
+        objectDetectorCamera.periodic()
+        for (camera in aprilTagCameras) {
+            camera.periodic()
             addVisionMeasurement(camera.getMeasurement())
         }
     }
@@ -246,7 +240,10 @@ internal val TRACK_WIDTH: Measure<Distance> = Inches.of(14.0)
 internal val FIELD_LENGTH: Measure<Distance> = Inches.of(651.25)
 internal val FIELD_WIDTH: Measure<Distance> = Inches.of(323.25)
 
+
+//TODO set these silly lil fellas
 internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> = listOf()
+internal val OBJECT_DETECTOR_TRANSFORM: Transform3d = Transform3d()
 
 internal val MODULE_POSITIONS =
     PerCorner(
