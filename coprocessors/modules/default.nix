@@ -4,7 +4,12 @@
   imports = [
     ./networking.nix
     ./administration.nix
+    ./services/photonvision.nix
   ];
 
-  config = { };
+  config = {
+    systemd.services.photonvision = {
+      serviceConfig = { };
+    };
+  };
 }
