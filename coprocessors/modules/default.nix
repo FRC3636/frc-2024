@@ -8,8 +8,5 @@
   ];
 
   config = {
-    systemd.services.photonvision = {
-      serviceConfig = { };
-    };
   };
 }

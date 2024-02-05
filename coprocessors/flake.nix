@@ -10,12 +10,12 @@
       inherit (nixos-rk3588.inputs) nixpkgs;
       inherit (nixpkgs) lib;
     in
-    {
+    rec {
       colmena = {
         meta = {
           nixpkgs = import nixpkgs {
             system = "x86_64-linux";
-            overlays = [ ];
+            overlays = [ overlays.default ];
           };
           specialArgs = {
             rk3588 = nixos-rk3588.inputs;
@@ -40,7 +40,9 @@
             targetUser = "root";
           };
 
-          nixpkgs.crossSystem.config = "aarch64-unknown-linux-gnu";
+          nixpkgs = {
+            system = "aarch64-linux";
+          };
 
           imports = [
             nixos-rk3588.nixosModules.orangepi5
@@ -49,6 +51,10 @@
             ./hosts/boop
           ];
         };
+      };
+
+      overlays.default = self: super: {
+        photonvision = self.callPackage ./pkgs/photonvision.nix { };
       };
 
       devShell = lib.attrsets.genAttrs
@@ -64,8 +70,8 @@
           in
           pkgs.mkShell {
             name = "3636-coprocessors";
-            buildInputs = with pkgs; [
-              colmena
+            buildInputs = [
+              pkgs.colmena
             ];
           });
     };

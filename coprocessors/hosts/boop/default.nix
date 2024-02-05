@@ -6,7 +6,7 @@
       hostName = "boop";
 
       robotNetwork = {
-        interface = "wlp1s0";
+        interface = "end1";
         address = "10.36.36.11";
       };
     };
