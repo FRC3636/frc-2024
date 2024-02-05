@@ -28,11 +28,10 @@ interface ClimberIO {
 }
 
 class ClimberIOSim : ClimberIO {
-    private var climberMotor = DCMotor.getNEO(1)
     private var elevatorSim = ElevatorSim(
         ELEVATOR_KV,
         ELEVATOR_KA,
-        climberMotor,
+        DCMotor.getNEO(1),
         ELEVATOR_MIN_HEIGHT,
         ELEVATOR_MAX_HEIGHT,
         true,
