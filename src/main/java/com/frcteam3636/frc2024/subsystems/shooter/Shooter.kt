@@ -1,6 +1,9 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.frcteam3636.frc2024.BLACK
+import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.WHITE
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
@@ -114,7 +117,3 @@ internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 
 internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)
-
-internal val BLACK = Color8Bit("#0a0a0a")
-internal val WHITE = Color8Bit("#ffffff")
-internal val BLUE = Color8Bit("#1d48a3")

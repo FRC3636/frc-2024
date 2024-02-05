@@ -32,11 +32,11 @@ interface ClimberIO {
 class ClimberIOSim : ClimberIO {
     companion object {
         //TODO: Find all of these
-        const val ELEVATOR_KV = 0.0
-        const val ELEVATOR_KA = 0.0
+        const val ELEVATOR_KV = 0.1
+        const val ELEVATOR_KA = 0.1
         const val ELEVATOR_MAX_HEIGHT = 1.0
         const val ELEVATOR_MIN_HEIGHT = 0.0
-        const val ELEVATOR_START_HEIGHT = 0.0
+        const val ELEVATOR_START_HEIGHT = 0.5
     }
 
     private var climberMotor = DCMotor.getNEO(1)
@@ -56,6 +56,7 @@ class ClimberIOSim : ClimberIO {
 
     override fun moveClimber(speed: Double) {
         elevatorSim.setInputVoltage(12.0 * speed)
+        elevatorSim.update(0.02)
     }
 }
 
