@@ -3,7 +3,7 @@
 {
   config = {
     networking = {
-      hostName = "spjorg";
+      hostName = "boop";
 
       robotNetwork = {
         interface = "end1";
