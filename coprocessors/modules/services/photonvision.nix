@@ -55,6 +55,7 @@ in
 
     networking.firewall = {
       allowedTCPPorts = [ 5800 ];
+      allowedTCPPortRanges = [ { from = 1180; to = 1190; } ];
     };
   };
 }
