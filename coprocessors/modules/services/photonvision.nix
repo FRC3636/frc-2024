@@ -3,8 +3,6 @@
 with lib;
 let
   cfg = config.services.photonvision;
-
-  makeEnvString = env: lib.strings.concatStringsSep " " (mapAttrsToList (name: value: "\"${name}=${value}\"") env);
 in
 {
   options = {
@@ -28,14 +26,6 @@ in
 
       serviceConfig = {
         ExecStart = "${cfg.package}/bin/photonvision";
-
-        Environment = makeEnvString { 
-          # add dependencies to PATH
-          PATH="${lib.strings.makeBinPath cfg.package.buildInputs}";
-        };
-
-        # WPILib assumes it's being executed by a user with a home directory etc.
-        User = "root";
 
         # ephemeral root directory
         RuntimeDirectory = "photonvision";
