@@ -213,8 +213,8 @@ class PivotIONeo : PivotIO {
 
         //sysid shit
         //velocity in rps cause talonfx uses those units and consistency ykyk
-        inputs.voltageLeft = leftMotor.get() * RobotController.getBatteryVoltage()
-        inputs.voltageRight = rightMotor.get() * RobotController.getBatteryVoltage()
+        inputs.voltageLeft = leftMotor.appliedOutput * RobotController.getBatteryVoltage()
+        inputs.voltageRight = rightMotor.appliedOutput * RobotController.getBatteryVoltage()
         inputs.rotorDistanceLeft = leftMotor.encoder.position * inverseConversionFactor
         inputs.rotorVelocityLeft = leftMotor.encoder.velocity * inverseConversionFactor
         inputs.rotorDistanceRight = rightMotor.encoder.position * inverseConversionFactor

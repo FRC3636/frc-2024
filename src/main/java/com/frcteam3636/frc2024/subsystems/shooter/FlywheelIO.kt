@@ -72,6 +72,8 @@ class FlywheelIOReal : FlywheelIO {
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
         inputs.leftSpeed = Rotation2d(leftSpark.encoder.velocity)
         inputs.rightSpeed = Rotation2d(rightSpark.encoder.velocity)
+        inputs.leftVoltage = leftSpark.busVoltage * leftSpark.appliedOutput
+        inputs.rightVoltage = rightSpark.busVoltage * rightSpark.appliedOutput
     }
 
     override fun setSpeeds(leftSpeed: Double, rightSpeed: Double) {
