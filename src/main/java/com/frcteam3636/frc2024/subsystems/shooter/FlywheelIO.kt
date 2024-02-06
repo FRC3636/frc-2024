@@ -10,6 +10,8 @@ import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -18,6 +20,8 @@ interface FlywheelIO {
     class Inputs : LoggableInputs {
         var leftSpeed = Rotation2d()
         var rightSpeed = Rotation2d()
+        var leftVoltage: Double = 0.0
+        var rightVoltage: Double = 0.0
 
         override fun toLog(table: LogTable) {
             table.put("Left Speed", leftSpeed)
@@ -34,6 +38,8 @@ interface FlywheelIO {
 
     /** Set the speeds of the flywheels in rad/s. */
     fun setSpeeds(leftSpeed: Double, rightSpeed: Double)
+
+    fun setVoltage(volts: Measure<Voltage>) {}
 }
 
 class FlywheelIOReal : FlywheelIO {
@@ -77,6 +83,13 @@ class FlywheelIOReal : FlywheelIO {
         Logger.recordOutput("Shooter/Flywheels/Left Setpoint", leftSpeed)
         Logger.recordOutput("Shooter/Flywheels/Right Setpoint", rightSpeed)
     }
+
+    override fun setVoltage(volts: Measure<Voltage>) {
+        rightSpark.setVoltage(volts.baseUnitMagnitude())
+        leftSpark.setVoltage(volts.baseUnitMagnitude())
+    }
+
+
 
     internal companion object {
         const val GEAR_RATIO = 1.0

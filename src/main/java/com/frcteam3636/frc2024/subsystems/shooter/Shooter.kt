@@ -19,10 +19,14 @@ import kotlin.math.abs
 
 object Shooter {
 
-    private val shooterIdRoutine = SysIdRoutine(
+    private val pivotIdRoutine = SysIdRoutine(
         SysIdRoutine.Config(), SysIdRoutine.Mechanism(
             Pivot::setvoltage, Pivot::getState, Pivot
         )
+    )
+
+    private val flywheelIORoutine = SysIdRoutine(
+        SysIdRoutine.Config(), SysIdRoutine.Mechanism( Flywheels::setVoltage, Flywheels::getState, Flywheels )
     )
 
     object Flywheels : Subsystem {
@@ -62,11 +66,33 @@ object Shooter {
 
         fun intake(): Command {
             return runEnd({
-                io.setSpeeds(1.0, 1.0)
+                io.setSpeeds(0.3, 0.3)
             }, {
                 io.setSpeeds(0.0, 0.0)
             })
         }
+
+        fun setVoltage(volts: Measure<Voltage>) {
+            io.setVoltage(volts)
+        }
+
+        fun getState(log: SysIdRoutineLog) {
+            log.motor("left-flywheels")
+                .voltage(
+                    Volts.of(inputs.leftVoltage)
+                )
+                .angularVelocity(
+                    RadiansPerSecond.of(inputs.leftSpeed.radians)
+                )
+            log.motor("right-flywheels")
+                .voltage(
+                    Volts.of(inputs.rightVoltage)
+                )
+                .angularVelocity(
+                    RadiansPerSecond.of(inputs.rightSpeed.radians)
+                )
+        }
+
     }
 
     object Pivot : Subsystem {
@@ -95,17 +121,17 @@ object Shooter {
         fun getState(log: SysIdRoutineLog) {
             log.motor("pivot-left").voltage(
                     Volts.of(inputs.voltageLeft)
-                ).linearPosition(
-                    Meters.of(inputs.rotorDistanceLeft)
-                ).linearVelocity(
-                    MetersPerSecond.of(inputs.rotorVelocityLeft)
+                ).angularPosition(
+                    Radians.of(inputs.rotorDistanceLeft)
+                ).angularVelocity(
+                    RadiansPerSecond.of(inputs.rotorVelocityLeft)
                 )
             log.motor("pivot-right").voltage(
                     Volts.of(inputs.voltageRight)
-                ).linearPosition(
-                    Meters.of(inputs.rotorDistanceRight)
-                ).linearVelocity(
-                    MetersPerSecond.of(inputs.rotorVelocityRight)
+                ).angularPosition(
+                    Radians.of(inputs.rotorDistanceRight)
+                ).angularVelocity(
+                    RadiansPerSecond.of(inputs.rotorVelocityRight)
                 )
         }
 
