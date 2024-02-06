@@ -11,6 +11,8 @@
       };
     };
 
+    services.photonvision.enable = true;
+
     system.stateVersion = "23.05";
   };
 }
