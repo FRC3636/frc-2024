@@ -109,6 +109,7 @@ object Shooter {
                 .voltage(
                     Volts.of(inputs.leftVoltage)
                 )
+                .angularPosition(inputs.leftPos)
                 .angularVelocity(
                     inputs.leftSpeed
                 )
@@ -116,6 +117,7 @@ object Shooter {
                 .voltage(
                     Volts.of(inputs.rightVoltage)
                 )
+                .angularPosition(inputs.rightPos)
                 .angularVelocity(
                     inputs.rightSpeed
                 )

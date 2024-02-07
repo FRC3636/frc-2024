@@ -11,6 +11,7 @@ import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units.Radians
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
@@ -24,6 +25,8 @@ interface FlywheelIO {
         var rightSpeed = RadiansPerSecond.zero()
         var leftVoltage: Double = 0.0
         var rightVoltage: Double = 0.0
+        var leftPos = Radians.zero()
+        var rightPos = Radians.zero()
 
         override fun toLog(table: LogTable) {
             table.put("Left Speed", leftSpeed)
@@ -69,6 +72,8 @@ class FlywheelIOReal : FlywheelIO {
         inputs.rightSpeed = RadiansPerSecond.of(rightSpark.encoder.velocity)
         inputs.leftVoltage = leftSpark.busVoltage * leftSpark.appliedOutput
         inputs.rightVoltage = rightSpark.busVoltage * rightSpark.appliedOutput
+        inputs.leftPos = Radians.of(leftSpark.encoder.position)
+        inputs.rightPos = Radians.of(rightSpark.encoder.position)
     }
 
     override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
