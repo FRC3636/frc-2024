@@ -132,9 +132,9 @@ object Drivetrain : Subsystem {
         run {
             chassisSpeeds =
                 ChassisSpeeds.fromFieldRelativeSpeeds(
-                    controller.leftX,
-                    controller.leftY,
-                    controller.rightX,
+                    controller.leftX / 8,
+                    controller.leftY / 8,
+                    controller.rightX / 4,
                     gyroRotation.toRotation2d()
                 )
         }
@@ -205,22 +205,22 @@ internal val MODULE_POSITIONS =
     PerCorner(
         frontLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(0.0)
         ),
         backLeft =
         Pose2d(
-            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(90.0)
         ),
         backRight =
         Pose2d(
-            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(180.0)
         ),
         frontRight =
         Pose2d(
-            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(270.0)
         ),
     )
