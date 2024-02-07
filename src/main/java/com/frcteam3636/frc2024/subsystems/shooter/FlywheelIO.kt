@@ -11,15 +11,17 @@ import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import java.sql.ResultSetMetaData
 
 interface FlywheelIO {
     class Inputs : LoggableInputs {
-        var leftSpeed = Rotation2d()
-        var rightSpeed = Rotation2d()
+        var leftSpeed = RadiansPerSecond.zero()
+        var rightSpeed = RadiansPerSecond.zero()
         var leftVoltage: Double = 0.0
         var rightVoltage: Double = 0.0
 
@@ -29,17 +31,14 @@ interface FlywheelIO {
         }
 
         override fun fromLog(table: LogTable) {
-            leftSpeed = table.get("Left Speed", leftSpeed)[0]
-            rightSpeed = table.get("Right Speed", rightSpeed)[0]
+            leftSpeed = table.get("Left Speed", leftSpeed)
+            rightSpeed = table.get("Right Speed", rightSpeed)
         }
     }
 
     fun updateInputs(inputs: Inputs)
 
-    /** Set the speeds of the flywheels in rad/s. */
-    fun setSpeeds(leftSpeed: Double, rightSpeed: Double)
-
-    fun setVoltage(volts: Measure<Voltage>) {}
+    fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
 }
 
 class FlywheelIOReal : FlywheelIO {
@@ -48,11 +47,9 @@ class FlywheelIOReal : FlywheelIO {
             restoreFactoryDefaults()
 
             inverted = true
-            encoder.velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
-
-            pidController.apply {
-                pidGains = PID_GAINS
-                ff = FF_GAINS.v
+            encoder.apply {
+                positionConversionFactor = Units.rotationsToRadians(1.0)
+                velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
             }
         }
 
@@ -61,63 +58,44 @@ class FlywheelIOReal : FlywheelIO {
             restoreFactoryDefaults()
 
             inverted = false
-            encoder.velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
-
-            pidController.apply {
-                pidGains = PID_GAINS
-                ff = FF_GAINS.v
+            encoder.apply {
+                positionConversionFactor = Units.rotationsToRadians(1.0)
+                velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
             }
         }
 
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
-        inputs.leftSpeed = Rotation2d(leftSpark.encoder.velocity)
-        inputs.rightSpeed = Rotation2d(rightSpark.encoder.velocity)
+        inputs.leftSpeed = RadiansPerSecond.of(leftSpark.encoder.velocity)
+        inputs.rightSpeed = RadiansPerSecond.of(rightSpark.encoder.velocity)
         inputs.leftVoltage = leftSpark.busVoltage * leftSpark.appliedOutput
         inputs.rightVoltage = rightSpark.busVoltage * rightSpark.appliedOutput
     }
 
-    override fun setSpeeds(leftSpeed: Double, rightSpeed: Double) {
-        // set the onboard PIDF controllers to the desired speeds
-        leftSpark.pidController.setReference(leftSpeed, CANSparkBase.ControlType.kVelocity)
-        rightSpark.pidController.setReference(rightSpeed, CANSparkBase.ControlType.kVelocity)
+    override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+        leftSpark.setVoltage(left.baseUnitMagnitude())
+        rightSpark.setVoltage(right.baseUnitMagnitude())
 
-        // log setpoints as outputs
-        Logger.recordOutput("Shooter/Flywheels/Left Setpoint", leftSpeed)
-        Logger.recordOutput("Shooter/Flywheels/Right Setpoint", rightSpeed)
+        Logger.recordOutput("Shooter/Flywheels/Left Effort", left)
+        Logger.recordOutput("Shooter/Flywheels/Right Effort", right)
     }
-
-    override fun setVoltage(volts: Measure<Voltage>) {
-        rightSpark.setVoltage(volts.baseUnitMagnitude())
-        leftSpark.setVoltage(volts.baseUnitMagnitude())
-    }
-
-
 
     internal companion object {
         const val GEAR_RATIO = 1.0
-
-        val PID_GAINS = PIDGains()
-        val FF_GAINS = MotorFFGains(v = 0.0)
     }
 }
 
 class FlywheelIOSim : FlywheelIO {
     // simulating the flywheels wouldn't actually allow us to test any more,
     // since we're just using onboard SPARK MAX feedback controllers
-    private var leftSpeed = Rotation2d()
-    private var rightSpeed = Rotation2d()
+    private var leftSpeed = RadiansPerSecond.zero()
+    private var rightSpeed = RadiansPerSecond.zero()
 
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
         inputs.leftSpeed = leftSpeed
         inputs.rightSpeed = rightSpeed
     }
 
-    override fun setSpeeds(leftSpeed: Double, rightSpeed: Double) {
-        this.leftSpeed = Rotation2d(leftSpeed)
-        this.rightSpeed = Rotation2d(rightSpeed)
-
-        // log setpoints as outputs
-        Logger.recordOutput("Shooter/Flywheels/Left Setpoint", leftSpeed)
-        Logger.recordOutput("Shooter/Flywheels/Right Setpoint", rightSpeed)
+    override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+        TODO()
     }
 }

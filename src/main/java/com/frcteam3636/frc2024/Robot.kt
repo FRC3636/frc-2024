@@ -1,7 +1,6 @@
 package com.frcteam3636.frc2024
 
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
-import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain.runOnce
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
@@ -13,9 +12,11 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
@@ -94,13 +95,16 @@ object Robot : LoggedRobot() {
 //        controller.x().whileTrue(Shooter.shootCommand())
 //        controller.b().whileTrue(Intake.intakeCommand())
 
-        controller.a().whileTrue(Intake.intakeCommand().andThen(
-            runOnce {
-                println(":3 :3 :3")
-            }
-        )).also {
-            Shooter.Flywheels.intake()
-        }
+        controller.a().whileTrue(Shooter.Flywheels.intake())
+
+        controller.leftTrigger().whileTrue(
+            Shooter.flywheelIORoutine.dynamic(SysIdRoutine.Direction.kForward).andThen(
+                Commands.print("foo")
+            )
+        )
+        controller.leftBumper().whileTrue(Shooter.flywheelIORoutine.dynamic(SysIdRoutine.Direction.kReverse))
+        controller.rightTrigger().whileTrue(Shooter.flywheelIORoutine.quasistatic(SysIdRoutine.Direction.kForward))
+        controller.rightBumper().whileTrue(Shooter.flywheelIORoutine.quasistatic(SysIdRoutine.Direction.kReverse))
 
 //        controller.leftBumper().whileTrue(
 //            Shooter.aimAtStatic(TargetPosition.Speaker, Drivetrain.estimatedPose.translation)

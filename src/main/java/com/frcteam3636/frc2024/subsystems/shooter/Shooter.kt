@@ -1,6 +1,10 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.utils.math.MotorFFGains
+import com.frcteam3636.frc2024.utils.math.PIDController
+import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.SimpleMotorFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
@@ -19,14 +23,14 @@ import kotlin.math.abs
 
 object Shooter {
 
-    private val pivotIdRoutine = SysIdRoutine(
+    val pivotIdRoutine = SysIdRoutine(
         SysIdRoutine.Config(), SysIdRoutine.Mechanism(
             Pivot::setvoltage, Pivot::getState, Pivot
         )
     )
 
-    private val flywheelIORoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism( Flywheels::setVoltage, Flywheels::getState, Flywheels )
+    val flywheelIORoutine = SysIdRoutine(
+        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Flywheels::setVoltage, Flywheels::getState, Flywheels)
     )
 
     object Flywheels : Subsystem {
@@ -36,44 +40,68 @@ object Shooter {
         }
         private val inputs = FlywheelIO.Inputs()
 
+        private var setpointLeft = RadiansPerSecond.zero()
+        private var setpointRight = RadiansPerSecond.zero()
+        private val pidControllerLeft = PIDController(FLYWHEEL_PID_GAINS)
+        private val pidControllerRight = PIDController(FLYWHEEL_PID_GAINS)
+        private val ffController = SimpleMotorFeedforward(FLYWHEEL_FF_GAINS)
 
         override fun periodic() {
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Flywheels", inputs)
 
-            flywheelLigament.color = if (inputs.leftSpeed.rotations > 1.0) {
+            flywheelLigament.color = if (inputs.leftSpeed > RotationsPerSecond.of(1.0)) {
                 BLUE
             } else {
                 WHITE
             }
             Logger.recordOutput("Shooter", mechanism)
+
+//            io.setVoltage(
+//                Volts.of(
+//                    ffController.calculate(setpointLeft.magnitude()) + pidControllerLeft.calculate(
+//                        inputs.leftSpeed.magnitude(),
+//                        setpointLeft.magnitude()
+//                    )
+//                ),
+//                Volts.of(
+//                    ffController.calculate(setpointRight.magnitude()) + pidControllerRight.calculate(
+//                        inputs.rightSpeed.magnitude(),
+//                        setpointRight.magnitude()
+//                    )
+//                )
+//            )
+            Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
+            Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
 
         /** Shoot a ball at a given velocity and spin (in rad/s). */
         fun shoot(velocity: Double, spin: Double): Command = runEnd({
             val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
 
-            io.setSpeeds(
-                (velocity - tangentialVelocity) / FLYWHEEL_RADIUS, (velocity + tangentialVelocity) / FLYWHEEL_RADIUS
-            )
+            setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
+            setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
 
             // TODO: run rollers
         }, {
-            io.setSpeeds(0.0, 0.0)
+            setpointLeft = RadiansPerSecond.zero()
+            setpointRight = RadiansPerSecond.zero()
 
             // TODO: stop rollers
         })
 
         fun intake(): Command {
             return runEnd({
-                io.setSpeeds(0.3, 0.3)
+                setpointLeft = RadiansPerSecond.of(1.0)
+                setpointRight = RadiansPerSecond.of(1.0)
             }, {
-                io.setSpeeds(0.0, 0.0)
+                setpointLeft = RadiansPerSecond.zero()
+                setpointRight = RadiansPerSecond.zero()
             })
         }
 
         fun setVoltage(volts: Measure<Voltage>) {
-            io.setVoltage(volts)
+            io.setVoltage(volts, volts)
         }
 
         fun getState(log: SysIdRoutineLog) {
@@ -82,17 +110,16 @@ object Shooter {
                     Volts.of(inputs.leftVoltage)
                 )
                 .angularVelocity(
-                    RadiansPerSecond.of(inputs.leftSpeed.radians)
+                    inputs.leftSpeed
                 )
             log.motor("right-flywheels")
                 .voltage(
                     Volts.of(inputs.rightVoltage)
                 )
                 .angularVelocity(
-                    RadiansPerSecond.of(inputs.rightSpeed.radians)
+                    inputs.rightSpeed
                 )
         }
-
     }
 
     object Pivot : Subsystem {
@@ -120,19 +147,19 @@ object Shooter {
 
         fun getState(log: SysIdRoutineLog) {
             log.motor("pivot-left").voltage(
-                    Volts.of(inputs.voltageLeft)
-                ).angularPosition(
-                    Radians.of(inputs.rotorDistanceLeft)
-                ).angularVelocity(
-                    RadiansPerSecond.of(inputs.rotorVelocityLeft)
-                )
+                Volts.of(inputs.voltageLeft)
+            ).angularPosition(
+                Radians.of(inputs.rotorDistanceLeft)
+            ).angularVelocity(
+                RadiansPerSecond.of(inputs.rotorVelocityLeft)
+            )
             log.motor("pivot-right").voltage(
-                    Volts.of(inputs.voltageRight)
-                ).angularPosition(
-                    Radians.of(inputs.rotorDistanceRight)
-                ).angularVelocity(
-                    RadiansPerSecond.of(inputs.rotorVelocityRight)
-                )
+                Volts.of(inputs.voltageRight)
+            ).angularPosition(
+                Radians.of(inputs.rotorDistanceRight)
+            ).angularVelocity(
+                RadiansPerSecond.of(inputs.rotorVelocityRight)
+            )
         }
 
         fun setvoltage(volts: Measure<Voltage>): Command = runOnce {
@@ -173,6 +200,8 @@ internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 
 internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)
+internal val FLYWHEEL_PID_GAINS = PIDGains(0.05, 0.0, 0.0)
+internal val FLYWHEEL_FF_GAINS = MotorFFGains()
 
 internal val BLACK = Color8Bit("#0a0a0a")
 internal val WHITE = Color8Bit("#ffffff")
