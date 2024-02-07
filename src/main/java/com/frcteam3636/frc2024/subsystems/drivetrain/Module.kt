@@ -223,11 +223,21 @@ internal val WHEEL_CIRCUMFERENCE = WHEEL_RADIUS * TAU
 // The distance travelled by one rotation of the driving motor.
 internal val DRIVING_MOTOR_TRAVEL_PER_REVOLUTION = WHEEL_CIRCUMFERENCE * DRIVING_MOTOR_TO_WHEEL_GEARING
 
-internal val DRIVING_PID_GAINS_TALON: PIDGains = PIDGains()
-internal val DRIVING_PID_GAINS_NEO: PIDGains = PIDGains()
-internal val DRIVING_FF_GAINS_TALON: MotorFFGains = MotorFFGains()
-internal val DRIVING_FF_GAINS_NEO: MotorFFGains = MotorFFGains()
+internal const val NEO_FREE_SPEED_RPM = 5676.0
+internal const val DRIVING_MOTOR_FREE_SPEED_RPS: Double = NEO_FREE_SPEED_RPM / 60
+internal val WHEEL_DIAMETER_METERS = Units.inchesToMeters(3.0)
+internal val WHEEL_CIRCUMFERENCE_METERS = WHEEL_DIAMETER_METERS * Math.PI
 
-internal val TURNING_PID_GAINS: PIDGains = PIDGains()
+// 45 teeth on the wheel's bevel gear, 22 teeth on the first-stage spur gear, 15 teeth on the bevel pinion
+val DRIVING_MOTOR_REDUCTION: Double =
+    (45.0 * 22) / (DRIVING_MOTOR_PINION_TEETH * 15)
+internal val DRIVE_WHEEL_FREE_SPEED_RPS = (DRIVING_MOTOR_FREE_SPEED_RPS * WHEEL_CIRCUMFERENCE_METERS) / DRIVING_MOTOR_REDUCTION;
+
+internal val DRIVING_PID_GAINS_TALON: PIDGains = PIDGains()
+internal val DRIVING_PID_GAINS_NEO: PIDGains = PIDGains(0.04, 0.0, 0.0)
+internal val DRIVING_FF_GAINS_TALON: MotorFFGains = MotorFFGains()
+internal val DRIVING_FF_GAINS_NEO: MotorFFGains = MotorFFGains(0.0, 1 / DRIVE_WHEEL_FREE_SPEED_RPS, 0.0)
+
+internal val TURNING_PID_GAINS: PIDGains = PIDGains(2.0, 0.0, 0.0)
 internal val DRIVING_CURRENT_LIMIT = 60.0
 internal val TURNING_CURRENT_LIMIT = 20.0

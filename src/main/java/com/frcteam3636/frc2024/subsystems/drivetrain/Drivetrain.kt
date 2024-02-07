@@ -18,8 +18,8 @@ import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Subsystem
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -127,6 +127,17 @@ object Drivetrain : Subsystem {
                     gyroRotation.toRotation2d()
                 )
         }
+
+    fun driveWithController(controller: CommandXboxController): Command =
+        run {
+            chassisSpeeds =
+                ChassisSpeeds.fromFieldRelativeSpeeds(
+                    controller.leftX,
+                    controller.leftY,
+                    controller.rightX,
+                    gyroRotation.toRotation2d()
+                )
+        }
 }
 
 abstract class DrivetrainIO {
@@ -195,23 +206,23 @@ internal val MODULE_POSITIONS =
         frontLeft =
         Pose2d(
             Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(-90.0)
-        ),
-        frontRight =
-        Pose2d(
-            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(180.0)
-        ),
-        backRight =
-        Pose2d(
-            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(0.0)
         ),
         backLeft =
         Pose2d(
-            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(90.0)
-        )
+        ),
+        backRight =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(180.0)
+        ),
+        frontRight =
+        Pose2d(
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(270.0)
+        ),
     )
 
 internal val MODULE_CAN_IDS_COMP =
