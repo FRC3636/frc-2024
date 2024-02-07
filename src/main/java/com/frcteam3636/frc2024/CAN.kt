@@ -17,8 +17,6 @@ enum class REVMotorControllerId(val num: Int) {
     BackRightDrivingMotor(3),
     FrontRightDrivingMotor(4),
 
-    // fixme: these can ids should probably be updated in hardware because 15 and 7 are pretty
-    // random
     LeftShooterFlywheel(11),
     RightShooterFlywheel(12),
 
