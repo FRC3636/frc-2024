@@ -8,27 +8,31 @@ import com.revrobotics.CANSparkMax
 // This module contains one enum for each (device type, manufacturer) pair we use.
 
 enum class REVMotorControllerId(val num: Int) {
-    FrontLeftTurningMotor(1),
-    BackLeftTurningMotor(2),
-    BackRightTurningMotor(3),
-    FrontRightTurningMotor(4),
-    FrontLeftDrivingMotor(5),
-    BackLeftDrivingMotor(6),
-    BackRightDrivingMotor(7),
-    FrontRightDrivingMotor(8),
+    FrontLeftTurningMotor(5),
+    BackLeftTurningMotor(6),
+    BackRightTurningMotor(7),
+    FrontRightTurningMotor(8),
+    FrontLeftDrivingMotor(1),
+    BackLeftDrivingMotor(2),
+    BackRightDrivingMotor(3),
+    FrontRightDrivingMotor(4),
 
     // fixme: these can ids should probably be updated in hardware because 15 and 7 are pretty
     // random
-    LeftShooterFlywheel(29),
-    RightShooterFlywheel(30),
+    LeftShooterFlywheel(11),
+    RightShooterFlywheel(12),
 
     // todo: the following `3x` CAN ids are placeholders
-    OverTheBumperIntakeArm(31),
+    OverTheBumperIntakeArm(33),
+
     OverTheBumperIntakeFeed(32),
-    UnderTheBumperIntakeRoller(33),
+    UnderTheBumperIntakeRoller(31),
+
+
     ClimberMotor(34),
-    RightPivotMotor(35),
-    LeftPivotMotor(36),
+
+    RightPivotMotor(22),
+    LeftPivotMotor(21),
 }
 
 fun CANSparkMax(id: REVMotorControllerId, type: CANSparkLowLevel.MotorType) =
