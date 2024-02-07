@@ -84,11 +84,11 @@ object Robot : LoggedRobot() {
 
     private fun configureBindings() {
         Drivetrain.defaultCommand =
-//            Drivetrain.driveWithController(controller)
-            Drivetrain.driveWithJoysticks(
-                translationJoystick = joystickLeft,
-                rotationJoystick = joystickRight
-            )
+            Drivetrain.driveWithController(controller)
+//            Drivetrain.driveWithJoysticks(
+//                translationJoystick = joystickLeft,
+//                rotationJoystick = joystickRight
+//            )
 
 //        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
 
