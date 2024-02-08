@@ -132,9 +132,9 @@ object Drivetrain : Subsystem {
         run {
             chassisSpeeds =
                 ChassisSpeeds.fromFieldRelativeSpeeds(
-                    controller.leftX / 8,
-                    controller.leftY / 8,
-                    controller.rightX / 4,
+                    controller.leftX,
+                    controller.leftY,
+                    controller.rightX,
                     gyroRotation.toRotation2d()
                 )
         }
