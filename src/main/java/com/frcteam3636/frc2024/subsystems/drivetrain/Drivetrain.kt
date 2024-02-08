@@ -3,6 +3,8 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.utils.math.PIDController
+import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -139,6 +141,20 @@ object Drivetrain : Subsystem {
                 )
         }
 
+    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command =
+        run {
+            val magnitude = ROTATION_PID_CONTROLLER.calculate(
+                estimatedPose.rotation.radians,
+                target.minus(estimatedPose.translation).angle.radians
+            )
+
+            val chassisSpeeds = ChassisSpeeds(
+                translationJoystick.x * FREE_SPEED,
+                translationJoystick.y * FREE_SPEED,
+                0.0
+            )
+        }
+
     fun zeroGyro() {
         gyroRotation = Rotation3d()
     }
@@ -204,6 +220,9 @@ class DrivetrainIOSim : DrivetrainIO() {
 // Constants
 internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
+
+internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
+internal val FREE_SPEED = 15.0
 
 internal val MODULE_POSITIONS =
     PerCorner(
@@ -275,3 +294,9 @@ internal val MODULE_CAN_IDS_PRACTICE =
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )
+
+enum class OrientationTarget(val position: Translation2d) {
+    Speaker(Translation2d()),
+    Amp(Translation2d()),
+    Source(Translation2d())
+}

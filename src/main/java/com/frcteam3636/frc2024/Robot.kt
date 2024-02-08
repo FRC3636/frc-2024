@@ -1,6 +1,9 @@
 package com.frcteam3636.frc2024
 
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
+import com.frcteam3636.frc2024.subsystems.intake.Intake
+import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
@@ -13,6 +16,7 @@ import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
@@ -39,18 +43,14 @@ object Robot : LoggedRobot() {
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
         HAL.report(
-            tResourceType.kResourceType_Language,
-            tInstances.kLanguage_Kotlin,
-            0,
-            WPILibVersion.Version
+            tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version
         )
 
         if (isReal()) {
             Logger.addDataReceiver(WPILOGWriter("/U")) // Log to a USB stick
             Logger.addDataReceiver(NT4Publisher()) // Publish data to NetworkTables
             PowerDistribution(
-                1,
-                PowerDistribution.ModuleType.kRev
+                1, PowerDistribution.ModuleType.kRev
             ) // Enables power distribution logging
         } else {
             var logPath: String? = null
@@ -85,12 +85,41 @@ object Robot : LoggedRobot() {
     }
 
     private fun configureBindings() {
-        Drivetrain.defaultCommand =
-//            Drivetrain.driveWithController(controller)
-            Drivetrain.driveWithJoysticks(
-                translationJoystick = joystickLeft,
-                rotationJoystick = joystickRight
-            )
+        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+            translationJoystick = joystickLeft, rotationJoystick = joystickRight
+        )
+
+        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
+            Intake.indexCommand()
+        )
+
+//        controller.x().whileTrue(Shooter.shootCommand())
+//        controller.b().whileTrue(Intake.intakeCommand())
+
+        controller.a().whileTrue(Shooter.Flywheels.intake())
+        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
+
+
+        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
+        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
+        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
+        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
+
+        //Drive if triggered joystickLeft input
+
+        JoystickButton(joystickLeft, 7).onTrue(
+            InstantCommand({
+                Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
+                    joystickLeft, OrientationTarget.Speaker.position
+                )
+            })
+        ).onFalse(
+            InstantCommand({
+                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+                    translationJoystick = joystickLeft, rotationJoystick = joystickRight
+                )
+            })
+        )
 
         JoystickButton(joystickLeft, 8).onTrue(
             InstantCommand({
@@ -99,12 +128,13 @@ object Robot : LoggedRobot() {
             })
         )
 
-//        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
-//
-//        JoystickButton(joystickLeft, 2).whileTrue(Shooter.Pivot.followMotionProfile(
-//            { Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
-//            { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) }
-//        ))
+        JoystickButton(
+            joystickLeft,
+            2
+        ).whileTrue(
+            Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
+                { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
+        )
     }
 
     override fun robotPeriodic() {
@@ -126,9 +156,7 @@ object Robot : LoggedRobot() {
 
     // A model of robot, depending on where we're deployed to.
     enum class Model {
-        SIMULATION,
-        PRACTICE,
-        COMPETITION,
+        SIMULATION, PRACTICE, COMPETITION,
     }
 
     // The model of this robot.
