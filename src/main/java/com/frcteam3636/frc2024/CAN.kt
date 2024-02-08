@@ -21,6 +21,7 @@ enum class REVMotorControllerId(val num: Int) {
     // random
     LeftShooterFlywheel(11),
     RightShooterFlywheel(12),
+    Indexer(13),
 
     // todo: the following `3x` CAN ids are placeholders
     OverTheBumperIntakeArm(33),

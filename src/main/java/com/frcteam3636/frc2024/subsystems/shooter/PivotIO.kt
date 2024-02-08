@@ -147,7 +147,7 @@ class PivotIOKraken : PivotIO {
     }
 
     internal companion object Constants {
-        val GEAR_RATIO = 1.0 / 90.0
+        val GEAR_RATIO = 1 / 90.0
 
         val PID_GAINS = PIDGains()
         val FF_GAINS = MotorFFGains()
@@ -166,18 +166,23 @@ class PivotIONeo : PivotIO {
     private val leftMotor = CANSparkMax(
         REVMotorControllerId.LeftPivotMotor, CANSparkLowLevel.MotorType.kBrushless
     ).apply {
+        restoreFactoryDefaults()
         inverted = true
-        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
-        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+        encoder.positionConversionFactor = TAU * PIVOT_GEAR_RATIO
+        encoder.velocityConversionFactor = TAU * PIVOT_GEAR_RATIO / 60.0
+//        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+//        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
     }
 
     private val rightMotor = CANSparkMax(
         REVMotorControllerId.RightPivotMotor, CANSparkLowLevel.MotorType.kBrushless
     ).apply {
+        restoreFactoryDefaults()
         inverted = true
-        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
-        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
-        follow(leftMotor)
+        encoder.positionConversionFactor = TAU * PIVOT_GEAR_RATIO
+        encoder.velocityConversionFactor = TAU * PIVOT_GEAR_RATIO / 60.0
+//        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+//        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
     }
 
     private val pid = leftMotor.pidController.apply {
@@ -188,11 +193,11 @@ class PivotIONeo : PivotIO {
         iZone = 0.0
         setOutputRange(0.0, 0.0)
 
-        setSmartMotionMaxVelocity(0.0, 0)
-        setSmartMotionMinOutputVelocity(0.0, 0)
-        setSmartMotionMaxAccel(0.0, 0)
-        setSmartMotionAllowedClosedLoopError(1.0, 0)
-        setSmartMotionAccelStrategy(SparkPIDController.AccelStrategy.kTrapezoidal, 0)
+//        setSmartMotionMaxVelocity(0.0, 0)
+//        setSmartMotionMinOutputVelocity(0.0, 0)
+//        setSmartMotionMaxAccel(0.0, 0)
+//        setSmartMotionAllowedClosedLoopError(1.0, 0)
+//        setSmartMotionAccelStrategy(SparkPIDController.AccelStrategy.kTrapezoidal, 0)
     }
 
     init {
@@ -206,19 +211,19 @@ class PivotIONeo : PivotIO {
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
 
-        val inverseConversionFactor = Units.radiansToRotations(1.0) * (1 / PIVOT_GEAR_RATIO)
-        inputs.position = Rotation2d(leftMotor.encoder.position * PIVOT_GEAR_RATIO)
-        inputs.velocity = Rotation2d(leftMotor.encoder.velocity * PIVOT_GEAR_RATIO)
+
+        inputs.position = Rotation2d(leftMotor.encoder.position)
+        inputs.velocity = Rotation2d(leftMotor.encoder.velocity)
 
 
         //sysid shit
         //velocity in rps cause talonfx uses those units and consistency ykyk
         inputs.voltageLeft = leftMotor.appliedOutput * RobotController.getBatteryVoltage()
         inputs.voltageRight = rightMotor.appliedOutput * RobotController.getBatteryVoltage()
-        inputs.rotorDistanceLeft = leftMotor.encoder.position * inverseConversionFactor
-        inputs.rotorVelocityLeft = leftMotor.encoder.velocity * inverseConversionFactor
-        inputs.rotorDistanceRight = rightMotor.encoder.position * inverseConversionFactor
-        inputs.rotorVelocityRight = rightMotor.encoder.velocity * inverseConversionFactor
+        inputs.rotorDistanceLeft = leftMotor.encoder.position
+        inputs.rotorVelocityLeft = leftMotor.encoder.velocity
+        inputs.rotorDistanceRight = rightMotor.encoder.position
+        inputs.rotorVelocityRight = rightMotor.encoder.velocity
         //inputs.acceleration = Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO)
     }
 

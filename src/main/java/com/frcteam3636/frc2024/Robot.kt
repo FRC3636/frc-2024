@@ -92,23 +92,21 @@ object Robot : LoggedRobot() {
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
 
+        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
+            Intake.indexCommand()
+        )
+
 //        controller.x().whileTrue(Shooter.shootCommand())
 //        controller.b().whileTrue(Intake.intakeCommand())
 
         controller.a().whileTrue(Shooter.Flywheels.intake())
+        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
 
-        controller.leftTrigger().whileTrue(
-            Shooter.flywheelIORoutine.dynamic(SysIdRoutine.Direction.kForward).andThen(
-                Commands.print("foo")
-            )
-        )
-        controller.leftBumper().whileTrue(Shooter.flywheelIORoutine.dynamic(SysIdRoutine.Direction.kReverse))
-        controller.rightTrigger().whileTrue(Shooter.flywheelIORoutine.quasistatic(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.flywheelIORoutine.quasistatic(SysIdRoutine.Direction.kReverse))
 
-//        controller.leftBumper().whileTrue(
-//            Shooter.aimAtStatic(TargetPosition.Speaker, Drivetrain.estimatedPose.translation)
-//        )
+        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
+        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
+        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
+        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
 
         //Drive if triggered joystickLeft input
 

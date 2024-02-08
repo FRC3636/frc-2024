@@ -7,6 +7,7 @@ import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.system.plant.DCMotor
+import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -18,7 +19,7 @@ interface IntakeIO {
         var otbCurrent: Double = 0.0
         var utbCurrent: Double = 0.0
         var isIntaking: Boolean = false
-//        var beamBreak: Boolean = false
+        var beamBreak: Boolean = false
 
         override fun toLog(table: LogTable?) {
             table?.put("OTB Roller Velocity", otbRollerVelocity)
@@ -26,6 +27,7 @@ interface IntakeIO {
             table?.put("OTB Current", otbCurrent)
             table?.put("UTB Current", utbCurrent)
             table?.put("Is Intaking", isIntaking)
+            table?.put("Beam Break", beamBreak)
 
         }
 
@@ -35,6 +37,7 @@ interface IntakeIO {
             otbCurrent = table.get("OTB Current", otbCurrent)
             utbCurrent = table.get("UTB Current", utbCurrent)
             isIntaking = table.get("Is Intaking", isIntaking)
+            beamBreak = table.get("Beam Break", beamBreak)
         }
     }
 
@@ -55,15 +58,15 @@ class IntakeIOReal : IntakeIO {
             REVMotorControllerId.UnderTheBumperIntakeRoller,
             CANSparkLowLevel.MotorType.kBrushless
         )
-//    private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
+   private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
         inputs.otbRollerVelocity = Rotation2d(otbRollers.encoder.velocity)
         inputs.utbRollerVelocity = Rotation2d(utbRollers.encoder.velocity)
         inputs.otbCurrent = otbRollers.outputCurrent
         inputs.utbCurrent = utbRollers.outputCurrent
-        inputs.isIntaking = utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD
-//              inputs.beamBreak = beamBreakSensor.get()
+        inputs.isIntaking = utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD && !inputs.beamBreak
+        inputs.beamBreak = beamBreakSensor.get()
     }
 
     override fun setOverBumperRoller(speed: Double) {
@@ -76,7 +79,7 @@ class IntakeIOReal : IntakeIO {
 
     internal companion object Constants {
         const val BEAM_BREAK_PORT = 0
-        const val BEAM_BREAK_CURRENT_THRESHOLD = 10.0
+        const val BEAM_BREAK_CURRENT_THRESHOLD = 50.0
     }
 }
 

@@ -41,6 +41,8 @@ interface FlywheelIO {
 
     fun updateInputs(inputs: Inputs)
 
+    fun setIndexerVoltage(volts: Measure<Voltage>) {}
+
     fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
 }
 
@@ -49,7 +51,7 @@ class FlywheelIOReal : FlywheelIO {
         CANSparkFlex(REVMotorControllerId.LeftShooterFlywheel, CANSparkLowLevel.MotorType.kBrushless).apply {
             restoreFactoryDefaults()
 
-            inverted = true
+            inverted = false
             encoder.apply {
                 positionConversionFactor = Units.rotationsToRadians(1.0)
                 velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
@@ -67,6 +69,10 @@ class FlywheelIOReal : FlywheelIO {
             }
         }
 
+    private val indexer =
+        CANSparkFlex(REVMotorControllerId.Indexer, CANSparkLowLevel.MotorType.kBrushless)
+
+
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
         inputs.leftSpeed = RadiansPerSecond.of(leftSpark.encoder.velocity)
         inputs.rightSpeed = RadiansPerSecond.of(rightSpark.encoder.velocity)
@@ -76,6 +82,10 @@ class FlywheelIOReal : FlywheelIO {
         inputs.rightPos = Radians.of(rightSpark.encoder.position)
     }
 
+    override fun setIndexerVoltage(volts: Measure<Voltage>) {
+        indexer.setVoltage(volts.baseUnitMagnitude())
+    }
+
     override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
         leftSpark.setVoltage(left.baseUnitMagnitude())
         rightSpark.setVoltage(right.baseUnitMagnitude())
@@ -83,6 +93,8 @@ class FlywheelIOReal : FlywheelIO {
         Logger.recordOutput("Shooter/Flywheels/Left Effort", left)
         Logger.recordOutput("Shooter/Flywheels/Right Effort", right)
     }
+
+
 
     internal companion object {
         const val GEAR_RATIO = 1.0
