@@ -88,51 +88,50 @@ object Robot : LoggedRobot() {
     }
 
     private fun configureBindings() {
-        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-            translationJoystick = joystickLeft, rotationJoystick = joystickRight
-        )
-
-        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
-            Intake.indexCommand()
-        )
-
-//        controller.x().whileTrue(Shooter.shootCommand())
-//        controller.b().whileTrue(Intake.intakeCommand())
-
-        controller.a().whileTrue(Shooter.Flywheels.intake())
-        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
-
-
-        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
-        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
-        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
-
-        //Drive if triggered joystickLeft input
-
-        JoystickButton(joystickLeft, 7).onTrue(
-            InstantCommand({
-                Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
-                    joystickLeft, OrientationTarget.Speaker.position
-                )
-            })
-        ).onFalse(
-            InstantCommand({
-                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-                    translationJoystick = joystickLeft, rotationJoystick = joystickRight
-                )
-            })
-        )
-
-        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
-
-        JoystickButton(
-            joystickLeft,
-            2
-        ).whileTrue(
-            Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
-                { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
-        )
+        controller.a().whileTrue(Intake.intakeCommand()).onFalse(Intake.indexCommand())
+        controller.b().whileTrue(Shooter.Flywheels.shoot(-20.0, -5.0))
+        controller.x().whileTrue(Shooter.Flywheels.intake())
+//        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+//            translationJoystick = joystickLeft, rotationJoystick = joystickRight
+//        )
+//
+////        controller.x().whileTrue(Shooter.shootCommand())
+////        controller.b().whileTrue(Intake.intakeCommand())
+//
+//        controller.a().whileTrue(Shooter.Flywheels.intake())
+//        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
+//
+//
+//        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
+//        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
+//        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
+//        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
+//
+//        //Drive if triggered joystickLeft input
+//
+//        JoystickButton(joystickLeft, 7).onTrue(
+//            InstantCommand({
+//                Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
+//                    joystickLeft, OrientationTarget.Speaker.position
+//                )
+//            })
+//        ).onFalse(
+//            InstantCommand({
+//                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+//                    translationJoystick = joystickLeft, rotationJoystick = joystickRight
+//                )
+//            })
+//        )
+//
+//        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
+//
+//        JoystickButton(
+//            joystickLeft,
+//            2
+//        ).whileTrue(
+//            Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
+//                { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
+//        )
     }
 
     override fun robotPeriodic() {

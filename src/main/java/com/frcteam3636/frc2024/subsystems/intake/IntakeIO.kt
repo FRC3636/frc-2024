@@ -52,7 +52,9 @@ class IntakeIOReal : IntakeIO {
         CANSparkMax(
             REVMotorControllerId.OverTheBumperIntakeFeed,
             CANSparkLowLevel.MotorType.kBrushless
-        )
+        ).apply {
+            inverted = true
+        }
     private var utbRollers =
         CANSparkFlex(
             REVMotorControllerId.UnderTheBumperIntakeRoller,
