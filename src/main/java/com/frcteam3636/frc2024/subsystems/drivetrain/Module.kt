@@ -115,7 +115,9 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
             motorFFGains = DRIVING_FF_GAINS_TALON
         })
         configurator.apply(
-            CurrentLimitsConfigs().withSupplyCurrentLimit(DRIVING_CURRENT_LIMIT)
+            CurrentLimitsConfigs().apply {
+                SupplyCurrentLimit = DRIVING_CURRENT_LIMIT
+            }
         )
     }
 

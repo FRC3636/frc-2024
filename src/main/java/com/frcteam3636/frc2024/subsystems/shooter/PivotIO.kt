@@ -2,13 +2,21 @@ package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
+import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.ctre.phoenix6.signals.GravityTypeValue
+import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.CTREMotorControllerId
-import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
 import com.frcteam3636.frc2024.utils.math.*
+import com.revrobotics.CANSparkBase
+import com.revrobotics.CANSparkLowLevel
+import com.revrobotics.SparkPIDController;
+import edu.wpi.first.math.controller.ArmFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -24,22 +32,47 @@ interface PivotIO {
         /** The angular acceleration of the pivot. */
         var acceleration: Rotation2d = Rotation2d()
 
+        var voltageLeft: Double = 0.0
+        var voltageRight: Double = 0.0
+
+        var rotorDistanceLeft: Double = 0.0
+        var rotorVelocityLeft: Double = 0.0
+
+        var rotorDistanceRight: Double = 0.0
+        var rotorVelocityRight: Double = 0.0
+
+
         override fun toLog(table: org.littletonrobotics.junction.LogTable) {
             table.put("Position", position)
             table.put("Velocity", velocity)
             table.put("Acceleration", acceleration)
+            table.put("Voltage Left", voltageLeft)
+            table.put("Voltage Right", voltageRight)
+            table.put("Rotor Distance Left (rotations)", rotorDistanceLeft)
+            table.put("Rotor Velocity Left", rotorVelocityLeft)
+            table.put("Rotor Distance Right (rotations)", rotorDistanceRight)
+            table.put("Rotor Velocity Right", rotorVelocityRight)
         }
 
         override fun fromLog(table: org.littletonrobotics.junction.LogTable) {
             position = table.get("Position", position)[0]
             velocity = table.get("Velocity", velocity)[0]
             acceleration = table.get("Acceleration", acceleration)[0]
+            voltageLeft = table.get("Voltage Left", voltageLeft)
+            voltageRight = table.get("Voltage Right", voltageRight)
+            rotorDistanceLeft = table.get("Rotor Distance Left (rotations)", rotorDistanceLeft)
+            rotorVelocityLeft = table.get("Rotor Velocity Left", rotorVelocityLeft)
+            rotorDistanceRight = table.get("Rotor Distance Right (rotations)", rotorDistanceRight)
+            rotorVelocityRight = table.get("Rotor Velocity Right", rotorVelocityRight)
         }
     }
 
     fun updateInputs(inputs: Inputs)
 
-    fun setSetpoint(position: Rotation2d, velocity: Rotation2d)
+    fun pivotToAndStop(position: Rotation2d)
+    fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d)
+
+    fun driveVoltage(volts: Double) {}
 }
 
 class PivotIOKraken : PivotIO {
@@ -75,16 +108,46 @@ class PivotIOKraken : PivotIO {
         inputs.position = Rotation2d.fromRotations(leftMotor.position.value * GEAR_RATIO)
         inputs.velocity = Rotation2d.fromRotations(leftMotor.velocity.value * GEAR_RATIO)
         inputs.acceleration = Rotation2d.fromRotations(leftMotor.acceleration.value * GEAR_RATIO)
+
+        //sysid shit
+        inputs.voltageLeft = leftMotor.motorVoltage.value
+        inputs.voltageRight = rightMotor.motorVoltage.value
+        inputs.rotorDistanceLeft = leftMotor.rotorPosition.value
+        inputs.rotorVelocityLeft = leftMotor.rotorVelocity.value
+        inputs.rotorDistanceRight = rightMotor.rotorPosition.value
+        inputs.rotorVelocityRight = rightMotor.rotorVelocity.value
     }
 
-    override fun setSetpoint(position: Rotation2d, velocity: Rotation2d) {
+    override fun pivotToAndStop(position: Rotation2d) {
         val request = MotionMagicTorqueCurrentFOC(position.rotations)
         leftMotor.setControl(request)
         rightMotor.setControl(request)
+
+        Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
+        Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
+    }
+
+    override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
+        val control = PositionTorqueCurrentFOC(0.0).apply {
+            Slot = 0
+            Position = position.rotations
+            Velocity = velocity.rotations
+        }
+
+        leftMotor.setControl(control)
+        rightMotor.setControl(control)
+
+        Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
+        Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", velocity)
+    }
+
+    override fun driveVoltage(volts: Double) {
+        leftMotor.setVoltage(volts)
+        rightMotor.setVoltage(volts)
     }
 
     internal companion object Constants {
-        val GEAR_RATIO = 1.0 / 90.0
+        val GEAR_RATIO = 1 / 90.0
 
         val PID_GAINS = PIDGains()
         val FF_GAINS = MotorFFGains()
@@ -93,6 +156,97 @@ class PivotIOKraken : PivotIO {
         val PROFILE_VELOCITY = TAU
         val PROFILE_ACCELERATION = TAU
         val PROFILE_JERK = 10 * TAU
+    }
+}
+
+class PivotIONeo : PivotIO {
+    private val profile: TrapezoidProfile = TrapezoidProfile(PROFILE_CONSTRAINTS)
+
+
+    private val leftMotor = CANSparkMax(
+        REVMotorControllerId.LeftPivotMotor, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        restoreFactoryDefaults()
+        inverted = true
+        encoder.positionConversionFactor = TAU * PIVOT_GEAR_RATIO
+        encoder.velocityConversionFactor = TAU * PIVOT_GEAR_RATIO / 60.0
+//        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+//        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+    }
+
+    private val rightMotor = CANSparkMax(
+        REVMotorControllerId.RightPivotMotor, CANSparkLowLevel.MotorType.kBrushless
+    ).apply {
+        restoreFactoryDefaults()
+        inverted = true
+        encoder.positionConversionFactor = TAU * PIVOT_GEAR_RATIO
+        encoder.velocityConversionFactor = TAU * PIVOT_GEAR_RATIO / 60.0
+//        encoder.positionConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO
+//        encoder.velocityConversionFactor = Units.rotationsToRadians(1.0) * PIVOT_GEAR_RATIO / 60
+    }
+
+    private val pid = leftMotor.pidController.apply {
+        p = 0.0
+        i = 0.0
+        d = 0.0
+        ff = 0.0
+        iZone = 0.0
+        setOutputRange(0.0, 0.0)
+
+//        setSmartMotionMaxVelocity(0.0, 0)
+//        setSmartMotionMinOutputVelocity(0.0, 0)
+//        setSmartMotionMaxAccel(0.0, 0)
+//        setSmartMotionAllowedClosedLoopError(1.0, 0)
+//        setSmartMotionAccelStrategy(SparkPIDController.AccelStrategy.kTrapezoidal, 0)
+    }
+
+    init {
+        leftMotor.burnFlash()
+        rightMotor.burnFlash()
+    }
+
+    private val pivotPID = PIDController(PIDGains(0.0, 0.0, 0.0))
+    private val pivotFeedForward = ArmFeedforward(0.0, 0.0, 0.0, 0.0)
+
+
+    override fun updateInputs(inputs: PivotIO.Inputs) {
+
+
+        inputs.position = Rotation2d(leftMotor.encoder.position)
+        inputs.velocity = Rotation2d(leftMotor.encoder.velocity)
+
+
+        //sysid shit
+        //velocity in rps cause talonfx uses those units and consistency ykyk
+        inputs.voltageLeft = leftMotor.appliedOutput * RobotController.getBatteryVoltage()
+        inputs.voltageRight = rightMotor.appliedOutput * RobotController.getBatteryVoltage()
+        inputs.rotorDistanceLeft = leftMotor.encoder.position
+        inputs.rotorVelocityLeft = leftMotor.encoder.velocity
+        inputs.rotorDistanceRight = rightMotor.encoder.position
+        inputs.rotorVelocityRight = rightMotor.encoder.velocity
+        //inputs.acceleration = Rotation2d(leftPivot.encoder.velocity * PIVOT_GEAR_RATIO)
+    }
+
+    override fun pivotToAndStop(position: Rotation2d) {
+        pivotToAndMove(position, Rotation2d())
+    }
+
+    override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
+        pid.setSmartMotionMinOutputVelocity(velocity.rotations, 0)
+        pid.setReference(
+            position.radians, CANSparkBase.ControlType.kSmartMotion
+        )
+    }
+
+    override fun driveVoltage(volts: Double) {
+        leftMotor.setVoltage(volts)
+        rightMotor.setVoltage(volts)
+    }
+
+    internal companion object Constants {
+        val PROFILE_CONSTRAINTS = TrapezoidProfile.Constraints(0.0, 0.0)
+
+        const val PIVOT_GEAR_RATIO = 1 / 90.0
     }
 }
 
@@ -114,12 +268,16 @@ class PivotIOSim : PivotIO {
         inputs.velocity = Rotation2d(state.velocity)
     }
 
-    override fun setSetpoint(position: Rotation2d, velocity: Rotation2d) {
+    override fun pivotToAndStop(position: Rotation2d) {
+        pivotToAndMove(position, Rotation2d())
+    }
+
+    override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
         start = profile.calculate(profileTimer.get(), start, goal)
         goal = TrapezoidProfile.State(position.radians, velocity.radians)
         profileTimer.reset()
 
         Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
-        Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", velocity)
+        Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
     }
 }
