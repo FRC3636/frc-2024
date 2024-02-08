@@ -138,6 +138,10 @@ object Drivetrain : Subsystem {
                     gyroRotation.toRotation2d()
                 )
         }
+
+    fun zeroGyro() {
+        gyroRotation = Rotation3d()
+    }
 }
 
 abstract class DrivetrainIO {
@@ -205,23 +209,23 @@ internal val MODULE_POSITIONS =
     PerCorner(
         frontLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(0.0)
+            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(-90.0)
         ),
         backLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(90.0)
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(0.0)
         ),
         backRight =
         Pose2d(
-            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(180.0)
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(90.0)
         ),
         frontRight =
         Pose2d(
-            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(270.0)
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(180.0)
         ),
     )
 

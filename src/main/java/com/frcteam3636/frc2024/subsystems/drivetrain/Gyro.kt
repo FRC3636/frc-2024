@@ -6,6 +6,7 @@ import com.kauailabs.navx.frc.AHRS
 import edu.wpi.first.math.geometry.Quaternion
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Translation2d
+import kotlin.math.PI
 import kotlin.math.sign
 
 interface Gyro {
@@ -14,7 +15,7 @@ interface Gyro {
     fun periodic() {}
 }
 
-class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
+class GyroNavX(private var offset: Rotation3d = Rotation3d(0.0, 0.0, PI)) : Gyro {
     private val ahrs = AHRS()
 
     override var rotation: Rotation3d

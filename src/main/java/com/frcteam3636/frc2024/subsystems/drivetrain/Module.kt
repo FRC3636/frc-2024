@@ -238,6 +238,6 @@ internal val DRIVING_PID_GAINS_NEO: PIDGains = PIDGains(0.04, 0.0, 0.0)
 internal val DRIVING_FF_GAINS_TALON: MotorFFGains = MotorFFGains()
 internal val DRIVING_FF_GAINS_NEO: MotorFFGains = MotorFFGains(0.0, 1 / DRIVE_WHEEL_FREE_SPEED_RPS, 0.0)
 
-internal val TURNING_PID_GAINS: PIDGains = PIDGains(2.0, 0.0, 0.0)
+internal val TURNING_PID_GAINS: PIDGains = PIDGains(0.8, 0.0, 0.125)
 internal val DRIVING_CURRENT_LIMIT = 60.0
 internal val TURNING_CURRENT_LIMIT = 20.0
