@@ -7,10 +7,8 @@ import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.PowerDistribution
-import edu.wpi.first.wpilibj.Preferences
-import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.InstantCommand
@@ -23,6 +21,9 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
