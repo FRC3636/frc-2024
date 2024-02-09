@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024.utils.math
 
-import com.ctre.phoenix6.configs.*
+import com.ctre.phoenix6.configs.Slot0Configs
+import com.ctre.phoenix6.configs.SlotConfigs
 import com.revrobotics.SparkPIDController
 import edu.wpi.first.math.controller.PIDController
 import edu.wpi.first.math.controller.SimpleMotorFeedforward
@@ -26,6 +27,9 @@ var Slot0Configs.motorFFGains: MotorFFGains
         kV = gains.v
         kA = gains.a
     }
+
+fun SlotConfigs.withPIDGains(gains: PIDGains) =
+    withKP(gains.p).withKI(gains.i).withKD(gains.d)
 
 data class PIDGains(val p: Double = 0.0, val i: Double = 0.0, val d: Double = 0.0)
 
