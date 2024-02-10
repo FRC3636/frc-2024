@@ -1,18 +1,30 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
+import com.frcteam3636.frc2024.subsystems.intake.Intake
+import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.wpilibj.PowerDistribution
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.InstantCommand
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import edu.wpi.first.wpilibj2.command.button.JoystickButton
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -26,24 +38,21 @@ import org.littletonrobotics.junction.wpilog.WPILOGWriter
  * renaming the object or package, it will get changed everywhere.)
  */
 object Robot : LoggedRobot() {
-
-    private var autonomousCommand: Command? = null
+    private val controller = CommandXboxController(2)
+    private val joystickLeft = Joystick(0)
+    private val joystickRight = Joystick(1)
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
         HAL.report(
-            tResourceType.kResourceType_Language,
-            tInstances.kLanguage_Kotlin,
-            0,
-            WPILibVersion.Version
+            tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version
         )
 
         if (isReal()) {
             Logger.addDataReceiver(WPILOGWriter("/U")) // Log to a USB stick
             Logger.addDataReceiver(NT4Publisher()) // Publish data to NetworkTables
             PowerDistribution(
-                1,
-                PowerDistribution.ModuleType.kRev
+                1, PowerDistribution.ModuleType.kRev
             ) // Enables power distribution logging
         } else {
             var logPath: String? = null
@@ -65,46 +74,96 @@ object Robot : LoggedRobot() {
                 ) // Save outputs to a new log
             }
         }
-
-        //TODO add field object constraints
         Logger.start() // Start logging! No more data receivers, replay sources, or metadata values
         // may be added.
 
-        // Access the RobotContainer object so that it is initialized. This will perform all our
-        // button bindings, and put our autonomous chooser on the dashboard.
-        RobotContainer
+        // initialize and register our subsystems
+        Shooter.register()
+        Drivetrain.register()
+        Intake.register()
+
+        // Configure our button and joystick bindings
+        configureBindings()
+    }
+
+    private fun configureBindings() {
+        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+            translationJoystick = joystickLeft, rotationJoystick = joystickRight
+        )
+
+        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
+            Intake.indexCommand()
+        )
+
+//        controller.x().whileTrue(Shooter.shootCommand())
+//        controller.b().whileTrue(Intake.intakeCommand())
+
+        controller.a().whileTrue(Shooter.Flywheels.intake())
+        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
+
+
+        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
+        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
+        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
+        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
+
+        //Drive if triggered joystickLeft input
+
+        JoystickButton(joystickLeft, 7).onTrue(
+            InstantCommand({
+                Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
+                    joystickLeft, OrientationTarget.Speaker.position
+                )
+            })
+        ).onFalse(
+            InstantCommand({
+                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+                    translationJoystick = joystickLeft, rotationJoystick = joystickRight
+                )
+            })
+        )
+
+        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
+
+        JoystickButton(
+            joystickLeft,
+            2
+        ).whileTrue(
+            Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
+                { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
+        )
     }
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
     }
 
-    override fun disabledInit() {}
-
-    override fun disabledPeriodic() {}
-
     override fun autonomousInit() {
-        autonomousCommand = RobotContainer.getAutonomousCommand()
-        autonomousCommand?.schedule()
+        // TODO: start autonomous command
     }
-
-    override fun autonomousPeriodic() {}
 
     override fun teleopInit() {
-        autonomousCommand?.cancel()
+        // TODO: cancel autonomous command
     }
-
-    /** This method is called periodically during operator control. */
-    override fun teleopPeriodic() {}
 
     override fun testInit() {
         // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll()
     }
 
-    override fun testPeriodic() {}
+    // A model of robot, depending on where we're deployed to.
+    enum class Model {
+        SIMULATION, PRACTICE, COMPETITION,
+    }
 
-    override fun simulationInit() {}
-
-    override fun simulationPeriodic() {}
+    // The model of this robot.
+    val model: Model = if (RobotBase.isSimulation()) {
+        Model.SIMULATION
+    } else {
+        when (val key = Preferences.getString("Model", "competition")) {
+            "competition" -> Model.COMPETITION
+            "practice" -> Model.PRACTICE
+            else -> throw Exception("invalid model found in preferences: $key")
+        }
+    }
 }
