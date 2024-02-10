@@ -7,10 +7,12 @@ import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
+import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -41,6 +43,8 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+
+    private var autoCommand: Command? = null
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -78,12 +82,15 @@ object Robot : LoggedRobot() {
         // may be added.
 
         // initialize and register our subsystems
-        Shooter.register()
+//        Shooter.register()
         Drivetrain.register()
         Intake.register()
 
         // Configure our button and joystick bindings
         configureBindings()
+
+        // Configure the autonomous command
+        autoCommand = Drivetrain.pathfindToPose(Pose2d(Units.feetToMeters(3.0), Units.feetToMeters(3.0), Rotation2d()))
     }
 
     private fun configureBindings() {
@@ -98,8 +105,8 @@ object Robot : LoggedRobot() {
 //        controller.x().whileTrue(Shooter.shootCommand())
 //        controller.b().whileTrue(Intake.intakeCommand())
 
-        controller.a().whileTrue(Shooter.Flywheels.intake())
-        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
+//        controller.a().whileTrue(Shooter.Flywheels.intake())
+//        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
 
 
         controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
@@ -123,7 +130,7 @@ object Robot : LoggedRobot() {
             })
         )
 
-        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
+//        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
 
         JoystickButton(
             joystickLeft,
@@ -139,11 +146,11 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        // TODO: start autonomous command
+        autoCommand!!.schedule()
     }
 
     override fun teleopInit() {
-        // TODO: cancel autonomous command
+        autoCommand!!.cancel()
     }
 
     override fun testInit() {
