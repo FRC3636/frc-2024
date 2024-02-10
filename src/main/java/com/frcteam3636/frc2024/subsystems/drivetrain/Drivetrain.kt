@@ -57,7 +57,7 @@ object Drivetrain : Subsystem {
         )
 
     init {
-        CommandScheduler.getInstance().registerSubsystem(this)
+        Pathfinding.setPathfinder(RemoteADStarAK())
     }
 
     override fun periodic() {
@@ -70,31 +70,6 @@ object Drivetrain : Subsystem {
         )
 
         Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
-    }
-
-    fun alignToPoseCommand(target: Pose2d): Command {
-        Pathfinding.setStartPosition(estimatedPose.translation)
-        Pathfinding.setGoalPosition(target.translation)
-        val path = Pathfinding.getCurrentPath(DEFAULT_PATHING_CONSTRAINTS, GoalEndState(0.0, target.rotation))
-
-        return FollowPathHolonomic(
-            path,
-            this::estimatedPose,
-            this::chassisSpeeds,
-            this::chassisSpeeds::set,
-            TRANSLATION_PID_CONSTANTS,
-            ROTATION_PID_CONSTANTS,
-            MAX_MODULE_SPEED,
-            DRIVE_BASE_RADIUS,
-            REPLANNING_CONFIG,
-            ::isRed,
-            this
-        )
-    }
-
-
-    private fun isRed(): Boolean {
-        return DriverStation.getAlliance().equals(DriverStation.Alliance.Red)
     }
 
     // The rotation of the robot as measured by the gyro.
@@ -150,6 +125,30 @@ object Drivetrain : Subsystem {
                     gyroRotation.toRotation2d()
                 )
         }
+
+    fun driveToPose(target: Pose2d): Command {
+        Pathfinding.setStartPosition(estimatedPose.translation)
+        Pathfinding.setGoalPosition(target.translation)
+        val path = Pathfinding.getCurrentPath(DEFAULT_PATHING_CONSTRAINTS, GoalEndState(0.0, target.rotation))
+
+        return FollowPathHolonomic(
+            path,
+            this::estimatedPose,
+            this::chassisSpeeds,
+            this::chassisSpeeds::set,
+            TRANSLATION_PID_CONSTANTS,
+            ROTATION_PID_CONSTANTS,
+            MAX_MODULE_SPEED,
+            DRIVE_BASE_RADIUS,
+            REPLANNING_CONFIG,
+            ::isRed,
+            this
+        )
+    }
+
+    private fun isRed(): Boolean {
+        return DriverStation.getAlliance().equals(DriverStation.Alliance.Red)
+    }
 }
 
 abstract class DrivetrainIO {
