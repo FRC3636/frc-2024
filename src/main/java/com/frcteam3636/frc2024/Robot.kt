@@ -8,7 +8,6 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -123,7 +122,12 @@ object Robot : LoggedRobot() {
             })
         )
 
-        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
+        JoystickButton(joystickLeft, 8).onTrue(
+            InstantCommand({
+                Drivetrain.zeroGyro()
+                println("Gyro zeroed")
+            })
+        )
 
         JoystickButton(
             joystickLeft,
