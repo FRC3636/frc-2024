@@ -10,16 +10,16 @@
 
 stdenv.mkDerivation rec {
   pname = "photonvision";
-  version = "2024.2.3";
+  version = "2024.2.4";
 
   src = lib.getAttr stdenv.hostPlatform.system {
     "x86_64-linux" = fetchurl {
       url = "https://github.com/PhotonVision/photonvision/releases/download/v${version}/photonvision-v${version}-linuxx64.jar";
-      hash = "sha256-45ae9sElAmN6++F9OGAvY/nUl/9UxvHtFxhetKVKfDc=";
+      hash = "sha256-97foGMzCFF9ks0RQeHDLzPU1jZuPftYlE0Y8TXl5nr4=";
     };
     "aarch64-linux" = fetchurl {
       url = "https://github.com/PhotonVision/photonvision/releases/download/v${version}/photonvision-v${version}-linuxarm64.jar";
-      hash = "sha256-i/osKO+RAg2nFUPjBdkn3q0Id+uCSTiucfKFVVlEqgs=";
+      hash = "sha256-KvQXOHjdvc1RWuN13HYrWONEMexIQxwJXHcJd8RoKGQ=";
     };
   };
 
