@@ -77,9 +77,9 @@ object Robot : LoggedRobot() {
         // may be added.
 
         // initialize and register our subsystems
-//        Shooter.register()
+        Shooter.register()
         Drivetrain.register()
-//        Intake.register()
+        Intake.register()
 
         // Configure our button and joystick bindings
         configureBindings()
