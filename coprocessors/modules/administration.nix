@@ -21,6 +21,8 @@
     environment.systemPackages = with pkgs; [
       neovim
       htop
+      usbutils
+      v4l-utils
     ];
   };
 }
