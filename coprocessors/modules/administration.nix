@@ -22,6 +22,7 @@
       neovim
       htop
       usbutils
+      pciutils
       v4l-utils
     ];
   };
