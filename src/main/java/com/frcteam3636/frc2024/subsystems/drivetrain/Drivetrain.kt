@@ -2,7 +2,9 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
-import com.frcteam3636.frc2024.utils.math.TAU
+import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.utils.math.PIDController
+import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -15,37 +17,47 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units
 import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Subsystem
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import java.lang.Exception
 import java.util.*
 
 
-class DrivetrainOdometryThread : Runnable {
+fun drivetrainOdometryThread() {
+    while (!Thread.interrupted()) {
+        Drivetrain.updateInputs()
+        Drivetrain.updateOdometry()
 
-    override fun run() {
-        while (!Thread.interrupted()) {
-            Drivetrain.updateInputs()
-            Drivetrain.updateOdometry()
-        }
     }
 }
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
-    private val io =
-        if (RobotBase.isReal()) {
-            DrivetrainIOReal()
-        } else {
-            DrivetrainIOSim()
-        }
+    private val io = when (Robot.model) {
+        Robot.Model.SIMULATION -> DrivetrainIOSim()
+        Robot.Model.COMPETITION -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_COMP).map { (position, ids) ->
+            val (driveId, turnId) = ids
+            MAXSwerveModule(
+                DrivingTalon(driveId),
+                turnId,
+                position.rotation
+            )
+        })
+        Robot.Model.PRACTICE -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_PRACTICE).map { (position, ids) ->
+            val (driveId, turnId) = ids
+            MAXSwerveModule(
+                DrivingSparkMAX(driveId),
+                turnId,
+                position.rotation
+            )
+        })
+    }
     private val inputs = DrivetrainIO.Inputs()
 
     private val aprilTagCameras = PHOTON_CAMERAS.map { (name, transform) -> PhotonAprilTagCamera(name, transform) }
@@ -66,10 +78,6 @@ object Drivetrain : Subsystem {
             ODOMETRY_STD_DEV,
             VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
         )
-
-    init {
-        CommandScheduler.getInstance().registerSubsystem(this)
-    }
 
     fun updateInputs() {
         io.updateInputs(inputs)
@@ -108,16 +116,14 @@ object Drivetrain : Subsystem {
 
     // The rotation of the robot as measured by the gyro.
     var gyroRotation
-        get(): Rotation3d = inputs.gyroRotation
-        set(value) = io.resetGyro(value)
+        get() = inputs.gyroRotation
+        set(value) {
+            io.resetGyro(value)
+        }
 
     private var moduleStates: PerCorner<SwerveModuleState>
         // Get the measured module states from the inputs.
-        get() {
-            synchronized(this) {
-                return inputs.measuredStates
-            }
-        }
+        get() = inputs.measuredStates
         // Set the desired module states.
         set(value) {
             synchronized(this) {
@@ -130,24 +136,23 @@ object Drivetrain : Subsystem {
     // traction with the ground.
     var chassisSpeeds: ChassisSpeeds
         // Get the chassis speeds from the measured module states.
-        get(): ChassisSpeeds = kinematics.cornerStatesToChassisSpeeds(inputs.measuredStates)
+        get() = kinematics.cornerStatesToChassisSpeeds(inputs.measuredStates)
         // Set the drivetrain to move with the given chassis speeds.
         //
         // Note that the speeds are relative to the chassis, not the field.
         set(value) {
-
             val states = kinematics.toCornerSwerveModuleStates(value)
+
             // TODO: desaturate states
+
             moduleStates = states
         }
 
     // Set the drivetrain to an X-formation to passively prevent movement in any direction.
     fun brake() {
-
+        // set the modules to radiate outwards from the chassis origin
         moduleStates =
             MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.rotation) }
-
-        // set the modules to radiate outwards from the chassis origin
     }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
@@ -155,17 +160,44 @@ object Drivetrain : Subsystem {
         get() = poseEstimator.estimatedPosition
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
-        synchronized(this) {
-            run {
-                chassisSpeeds =
-                    ChassisSpeeds.fromFieldRelativeSpeeds(
-                        translationJoystick.y,
-                        translationJoystick.x,
-                        rotationJoystick.x,
-                        gyroRotation.toRotation2d()
-                    )
-            }
+        run {
+            chassisSpeeds =
+                ChassisSpeeds.fromFieldRelativeSpeeds(
+                    translationJoystick.y,
+                    translationJoystick.x,
+                    rotationJoystick.x,
+                    gyroRotation.toRotation2d()
+                )
         }
+
+    fun driveWithController(controller: CommandXboxController): Command =
+        run {
+            chassisSpeeds =
+                ChassisSpeeds.fromFieldRelativeSpeeds(
+                    controller.leftX,
+                    controller.leftY,
+                    controller.rightX,
+                    gyroRotation.toRotation2d()
+                )
+        }
+
+    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command =
+        run {
+            val magnitude = ROTATION_PID_CONTROLLER.calculate(
+                estimatedPose.rotation.radians,
+                target.minus(estimatedPose.translation).angle.radians
+            )
+
+            val chassisSpeeds = ChassisSpeeds(
+                translationJoystick.x * FREE_SPEED,
+                translationJoystick.y * FREE_SPEED,
+                0.0
+            )
+        }
+
+    fun zeroGyro() {
+        gyroRotation = Rotation3d()
+    }
 }
 
 abstract class DrivetrainIO {
@@ -178,9 +210,9 @@ abstract class DrivetrainIO {
                 synchronized(this) { field = value }
             }
         var measuredStates: PerCorner<SwerveModuleState> =
-            PerCorner.generate { SwerveModuleState() }
+                PerCorner.generate { SwerveModuleState() }
         var measuredPositions: PerCorner<SwerveModulePosition> =
-            PerCorner.generate { SwerveModulePosition() }
+                PerCorner.generate { SwerveModulePosition() }
 
         override fun fromLog(table: LogTable?) {
             gyroRotation = table?.get("GyroRotation", gyroRotation)!![0]
@@ -219,13 +251,8 @@ abstract class DrivetrainIO {
     }
 }
 
-class DrivetrainIOReal : DrivetrainIO() {
+class DrivetrainIOReal(override val modules: PerCorner<out SwerveModule>) : DrivetrainIO() {
     override val gyro = GyroNavX()
-    override val modules =
-        MODULE_CAN_IDS.zip(MODULE_POSITIONS).map { (can, pose) ->
-            val (driving, turning) = can
-            MAXSwerveModule(driving, turning, pose.rotation)
-        }
 }
 
 class DrivetrainIOSim : DrivetrainIO() {
@@ -246,38 +273,41 @@ internal val FIELD_WIDTH: Measure<Distance> = Inches.of(323.25)
 //TODO set these silly lil fellas
 internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> =
     listOf(
-    "fljorg" to Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785)),
+    "fcukoff" to Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785)),
 //    "bloop" to Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570)),
 //    "freedom" to Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0)),
 //    "brack" to Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
     )
 internal val OBJECT_DETECTOR_TRANSFORM: Transform3d = Transform3d()
 
+internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
+internal val FREE_SPEED = 15.0
+
 internal val MODULE_POSITIONS =
     PerCorner(
         frontLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Translation2d(WHEEL_BASE.baseUnitMagnitude(), TRACK_WIDTH.baseUnitMagnitude()) / 2.0,
             Rotation2d.fromDegrees(-90.0)
-        ),
-        frontRight =
-        Pose2d(
-            Translation2d(WHEEL_BASE, TRACK_WIDTH.negate()) / 2.0,
-            Rotation2d.fromDegrees(180.0)
-        ),
-        backRight =
-        Pose2d(
-            Translation2d(WHEEL_BASE.negate(), TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(0.0)
         ),
         backLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE.negate(), TRACK_WIDTH.negate()) / 2.0,
+            Translation2d(WHEEL_BASE.negate().baseUnitMagnitude(), TRACK_WIDTH.baseUnitMagnitude()) / 2.0,
+            Rotation2d.fromDegrees(0.0)
+        ),
+        backRight =
+        Pose2d(
+            Translation2d(WHEEL_BASE.negate().baseUnitMagnitude(), TRACK_WIDTH.negate().baseUnitMagnitude()) / 2.0,
             Rotation2d.fromDegrees(90.0)
-        )
+        ),
+        frontRight =
+        Pose2d(
+            Translation2d(WHEEL_BASE.baseUnitMagnitude(), TRACK_WIDTH.negate().baseUnitMagnitude()) / 2.0,
+            Rotation2d.fromDegrees(180.0)
+        ),
     )
 
-internal val MODULE_CAN_IDS =
+internal val MODULE_CAN_IDS_COMP =
     PerCorner(
         frontLeft =
         Pair(
@@ -300,3 +330,32 @@ internal val MODULE_CAN_IDS =
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )
+internal val MODULE_CAN_IDS_PRACTICE =
+    PerCorner(
+        frontLeft =
+        Pair(
+            REVMotorControllerId.FrontLeftDrivingMotor,
+            REVMotorControllerId.FrontLeftTurningMotor
+        ),
+        frontRight =
+        Pair(
+            REVMotorControllerId.FrontRightDrivingMotor,
+            REVMotorControllerId.FrontRightTurningMotor
+        ),
+        backRight =
+        Pair(
+            REVMotorControllerId.BackRightDrivingMotor,
+            REVMotorControllerId.BackRightTurningMotor
+        ),
+        backLeft =
+        Pair(
+            REVMotorControllerId.BackLeftDrivingMotor,
+            REVMotorControllerId.BackLeftTurningMotor
+        ),
+    )
+
+enum class OrientationTarget(val position: Translation2d) {
+    Speaker(Translation2d()),
+    Amp(Translation2d()),
+    Source(Translation2d())
+}

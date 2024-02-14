@@ -54,14 +54,19 @@ class AprilTagPhotonVisionIOReal(private val name: String, private val cameraTra
     )
 
     override fun updateInputs(inputs: Inputs) {
-        inputs.targetCorners = result.get().targetsUsed.flatMap { target ->
-            target.detectedCorners
-        }.map { corner ->
-            Translation2d(corner.x, corner.y)
-        }
 
-        inputs.targetIDs = result.get().targetsUsed.map { target ->
-            target.fiducialId
+
+        result.map {
+
+            inputs.targetCorners = it.targetsUsed.flatMap { target ->
+                target.detectedCorners
+            }.map { corner ->
+                Translation2d(corner.x, corner.y)
+            }
+
+            inputs.targetIDs = it.targetsUsed.map { target ->
+                target.fiducialId
+            }
         }
     }
 
