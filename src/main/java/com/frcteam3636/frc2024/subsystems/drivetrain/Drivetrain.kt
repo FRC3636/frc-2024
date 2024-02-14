@@ -2,6 +2,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
+import com.frcteam3636.frc2024.utils.math.TAU
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -14,6 +15,7 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units
 import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj.RobotBase
@@ -242,7 +244,13 @@ internal val FIELD_WIDTH: Measure<Distance> = Inches.of(323.25)
 
 
 //TODO set these silly lil fellas
-internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> = listOf()
+internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> =
+    listOf(
+    "fljorg" to Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785)),
+    "bloop" to Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570)),
+    "freedom" to Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0)),
+    "brack" to Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
+    )
 internal val OBJECT_DETECTOR_TRANSFORM: Transform3d = Transform3d()
 
 internal val MODULE_POSITIONS =
