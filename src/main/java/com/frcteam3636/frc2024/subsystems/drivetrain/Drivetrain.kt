@@ -49,7 +49,7 @@ object Drivetrain : Subsystem {
     private val inputs = DrivetrainIO.Inputs()
 
     private val aprilTagCameras = PHOTON_CAMERAS.map { (name, transform) -> PhotonAprilTagCamera(name, transform) }
-    private val objectDetectorCamera = PhotonObjectDetectionCamera("ObjectDetector", Transform3d())
+//    private val objectDetectorCamera = PhotonObjectDetectionCamera("ObjectDetector", Transform3d())
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
@@ -99,7 +99,7 @@ object Drivetrain : Subsystem {
     override fun periodic() {
         Logger.processInputs("Drivetrain", inputs)
         Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
-        objectDetectorCamera.periodic()
+//        objectDetectorCamera.periodic()
         for (camera in aprilTagCameras) {
             camera.periodic()
             addVisionMeasurement(camera.getMeasurement())
@@ -247,9 +247,9 @@ internal val FIELD_WIDTH: Measure<Distance> = Inches.of(323.25)
 internal val PHOTON_CAMERAS: List<Pair<String, Transform3d>> =
     listOf(
     "fljorg" to Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785)),
-    "bloop" to Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570)),
-    "freedom" to Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0)),
-    "brack" to Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
+//    "bloop" to Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570)),
+//    "freedom" to Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0)),
+//    "brack" to Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
     )
 internal val OBJECT_DETECTOR_TRANSFORM: Transform3d = Transform3d()
 

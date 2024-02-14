@@ -24,10 +24,10 @@ object RobotContainer {
     private val joystickRight = Joystick(1)
 
     init {
-        configureBindings()
-        Shooter.register()
+//        configureBindings()
+//        Shooter.register()
         Drivetrain.register()
-        Intake.register()
+//        Intake.register()
     }
 
     /** Use this method to define your `trigger->command` mappings. */
@@ -44,4 +44,6 @@ object RobotContainer {
     fun getAutonomousCommand(): Command? {
         return null
     }
+
+
 }
