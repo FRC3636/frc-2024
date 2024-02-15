@@ -23,9 +23,9 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d(0.0, 0.0, PI)) : Gyro
     }
 
     override var rotation: Rotation3d
-        get() = offset + ahrs.rotation3d
+        get() = offset + (-ahrs.rotation3d)
         set(goal) {
-            offset = goal - ahrs.rotation3d
+            offset = goal - (-ahrs.rotation3d)
             Logger.recordOutput("Gyro/Offset", offset)
         }
 }
