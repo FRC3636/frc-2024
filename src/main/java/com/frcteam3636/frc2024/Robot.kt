@@ -1,7 +1,6 @@
 package com.frcteam3636.frc2024
 
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
-import com.frcteam3636.frc2024.subsystems.drivetrain.drivetrainOdometryThread
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
@@ -22,7 +21,6 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import kotlin.concurrent.thread
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -138,8 +136,6 @@ object Robot : LoggedRobot() {
             Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
                 { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
         )
-
-        thread { drivetrainOdometryThread() }
     }
 
     override fun robotPeriodic() {
