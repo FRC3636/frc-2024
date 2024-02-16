@@ -11,7 +11,10 @@ import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.*
-import edu.wpi.first.math.kinematics.*
+import edu.wpi.first.math.kinematics.ChassisSpeeds
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics
+import edu.wpi.first.math.kinematics.SwerveModulePosition
+import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Inches
@@ -22,7 +25,6 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import org.photonvision.simulation.VisionSystemSim
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
@@ -48,58 +50,24 @@ object Drivetrain : Subsystem {
     }
     private val inputs = DrivetrainIO.Inputs()
 
-
-    private val photonVisionSimSystem = when (Robot.model) {
-        Robot.Model.SIMULATION -> VisionSystemSim("main").apply {
-            addAprilTags(APRIL_TAG_FIELD_LAYOUT)
-        }
-
-        else -> null
-    }
-
-    private val absolutePoseIOs = when (Robot.model) {
-        Robot.Model.SIMULATION -> mapOf(
-            "Fljorg" to PhotonVisionPoseIOSim(
-                "fljorg",
-                CHASSIS_TO_CAMERA_TRANSFORMS["fljorg"]!!,
-                photonVisionSimSystem!!
-            ),
-            "Bloop" to PhotonVisionPoseIOSim(
-                "bloop",
-                CHASSIS_TO_CAMERA_TRANSFORMS["bloop"]!!,
-                photonVisionSimSystem
-            ),
-            "Freedom" to PhotonVisionPoseIOSim(
-                "freedom",
-                CHASSIS_TO_CAMERA_TRANSFORMS["freedom"]!!,
-                photonVisionSimSystem
-            ),
-            "Brack" to PhotonVisionPoseIOSim(
-                "brack",
-                CHASSIS_TO_CAMERA_TRANSFORMS["brack"]!!,
-                photonVisionSimSystem
-            )
+    private val absolutePoseIOs = mapOf(
+        "Fljorg" to PhotonVisionPoseIOReal(
+            "fljorg",
+            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785))
+        ),
+        "Bloop" to PhotonVisionPoseIOReal(
+            "bloop",
+            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570))
+        ),
+        "Freedom" to PhotonVisionPoseIOReal(
+            "freedom",
+            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0))
+        ),
+        "Brack" to PhotonVisionPoseIOReal(
+            "brack",
+            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
         )
-        Robot.Model.COMPETITION -> emptyMap()
-        Robot.Model.PRACTICE -> mapOf(
-            "Fljorg" to PhotonVisionPoseIOReal(
-                "fljorg",
-                CHASSIS_TO_CAMERA_TRANSFORMS["fljorg"]!!
-            ),
-            "Bloop" to PhotonVisionPoseIOReal(
-                "bloop",
-                CHASSIS_TO_CAMERA_TRANSFORMS["bloop"]!!
-            ),
-            "Freedom" to PhotonVisionPoseIOReal(
-                "freedom",
-                CHASSIS_TO_CAMERA_TRANSFORMS["freedom"]!!
-            ),
-            "Brack" to PhotonVisionPoseIOReal(
-                "brack",
-                CHASSIS_TO_CAMERA_TRANSFORMS["brack"]!!
-            )
-        )
-    }.mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
+    ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
@@ -117,39 +85,15 @@ object Drivetrain : Subsystem {
             VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
         )
 
-    // Used as the "true" pose estimator in simulation
-    private val simualatedPoseOdometry = when (Robot.model) {
-        Robot.Model.SIMULATION -> SwerveDriveOdometry(
-            SwerveDriveKinematics(
-                *MODULE_POSITIONS.map(Pose2d::getTranslation).toList().toTypedArray()
-            ),
-            inputs.gyroRotation.toRotation2d(),
-            inputs.measuredPositions.toTypedArray()
-        )
-
-        else -> null
-    }
-
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
 
-        if (Robot.model == Robot.Model.SIMULATION) {
-            simualatedPoseOdometry!!.update(
-                inputs.gyroRotation.toRotation2d(),
-                inputs.measuredPositions.toTypedArray()
-            )
-
-            photonVisionSimSystem!!.update(simualatedPoseOdometry.poseMeters)
-
-            Logger.recordOutput("Drivetrain/Simulated Pose", simualatedPoseOdometry.poseMeters)
-        }
-
-        absolutePoseIOs.forEach { (name, ioPair) ->
+        absolutePoseIOs.forEach { (_, ioPair) ->
             val (io, inputs) = ioPair
 
             io.updateInputs(inputs)
-            Logger.processInputs("Drivetrain/$name", ioPair.second)
+            Logger.processInputs("Vision/$name", ioPair.second)
 
             inputs.measurement?.let { poseEstimator.addAbsolutePoseMeasurement(it) }
         }
@@ -173,8 +117,10 @@ object Drivetrain : Subsystem {
         get() = inputs.measuredStates
         // Set the desired module states.
         set(value) {
-            io.setDesiredStates(value)
-            Logger.recordOutput("Drivetrain/Desired States", *value.toTypedArray())
+            synchronized(this) {
+                io.setDesiredStates(value)
+                Logger.recordOutput("Drivetrain/Desired States", *value.toTypedArray())
+            }
         }
 
     // The current speed of chassis relative to the ground, assuming that the wheels have perfect
@@ -331,12 +277,6 @@ internal val MODULE_POSITIONS =
             Rotation2d.fromDegrees(180.0)
         ),
     )
-internal val CHASSIS_TO_CAMERA_TRANSFORMS = mapOf(
-    "fljorg" to Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785)),
-    "bloop" to Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570)),
-    "freedom" to Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0)),
-    "brack" to Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
-)
 
 // Performance characteristics
 internal val FREE_SPEED = 15.0

@@ -6,7 +6,6 @@ import edu.wpi.first.math.Matrix
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.Pose3d
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Transform3d
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
@@ -16,9 +15,6 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import org.photonvision.PhotonCamera
 import org.photonvision.PhotonPoseEstimator
-import org.photonvision.simulation.PhotonCameraSim
-import org.photonvision.simulation.SimCameraProperties
-import org.photonvision.simulation.VisionSystemSim
 import java.nio.ByteBuffer
 import kotlin.math.pow
 
@@ -41,16 +37,16 @@ interface AbsolutePoseIO {
     fun updateInputs(inputs: Inputs)
 }
 
-abstract class PhotonVisionPoseIO(camera: PhotonCamera, chassisToCamera: Transform3d) : AbsolutePoseIO {
+class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
     private val estimator =
         PhotonPoseEstimator(
             APRIL_TAG_FIELD_LAYOUT,
             PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            camera,
+            PhotonCamera(name).apply { driverMode = false },
             chassisToCamera
         )
 
-    override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+    fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
         estimator.update().ifPresent {
             inputs.measurement = AbsolutePoseMeasurement(
                 it.estimatedPose,
@@ -60,26 +56,6 @@ abstract class PhotonVisionPoseIO(camera: PhotonCamera, chassisToCamera: Transfo
         }
     }
 }
-
-class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) : PhotonVisionPoseIO(
-    PhotonCamera(name).apply { driverMode = false },
-    chassisToCamera
-)
-
-class PhotonVisionPoseIOSim(name: String, chassisToCamera: Transform3d, simSystem: VisionSystemSim) : PhotonVisionPoseIO(
-    PhotonCamera(name).also {
-        val sim = PhotonCameraSim(it, OV9281_SIM_PROPERTIES)
-        // TODO: verify these numbers, these are copied from 1155 (thanks Asa!)
-        sim.setMaxSightRange(7.0)
-        sim.enableRawStream(true)
-        sim.enableProcessedStream(true)
-        sim.enableDrawWireframe(true)
-
-        simSystem.addCamera(sim, chassisToCamera)
-    },
-    chassisToCamera
-)
-
 
 data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Matrix<N3, N1>) :
     StructSerializable {
@@ -115,15 +91,6 @@ class AbsolutePoseMeasurementStruct : Struct<AbsolutePoseMeasurement> {
         bb.putDouble(value.stdDeviation[1, 0])
         bb.putDouble(value.stdDeviation[2, 0])
     }
-}
-
-internal val OV9281_SIM_PROPERTIES = SimCameraProperties().apply {
-    // TODO: verify these numbers, these are copied from 1155 (thanks Asa!)
-    setCalibration(1280, 800, Rotation2d.fromDegrees(100.0))
-    setCalibError(0.35, 0.10)
-    fps = 50.0
-    avgLatencyMs = 20.0
-    latencyStdDevMs = 3.5
 }
 
 internal val APRIL_TAG_FIELD_LAYOUT = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile)

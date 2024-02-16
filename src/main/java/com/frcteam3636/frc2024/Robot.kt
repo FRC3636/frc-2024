@@ -77,7 +77,7 @@ object Robot : LoggedRobot() {
         // may be added.
 
         // initialize and register our subsystems
-//        Shooter.register()
+        Shooter.register()
         Drivetrain.register()
         Intake.register()
 
@@ -97,14 +97,14 @@ object Robot : LoggedRobot() {
 //        controller.x().whileTrue(Shooter.shootCommand())
 //        controller.b().whileTrue(Intake.intakeCommand())
 
-//        controller.a().whileTrue(Shooter.Flywheels.intake())
-//        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
-//
-//
-//        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
-//        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
-//        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
-//        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
+        controller.a().whileTrue(Shooter.Flywheels.intake())
+        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
+
+
+        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
+        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
+        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
+        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
 
         //Drive if triggered joystickLeft input
 
