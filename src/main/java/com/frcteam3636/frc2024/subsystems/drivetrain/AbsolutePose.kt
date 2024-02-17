@@ -7,99 +7,86 @@ import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.Pose3d
 import edu.wpi.first.math.geometry.Transform3d
+import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
-import edu.wpi.first.util.struct.Struct
-import edu.wpi.first.util.struct.StructSerializable
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import org.photonvision.PhotonCamera
 import org.photonvision.PhotonPoseEstimator
-import java.nio.ByteBuffer
-import kotlin.math.pow
+
 
 interface AbsolutePoseIO {
     class Inputs : LoggableInputs {
-        // The most recent measurement from the pose estimator.
-        var measurement: AbsolutePoseMeasurement? = null
+        var absolutePoseMeasurement: AbsolutePoseMeasurement = AbsolutePoseMeasurement(Pose3d(), 0.0, Translation3d())
 
         override fun toLog(table: LogTable) {
-            if (measurement != null) {
-                table.put("Measurement", measurement)
-            }
+            table.put("Pose", absolutePoseMeasurement.pose)
+            table.put("Timestamp", absolutePoseMeasurement.timestamp)
+            table.put("Standard Deviations", absolutePoseMeasurement.stdDeviation)
         }
 
         override fun fromLog(table: LogTable?) {
-            measurement = table?.get("Measurement", measurement)!![0]
+            val pose = table?.get("Pose", Pose3d())!![0]
+            val timestamp = table.get("Timestamp", 0.0)
+            val stdDeviation = table.get("Standard Deviations", Translation3d())!![0]
+
+            absolutePoseMeasurement = AbsolutePoseMeasurement(pose, timestamp, stdDeviation)
         }
     }
 
     fun updateInputs(inputs: Inputs)
 }
 
-class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
-    private val estimator =
-        PhotonPoseEstimator(
-            APRIL_TAG_FIELD_LAYOUT,
-            PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            PhotonCamera(name).apply { driverMode = false },
-            chassisToCamera
-        )
+// Singular. Lime. Light. A.P.ril T.a . I. Nout. Real. (on friend)
+class SLLAPTIR(val name: String, val chassisToCamera: Transform3d) : AbsolutePoseIO {
+    override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+        TODO("Not yet implemented")
+    }
+}
 
-    fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+// Plural. Photon. Phision.
+class PPPAPTIR(val name: String, val chassisToCamera: Transform3d) : AbsolutePoseIO {
+
+    val estimator: PhotonPoseEstimator = PhotonPoseEstimator(
+        APRIL_TAG_FIELD_LAYOUT,
+        PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
+        PhotonCamera(name).apply { driverMode = false },
+        chassisToCamera
+    )
+
+    override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+
         estimator.update().ifPresent {
-            inputs.measurement = AbsolutePoseMeasurement(
-                it.estimatedPose,
-                it.timestampSeconds,
-                APRIL_TAG_STD_DEV(it.estimatedPose.translation.norm, it.targetsUsed.size)
-            )
+            val pose = it.estimatedPose
+            val timestamp = it.timestampSeconds
+            val stdDev = PHOTON_APRIL_TAG_STD_DEV.of(pose.translation.norm, it.targetsUsed.size)
+
+            inputs.absolutePoseMeasurement = AbsolutePoseMeasurement(pose, timestamp, stdDev)
         }
     }
 }
 
-data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Matrix<N3, N1>) :
-    StructSerializable {
-    companion object {
-        val struct = AbsolutePoseMeasurementStruct()
-    }
-}
+data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Translation3d);
 
 fun SwerveDrivePoseEstimator.addAbsolutePoseMeasurement(measurement: AbsolutePoseMeasurement) {
     addVisionMeasurement(
         measurement.pose.toPose2d(),
         measurement.timestamp,
-        measurement.stdDeviation
+        measurement.stdDeviation.toStdDeviationMatrix()
     )
 }
 
-class AbsolutePoseMeasurementStruct : Struct<AbsolutePoseMeasurement> {
-    override fun getTypeClass(): Class<AbsolutePoseMeasurement> = AbsolutePoseMeasurement::class.java
-    override fun getTypeString(): String = "struct:VisionPoseMeasurement"
-    override fun getSize(): Int = Pose3d.struct.size + Struct.kSizeDouble + 3 * Struct.kSizeDouble
-    override fun getSchema(): String = "Pose3d pose; double timestamp; double stdDeviation[3];"
-    override fun unpack(bb: ByteBuffer): AbsolutePoseMeasurement =
-        AbsolutePoseMeasurement(
-            pose = Pose3d.struct.unpack(bb),
-            timestamp = bb.double,
-            stdDeviation = VecBuilder.fill(bb.double, bb.double, bb.double)
-        )
+fun Translation3d.toStdDeviationMatrix(): Matrix<N3, N1> {
+    return VecBuilder.fill(x, y, z)
+}
 
-    override fun pack(bb: ByteBuffer, value: AbsolutePoseMeasurement) {
-        Pose3d.struct.pack(bb, value.pose)
-        bb.putDouble(value.timestamp)
-        bb.putDouble(value.stdDeviation[0, 0])
-        bb.putDouble(value.stdDeviation[1, 0])
-        bb.putDouble(value.stdDeviation[2, 0])
-    }
+fun interface StandardDeviation {
+    abstract fun of(distance: Double, numTags: Int): Translation3d
 }
 
 internal val APRIL_TAG_FIELD_LAYOUT = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile)
-internal const val APRIL_TAG_AMBIGUITY_FILTER = 0.3
-internal val APRIL_TAG_STD_DEV = { distance: Double, count: Int ->
-    val distanceMultiplier = (distance - (count - 1) * 2).pow(2.0)
-    val translationalStdDev = (0.05 / count) * distanceMultiplier + 0.0
-    val rotationalStdDev = 0.2 * distanceMultiplier + 0.1
-    VecBuilder.fill(
-        translationalStdDev, translationalStdDev, rotationalStdDev
-    )
-}
+
+
+//TODO make the functoin on friend
+internal val PHOTON_APRIL_TAG_STD_DEV = StandardDeviation { distance, num -> Translation3d() }

@@ -50,25 +50,6 @@ object Drivetrain : Subsystem {
     }
     private val inputs = DrivetrainIO.Inputs()
 
-    private val absolutePoseIOs = mapOf(
-        "Fljorg" to PhotonVisionPoseIOReal(
-            "fljorg",
-            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785))
-        ),
-        "Bloop" to PhotonVisionPoseIOReal(
-            "bloop",
-            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570))
-        ),
-        "Freedom" to PhotonVisionPoseIOReal(
-            "freedom",
-            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Brack" to PhotonVisionPoseIOReal(
-            "brack",
-            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
-        )
-    ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
-
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
         SwerveDriveKinematics(
@@ -88,15 +69,6 @@ object Drivetrain : Subsystem {
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
-
-        absolutePoseIOs.forEach { (_, ioPair) ->
-            val (io, inputs) = ioPair
-
-            io.updateInputs(inputs)
-            Logger.processInputs("Vision/$name", ioPair.second)
-
-            inputs.measurement?.let { poseEstimator.addAbsolutePoseMeasurement(it) }
-        }
 
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),
@@ -293,7 +265,7 @@ internal val MODULE_CAN_IDS_COMP =
         frontLeft =
         Pair(
             CTREMotorControllerId.FrontLeftDrivingMotor,
-            REVMotorControllerId.FrontLeftTurningMotor
+            REVMotorControllerId.FrontLeftTurningMotor,
         ),
         frontRight =
         Pair(
