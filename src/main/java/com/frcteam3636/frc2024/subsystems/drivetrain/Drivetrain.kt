@@ -48,6 +48,16 @@ object Drivetrain : Subsystem {
             )
         })
     }
+
+    private val pppaptirs: List<PhotonCamera> = listOf(
+        "freedom" to Transform3d(),
+        "brack" to Transform3d(),
+        "fljorg" to Transform3d(),
+        "bloop" to Transform3d(),
+    ).map {
+        PhotonCamera(PPPAPTIR(it.first, it.second), AbsolutePoseIO.Inputs())
+    }
+
     private val inputs = DrivetrainIO.Inputs()
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
@@ -70,6 +80,12 @@ object Drivetrain : Subsystem {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
 
+        pppaptirs.forEach {
+            Logger.processInputs("Drivetrain/${it.io.name}", it.inputs)
+            poseEstimator.addAbsolutePoseMeasurement(it.inputs.absolutePoseMeasurement)
+
+            it.io.updateInputs(it.inputs)
+        }
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
@@ -265,7 +281,7 @@ internal val MODULE_CAN_IDS_COMP =
         frontLeft =
         Pair(
             CTREMotorControllerId.FrontLeftDrivingMotor,
-            REVMotorControllerId.FrontLeftTurningMotor,
+            REVMotorControllerId.FrontLeftTurningMotor
         ),
         frontRight =
         Pair(
@@ -307,6 +323,8 @@ internal val MODULE_CAN_IDS_PRACTICE =
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )
+
+data class PhotonCamera(val io: PPPAPTIR, val inputs: AbsolutePoseIO.Inputs)
 
 enum class OrientationTarget(val position: Translation2d) {
     Speaker(Translation2d()),
