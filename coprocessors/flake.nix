@@ -2,12 +2,15 @@
   description = "Coprocessor NixOS configurations for 3636's 2024 FRC robot.";
 
   inputs = {
-    nixos-rk3588.url = "github:ryan4yin/nixos-rk3588";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixos-rk3588 = {
+      url = "github:ryan4yin/nixos-rk3588";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixos-rk3588, }:
+  outputs = { self, nixpkgs, nixos-rk3588, }:
     let
-      inherit (nixos-rk3588.inputs) nixpkgs;
       inherit (nixpkgs) lib;
     in
     rec {

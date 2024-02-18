@@ -61,7 +61,9 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "mesa-panfork": "mesa-panfork",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": [
+          "nixpkgs"
+        ],
         "pre-commit-hooks": "pre-commit-hooks"
       },
       "locked": {
@@ -80,16 +82,16 @@
     },
     "nixpkgs": {
       "locked": {
-        "lastModified": 1691486536,
-        "narHash": "sha256-W2jYTn6rNiJEpjXkOiZxNltgxxwgeZE5cQ967NgsrHU=",
+        "lastModified": 1708105575,
+        "narHash": "sha256-sS4AItZeUnAei6v8FqxNlm+/27MPlfoGym/TZP0rmH0=",
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "8fa39adf946a4470610b38fd7aff0a73ad4356c3",
+        "rev": "1d1817869c47682a6bee85b5b0a6537b6c0fba26",
         "type": "github"
       },
       "original": {
         "owner": "NixOS",
-        "ref": "nixos-23.05-small",
+        "ref": "nixos-23.11",
         "repo": "nixpkgs",
         "type": "github"
       }
@@ -129,7 +131,8 @@
     },
     "root": {
       "inputs": {
-        "nixos-rk3588": "nixos-rk3588"
+        "nixos-rk3588": "nixos-rk3588",
+        "nixpkgs": "nixpkgs"
       }
     },
     "systems": {

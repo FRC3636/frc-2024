@@ -9,6 +9,11 @@
     networking = {
       hostName = "tangerine";
 
+      interfaces.enp1s0.wakeOnLan = {
+        enable = true;
+        policy = [ "phy" ];
+      };
+
       robotNetwork = {
         interface = "enp1s0";
         address = "10.36.36.10";
