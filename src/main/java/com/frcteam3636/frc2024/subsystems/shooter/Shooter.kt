@@ -11,24 +11,18 @@ import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.DigitalInput
-import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
-import edu.wpi.first.wpilibj.util.Color8Bit
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.Subsystem
-import edu.wpi.first.wpilibj2.command.WaitCommand
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
-import kotlin.math.sin
 
 object Shooter {
 
     val pivotIdRoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism(
+        SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), null, null, null), SysIdRoutine.Mechanism(
             Pivot::setvoltage, Pivot::getState, Pivot
         )
     )
@@ -63,46 +57,47 @@ object Shooter {
             }
             Logger.recordOutput("Shooter", mechanism)
 
-            io.setVoltage(
-                Volts.of(
-                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
-                        inputs.leftSpeed.`in`(RadiansPerSecond),
-                        setpointLeft.`in`(RadiansPerSecond)
-                    )
-                ),
-                Volts.of(
-                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
-                        inputs.rightSpeed.`in`(RadiansPerSecond),
-                        setpointRight.`in`(RadiansPerSecond)
-                    )
-                )
-            )
+//            io.setVoltage(
+//                Volts.of(
+//                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
+//                        inputs.leftSpeed.`in`(RadiansPerSecond),
+//                        setpointLeft.`in`(RadiansPerSecond)
+//                    )
+//                ),
+//                Volts.of(
+//                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
+//                        inputs.rightSpeed.`in`(RadiansPerSecond),
+//                        setpointRight.`in`(RadiansPerSecond)
+//                    )
+//                )
+//            )
             Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
             Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
 
         /** Shoot a ball at a given velocity and spin (in rad/s). */
-        fun shoot(velocity: Double, spin: Double): Command =
-            runOnce {
-            val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
-
-            setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
-            setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
-
-            // TODO: run rollers
-        }.alongWith(Commands.waitSeconds(2.0)).andThen( runEnd( {
+        fun shoot(velocity: Double, spin: Double): Command = ParallelCommandGroup(
+            // start the flywheels
+            runEnd({
                 val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
 
                 setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
                 setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
-
-                io.setIndexerVoltage(Volts.of(-6.78))
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
-
-                io.setIndexerVoltage(Volts.zero())
-            }) )
+            }),
+            SequentialCommandGroup(
+                // wait for the flywheels to get up to speed
+                Commands.waitSeconds(2.0),
+                // run the indexer
+                Commands.runEnd({
+                    io.setIndexerVoltage(Volts.of(-10.0))
+                }, {
+                    io.setIndexerVoltage(Volts.zero())
+                })
+            )
+        )
 
         fun index(): Command {
             return runEnd({
@@ -114,8 +109,8 @@ object Shooter {
 
         fun intake(): Command {
             return runEnd({
-                setpointLeft = RadiansPerSecond.of(50.0)
-                setpointRight = RadiansPerSecond.of(50.0)
+                setpointLeft = RadiansPerSecond.of(-50.0)
+                setpointRight = RadiansPerSecond.of(-50.0)
                 io.setIndexerVoltage(Volts.of(6.78))
             }, {
                 setpointLeft = RadiansPerSecond.zero()
@@ -198,6 +193,14 @@ object Shooter {
 
         fun setvoltage(volts: Measure<Voltage>) {
             io.driveVoltage(volts.magnitude())
+        }
+
+        fun dynamicIdCommand(direction: SysIdRoutine.Direction) : Command {
+              return  Shooter.pivotIdRoutine.dynamic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
+        }
+
+        fun quasistaticIdCommand(direction: SysIdRoutine.Direction): Command {
+            return  Shooter.pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
         }
 
         fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command = run {

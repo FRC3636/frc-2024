@@ -1,14 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.CANSparkFlex
-import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.REVMotorControllerId
-import com.frcteam3636.frc2024.utils.math.MotorFFGains
-import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.pidGains
-import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Radians
@@ -17,7 +11,6 @@ import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import java.sql.ResultSetMetaData
 
 interface FlywheelIO {
     class Inputs : LoggableInputs {
@@ -42,6 +35,7 @@ interface FlywheelIO {
     fun updateInputs(inputs: Inputs)
 
     fun setIndexerVoltage(volts: Measure<Voltage>) {}
+    fun setIndexerDutyCycle(percent: Double)
 
     fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
 }
@@ -83,7 +77,14 @@ class FlywheelIOReal : FlywheelIO {
     }
 
     override fun setIndexerVoltage(volts: Measure<Voltage>) {
-        indexer.setVoltage(volts.baseUnitMagnitude())
+//        indexer.setVoltage(volts.baseUnitMagnitude())
+//        Logger.recordOutput("Shooter/Flywheels/Indexer Volts", volts.baseUnitMagnitude())
+    }
+
+    override fun setIndexerDutyCycle(percent: Double) {
+//        indexer.set(percent)
+//
+//        Logger.recordOutput("Shooter/Flywheels/Indexer Volts", percent * 12.0)
     }
 
     override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
@@ -113,6 +114,10 @@ class FlywheelIOSim : FlywheelIO {
     }
 
     override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+        TODO()
+    }
+
+    override fun setIndexerDutyCycle(percent: Double) {
         TODO()
     }
 }

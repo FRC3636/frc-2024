@@ -40,12 +40,12 @@ fun CANSparkFlex(id: REVMotorControllerId, type: CANSparkLowLevel.MotorType) =
     CANSparkFlex(id.num, type)
 
 enum class CTREMotorControllerId(val num: Int, val bus: String) {
-    FrontLeftDrivingMotor(1, "*"),
-    BackLeftDrivingMotor(2, "*"),
-    BackRightDrivingMotor(3, "*"),
-    FrontRightDrivingMotor(4, "*"),
-    RightPivotMotor(5, "*"),
-    LeftPivotMotor(6, "*"),
+    FrontLeftDrivingMotor(3, "*"),
+    BackLeftDrivingMotor(4, "*"),
+    BackRightDrivingMotor(5, "*"),
+    FrontRightDrivingMotor(6, "*"),
+    RightPivotMotor(1, "*"),
+    LeftPivotMotor(0, "*"),
 }
 
 fun TalonFX(id: CTREMotorControllerId) = TalonFX(id.num, id.bus)
