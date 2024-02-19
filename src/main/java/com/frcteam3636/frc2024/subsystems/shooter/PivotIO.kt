@@ -15,6 +15,7 @@ import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.controller.ArmFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
@@ -113,10 +114,10 @@ class PivotIOKraken : PivotIO {
         //sysid shit
         inputs.voltageLeft = leftMotor.motorVoltage.value
         inputs.voltageRight = rightMotor.motorVoltage.value
-        inputs.rotorDistanceLeft = leftMotor.rotorPosition.value
-        inputs.rotorVelocityLeft = leftMotor.rotorVelocity.value
-        inputs.rotorDistanceRight = rightMotor.rotorPosition.value
-        inputs.rotorVelocityRight = rightMotor.rotorVelocity.value
+        inputs.rotorDistanceLeft = Units.rotationsToRadians(leftMotor.rotorPosition.value)
+        inputs.rotorVelocityLeft = Units.rotationsToRadians(leftMotor.rotorVelocity.value)
+        inputs.rotorDistanceRight = Units.rotationsToRadians(rightMotor.rotorPosition.value)
+        inputs.rotorVelocityRight = Units.rotationsToRadians(rightMotor.rotorVelocity.value)
     }
 
     override fun pivotToAndStop(position: Rotation2d) {
