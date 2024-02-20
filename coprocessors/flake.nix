@@ -11,6 +11,7 @@
       url = "github:FRC3636/rgb-2024";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nixos-hardware.url = "github:NixOS/nixos-hardware/master";
   };
 
   outputs = { self, nixpkgs, nixos-rk3588, nixos-hardware, rgb-2024, }:
