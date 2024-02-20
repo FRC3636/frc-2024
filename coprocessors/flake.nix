@@ -26,6 +26,7 @@
           specialArgs = { rk3588 = nixos-rk3588.inputs; };
         };
 
+        # RGB LED strips Raspberry Pi
         copepod = {
           deployment = {
             targetHost = "10.36.36.20";
@@ -40,6 +41,7 @@
           ];
         };
 
+        # Mini PC
         tangerine = {
           deployment = {
             targetHost = "10.36.36.10";
@@ -49,6 +51,7 @@
           imports = [ ./modules ./hosts/tangerine ];
         };
 
+        # Photon vision Orange Pi
         boop = {
           deployment = {
             targetHost = "10.36.36.11";
