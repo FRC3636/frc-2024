@@ -103,6 +103,6 @@
 
   nix.settings.trusted-users = [ "root" ];
 
-  system.stateVersion = "23.11";
+  system.stateVersion = "23.05";
 }
 
