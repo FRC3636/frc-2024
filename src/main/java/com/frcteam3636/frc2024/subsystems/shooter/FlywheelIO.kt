@@ -36,10 +36,9 @@ interface FlywheelIO {
 
     fun updateInputs(inputs: Inputs)
 
-    fun setIndexerVoltage(volts: Measure<Voltage>) {}
-    fun setIndexerDutyCycle(percent: Double)
+    fun setIndexerVoltage(voltage: Measure<Voltage>)
 
-    fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
+    fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
 }
 
 class FlywheelIOReal : FlywheelIO {
@@ -78,18 +77,13 @@ class FlywheelIOReal : FlywheelIO {
         inputs.rightPos = Radians.of(rightSpark.encoder.position)
     }
 
-    override fun setIndexerVoltage(volts: Measure<Voltage>) {
-//        indexer.setVoltage(volts.baseUnitMagnitude())
-//        Logger.recordOutput("Shooter/Flywheels/Indexer Volts", volts.baseUnitMagnitude())
+    override fun setIndexerVoltage(voltage: Measure<Voltage>) {
+        indexer.setVoltage(voltage.baseUnitMagnitude())
+
+        Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
 
-    override fun setIndexerDutyCycle(percent: Double) {
-//        indexer.set(percent)
-//
-//        Logger.recordOutput("Shooter/Flywheels/Indexer Volts", percent * 12.0)
-    }
-
-    override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+    override fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
         leftSpark.setVoltage(left.baseUnitMagnitude())
         rightSpark.setVoltage(right.baseUnitMagnitude())
 
@@ -109,12 +103,17 @@ class FlywheelIOSim : FlywheelIO {
         inputs.rightSpeed = RadiansPerSecond.of(rightFlywheel.angularVelocityRadPerSec)
     }
 
-    override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+    override fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
         leftFlywheel.setInputVoltage(left.baseUnitMagnitude())
         rightFlywheel.setInputVoltage(right.baseUnitMagnitude())
+
+        Logger.recordOutput("Shooter/Flywheels/Left Effort", left)
+        Logger.recordOutput("Shooter/Flywheels/Right Effort", right)
     }
 
-    override fun setIndexerDutyCycle(percent: Double) {
-        TODO()
+    override fun setIndexerVoltage(voltage: Measure<Voltage>) {
+        // no-op, we don't have an indexer in the sim
+
+        Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
 }
