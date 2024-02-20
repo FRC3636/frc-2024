@@ -122,7 +122,7 @@ object Shooter {
 
 
         fun setVoltage(volts: Measure<Voltage>) {
-            io.setVoltage(volts, volts)
+            io.setFlywheelVoltage(volts, volts)
         }
 
         fun getState(log: SysIdRoutineLog) {
