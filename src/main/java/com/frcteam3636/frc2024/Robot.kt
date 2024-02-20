@@ -9,11 +9,9 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.units.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
-import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
@@ -43,6 +41,7 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+    private val joystickDev = Joystick(2)
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -129,7 +128,17 @@ object Robot : LoggedRobot() {
                 { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
         )
 
-        // TODO: SysId routines
+        val sysIdDirection = {
+            if (joystickDev.y <= 0.0) {
+                SysIdRoutine.Direction.kForward
+            } else {
+                SysIdRoutine.Direction.kReverse
+            }
+        }
+        JoystickButton(joystickDev, 1).whileTrue(Shooter.Pivot.doDynamicSysId(sysIdDirection()))
+        JoystickButton(joystickDev, 2).whileTrue(Shooter.Pivot.doQuasistaticSysId(sysIdDirection()))
+        JoystickButton(joystickDev, 3).whileTrue(Shooter.Flywheels.doDynamicSysId(sysIdDirection()))
+        JoystickButton(joystickDev, 4).whileTrue(Shooter.Flywheels.doQuasistaticSysId(sysIdDirection()))
     }
 
     override fun robotPeriodic() {

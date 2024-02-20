@@ -13,7 +13,6 @@ import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
@@ -49,7 +48,7 @@ object Shooter {
             Logger.recordOutput("Shooter", mechanism)
 
             if (pidfControlEnabled) {
-                io.setVoltage(
+                io.setFlywheelVoltage(
                     Volts.of(
                         ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
                             inputs.leftSpeed.`in`(RadiansPerSecond),
@@ -70,43 +69,43 @@ object Shooter {
         }
 
         /** Shoot a ball at a given velocity and spin (in rad/s). */
-        fun shoot(velocity: Double, spin: Double): Command = Commands.parallel(
-            // start the flywheels
-            runEnd({
-                pidfControlEnabled = true
+        fun shoot(velocity: Double, spin: Double): Command =
+            Commands.parallel(
+                // start the flywheels
+                runEnd({
+                    pidfControlEnabled = true
 
-                val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
+                    val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
 
-                setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
-                setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
-            }, {
-                setpointLeft = RadiansPerSecond.zero()
-                setpointRight = RadiansPerSecond.zero()
-            }),
-            Commands.sequence(
-                // wait for the flywheels to get up to speed
-                Commands.waitUntil { pidControllerLeft.atSetpoint() && pidControllerRight.atSetpoint() },
-                // run the indexer.
-                // note that not taking `this` as a requirement here is a hack, but ultimately fine because
-                // we're the subsystem
-                Commands.runEnd({
-                    io.setIndexerVoltage(Volts.of(-10.0))
+                    setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
+                    setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
                 }, {
-                    io.setIndexerVoltage(Volts.zero())
-                })
+                    setpointLeft = RadiansPerSecond.zero()
+                    setpointRight = RadiansPerSecond.zero()
+                }),
+                Commands.sequence(
+                    // wait for the flywheels to get up to speed
+                    Commands.waitUntil { pidControllerLeft.atSetpoint() && pidControllerRight.atSetpoint() },
+                    // run the indexer.
+                    // note that not taking `this` as a requirement here is a hack, but ultimately fine because
+                    // we're the subsystem
+                    Commands.runEnd({
+                        io.setIndexerVoltage(Volts.of(-10.0))
+                    }, {
+                        io.setIndexerVoltage(Volts.zero())
+                    })
+                )
             )
-        )
 
-        fun index(): Command {
-            return runEnd({
+        fun index(): Command =
+            runEnd({
                 io.setIndexerVoltage(Volts.of(-10.0))
             }, {
                 io.setIndexerVoltage(Volts.of(0.0))
             })
-        }
 
-        fun intake(): Command {
-            return runEnd({
+        fun intake(): Command =
+            runEnd({
                 pidfControlEnabled = true
 
                 setpointLeft = RadiansPerSecond.of(-50.0)
@@ -117,13 +116,12 @@ object Shooter {
                 setpointRight = RadiansPerSecond.zero()
                 io.setIndexerVoltage(Volts.of(0.0))
             })
-        }
 
         val sysIdRoutine = SysIdRoutine(
             SysIdRoutine.Config(), SysIdRoutine.Mechanism(
                 {
                     pidfControlEnabled = false
-                    io.setVoltage(it, it)
+                    io.setFlywheelVoltage(it, it)
                 },
                 {
                     it.motor("left-flywheels")
@@ -138,6 +136,12 @@ object Shooter {
                 this
             )
         )
+
+        fun doDynamicSysId(direction: SysIdRoutine.Direction): Command =
+            sysIdRoutine.dynamic(direction).beforeStarting(runOnce { pidfControlEnabled = false })
+
+        fun doQuasistaticSysId(direction: SysIdRoutine.Direction): Command =
+            sysIdRoutine.quasistatic(direction).beforeStarting(runOnce { pidfControlEnabled = false })
     }
 
     object Pivot : Subsystem {
@@ -194,25 +198,27 @@ object Shooter {
             )
         )
 
-        fun doDynamicSysId(direction: SysIdRoutine.Direction): Command {
-            return sysIdRoutine.dynamic(direction).until {
-                if (direction == SysIdRoutine.Direction.kForward) {
-                    inputs.position.rotations > 0.4
-                } else {
-                    inputs.position.rotations < -0.3
+        fun doDynamicSysId(direction: SysIdRoutine.Direction): Command =
+            sysIdRoutine.dynamic(direction)
+                .until {
+                    if (direction == SysIdRoutine.Direction.kForward) {
+                        inputs.position.rotations > 0.4
+                    } else {
+                        inputs.position.rotations < -0.3
+                    }
                 }
-            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
-        }
+                .andThen(runOnce { io.driveVoltage(0.0) })
 
-        fun doQuasistaticSysId(direction: SysIdRoutine.Direction): Command {
-            return sysIdRoutine.quasistatic(direction).until {
-                if (direction == SysIdRoutine.Direction.kForward) {
-                    inputs.position.rotations > 0.4
-                } else {
-                    inputs.position.rotations < -0.3
+        fun doQuasistaticSysId(direction: SysIdRoutine.Direction): Command =
+            sysIdRoutine.quasistatic(direction)
+                .until {
+                    if (direction == SysIdRoutine.Direction.kForward) {
+                        inputs.position.rotations > 0.4
+                    } else {
+                        inputs.position.rotations < -0.3
+                    }
                 }
-            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
-        }
+                .andThen(runOnce { io.driveVoltage(0.0) })
 
         enum class PositionPresets(position: Rotation2d) {
             Handoff(Rotation2d()), Amp(Rotation2d())
