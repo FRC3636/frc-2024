@@ -95,33 +95,11 @@ object Robot : LoggedRobot() {
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
 
-        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
-            Intake.indexCommand()
-        )
-
-//        controller.x().whileTrue(Shooter.shootCommand())
-//        controller.b().whileTrue(Intake.intakeCommand())
+        controller.b().whileTrue(Intake.intakeCommand()).onFalse(Intake.indexCommand())
 
         controller.a().whileTrue(Shooter.Flywheels.intake())
         controller.b().whileTrue(Shooter.Flywheels.shoot(12.0, -0.0))
         controller.x().whileTrue(Shooter.Flywheels.shoot(3.5, 0.0))
-        controller.y().whileTrue(Commands.startEnd({
-            println("Shooting")
-            Shooter.Flywheels.setVoltage(Units.Volts.of(12.0))
-        }, {
-            println("Done Shooting")
-            Shooter.Flywheels.setVoltage(Units.Volts.zero())
-        }, Shooter.Flywheels))
-
-
-        controller.leftBumper().whileTrue(Shooter.Pivot.quasistaticIdCommand(SysIdRoutine.Direction.kForward))
-        controller.rightTrigger().whileTrue(Shooter.Pivot.dynamicIdCommand(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.Pivot.quasistaticIdCommand(SysIdRoutine.Direction.kReverse))
-        controller.leftTrigger().whileTrue(Shooter.Pivot.dynamicIdCommand(SysIdRoutine.Direction.kReverse))
-//        controller.leftTrigger().whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
-//        controller.rightTrigger().whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromRotations(0.5)))
-
-        //Drive if triggered joystickLeft input
 
         JoystickButton(joystickLeft, 7).onTrue(
             InstantCommand({
@@ -145,12 +123,13 @@ object Robot : LoggedRobot() {
         )
 
         JoystickButton(
-            joystickLeft,
-            2
+            joystickLeft, 2
         ).whileTrue(
             Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
                 { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
         )
+
+        // TODO: SysId routines
     }
 
     override fun robotPeriodic() {
