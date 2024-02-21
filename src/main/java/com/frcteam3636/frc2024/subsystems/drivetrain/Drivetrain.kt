@@ -102,6 +102,7 @@ object Drivetrain : Subsystem {
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
+        Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
         Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
     }
 
@@ -154,9 +155,9 @@ object Drivetrain : Subsystem {
         run {
             chassisSpeeds =
                 ChassisSpeeds.fromFieldRelativeSpeeds(
-                    translationJoystick.y,
-                    translationJoystick.x,
-                    rotationJoystick.x,
+                    -translationJoystick.y,
+                    -translationJoystick.x,
+                    -rotationJoystick.x,
                     gyroRotation.toRotation2d()
                 )
         }
@@ -252,8 +253,8 @@ class DrivetrainIOSim : DrivetrainIO() {
 }
 
 // Physical dimensions
-internal val WHEEL_BASE: Measure<Distance> = Inches.of(13.0)
-internal val TRACK_WIDTH: Measure<Distance> = Inches.of(14.0)
+internal val WHEEL_BASE: Measure<Distance> = Inches.of(30.0)
+internal val TRACK_WIDTH: Measure<Distance> = Inches.of(28.0)
 internal val MODULE_POSITIONS =
     PerCorner(
         frontLeft =
