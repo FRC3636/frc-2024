@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024
 
+import com.ctre.phoenix6.hardware.TalonFX
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
@@ -8,9 +9,11 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.units.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
@@ -81,6 +84,8 @@ object Robot : LoggedRobot() {
         Drivetrain.register()
         Intake.register()
 
+        TalonFX(0) // init phoenix diagnostics server
+
         // Configure our button and joystick bindings
         configureBindings()
     }
@@ -98,13 +103,23 @@ object Robot : LoggedRobot() {
 //        controller.b().whileTrue(Intake.intakeCommand())
 
         controller.a().whileTrue(Shooter.Flywheels.intake())
-        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
+        controller.b().whileTrue(Shooter.Flywheels.shoot(12.0, -0.0))
+        controller.x().whileTrue(Shooter.Flywheels.shoot(3.5, 0.0))
+        controller.y().whileTrue(Commands.startEnd({
+            println("Shooting")
+            Shooter.Flywheels.setVoltage(Units.Volts.of(12.0))
+        }, {
+            println("Done Shooting")
+            Shooter.Flywheels.setVoltage(Units.Volts.zero())
+        }, Shooter.Flywheels))
 
 
-        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
-        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
-        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
+        controller.leftBumper().whileTrue(Shooter.Pivot.quasistaticIdCommand(SysIdRoutine.Direction.kForward))
+        controller.rightTrigger().whileTrue(Shooter.Pivot.dynamicIdCommand(SysIdRoutine.Direction.kForward))
+        controller.rightBumper().whileTrue(Shooter.Pivot.quasistaticIdCommand(SysIdRoutine.Direction.kReverse))
+        controller.leftTrigger().whileTrue(Shooter.Pivot.dynamicIdCommand(SysIdRoutine.Direction.kReverse))
+//        controller.leftTrigger().whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
+//        controller.rightTrigger().whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromRotations(0.5)))
 
         //Drive if triggered joystickLeft input
 
