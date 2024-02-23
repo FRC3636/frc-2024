@@ -208,11 +208,24 @@ object Shooter {
             Handoff(Rotation2d()), Amp(Rotation2d())
         }
     }
+    object Amp: Subsystem {
+        val io = AmpMechIOReal()
+        val inputs = AmpMechIO.Inputs()
 
+        fun pivotTo(pos: Rotation2d){
+            io.pivotTo(pos)
+        }
+
+        override fun periodic() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Shooter/AmpMech", inputs)
+        }
+    }
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
         Pivot.register()
+        Amp.register()
     }
 
     private val mechanism = Mechanism2d(3.0, 3.0, BLACK)

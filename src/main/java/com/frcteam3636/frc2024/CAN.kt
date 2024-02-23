@@ -12,6 +12,7 @@ enum class REVMotorControllerId(val num: Int) {
     BackLeftTurningMotor(6),
     BackRightTurningMotor(7),
     FrontRightTurningMotor(8),
+
     FrontLeftDrivingMotor(1),
     BackLeftDrivingMotor(2),
     BackRightDrivingMotor(3),
@@ -20,6 +21,7 @@ enum class REVMotorControllerId(val num: Int) {
     LeftShooterFlywheel(11),
     RightShooterFlywheel(12),
     Indexer(13),
+    AmpMech(14),
 
     // todo: the following `3x` CAN ids are placeholders
     OverTheBumperIntakeArm(33),
