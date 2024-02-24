@@ -2,6 +2,8 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.SlotConfigs
+import com.ctre.phoenix6.controls.TorqueCurrentFOC
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.ctre.phoenix6.controls.VelocityVoltage
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -14,6 +16,7 @@ import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
+import org.littletonrobotics.junction.Logger
 import kotlin.math.roundToInt
 
 interface SwerveModule {
@@ -93,6 +96,7 @@ class MAXSwerveModule(
                 corrected, Rotation2d.fromRadians(turningEncoder.position)
             )
 
+            Logger.recordOutput("SetVelocity", optimized.speedMetersPerSecond)
             drivingMotor.velocity = optimized.speedMetersPerSecond
 
             turningPIDController.setReference(
@@ -121,13 +125,16 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
         )
     }
 
+
+
     override val position: Double
         get() = inner.position.value * DRIVING_MOTOR_TRAVEL_PER_REVOLUTION
 
     override var velocity: Double
         get() = inner.velocity.value
         set(value) {
-            inner.setControl(VelocityVoltage(value).withSlot(0))
+            Logger.recordOutput("DriveVelocity", value)
+            inner.setControl(VelocityTorqueCurrentFOC(value))
         }
 }
 
@@ -215,7 +222,7 @@ internal val DRIVING_MOTOR_PINION_TEETH = 14
 // I.e. the wheel angle divided by the motor angle.
 // Motor Pinion : Motor Spur Gear = x :
 // Bevel Pinion : Wheel Bevel Gear = 15 : 45
-internal val DRIVING_MOTOR_TO_WHEEL_GEARING = (DRIVING_MOTOR_PINION_TEETH.toDouble() / 22.0) * (15.0 / 45.0)
+internal val DRIVING_MOTOR_TO_WHEEL_GEARING = 1 / 3.56
 
 // take the known wheel diameter, divide it by two to get the radius, then get the
 // circumference
@@ -235,11 +242,11 @@ val DRIVING_MOTOR_REDUCTION: Double =
     (45.0 * 22) / (DRIVING_MOTOR_PINION_TEETH * 15)
 internal val DRIVE_WHEEL_FREE_SPEED_RPS = (DRIVING_MOTOR_FREE_SPEED_RPS * WHEEL_CIRCUMFERENCE_METERS) / DRIVING_MOTOR_REDUCTION;
 
-internal val DRIVING_PID_GAINS_TALON: PIDGains = PIDGains()
+internal val DRIVING_PID_GAINS_TALON: PIDGains = PIDGains(0.0, 0.0, 0.0)
 internal val DRIVING_PID_GAINS_NEO: PIDGains = PIDGains(0.04, 0.0, 0.0)
-internal val DRIVING_FF_GAINS_TALON: MotorFFGains = MotorFFGains()
+internal val DRIVING_FF_GAINS_TALON: MotorFFGains = MotorFFGains(0.4, 0.0, 0.0)
 internal val DRIVING_FF_GAINS_NEO: MotorFFGains = MotorFFGains(0.0, 1 / DRIVE_WHEEL_FREE_SPEED_RPS, 0.0)
 
-internal val TURNING_PID_GAINS: PIDGains = PIDGains(0.8, 0.0, 0.125)
+internal val TURNING_PID_GAINS: PIDGains = PIDGains(0.0, 0.0, 0.0)
 internal val DRIVING_CURRENT_LIMIT = 60.0
 internal val TURNING_CURRENT_LIMIT = 20.0

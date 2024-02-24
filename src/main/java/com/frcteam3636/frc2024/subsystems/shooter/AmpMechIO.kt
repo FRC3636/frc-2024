@@ -42,11 +42,11 @@ class AmpMechIOReal: AmpMechIO {
         restoreFactoryDefaults()
         inverted = false;
         encoder.positionConversionFactor = TAU * GEAR_RATIO
-        encoder.velocityConversionFactor = ( TAU * GEAR_RATIO  )/ 60
+        encoder.velocityConversionFactor = ( TAU * GEAR_RATIO  ) / 60
     }
 
     private val pid = pivotMotor.pidController.apply {
-        p = 0.0
+        p = 0.1
         i = 0.0
         d = 0.0
     }

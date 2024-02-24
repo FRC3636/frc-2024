@@ -57,20 +57,20 @@ object Shooter {
             }
             Logger.recordOutput("Shooter", mechanism)
 
-//            io.setVoltage(
-//                Volts.of(
-//                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
-//                        inputs.leftSpeed.`in`(RadiansPerSecond),
-//                        setpointLeft.`in`(RadiansPerSecond)
-//                    )
-//                ),
-//                Volts.of(
-//                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
-//                        inputs.rightSpeed.`in`(RadiansPerSecond),
-//                        setpointRight.`in`(RadiansPerSecond)
-//                    )
-//                )
-//            )
+            io.setFlywheelVoltage(
+                Volts.of(
+                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
+                        inputs.leftSpeed.`in`(RadiansPerSecond),
+                        setpointLeft.`in`(RadiansPerSecond)
+                    )
+                ),
+                Volts.of(
+                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
+                        inputs.rightSpeed.`in`(RadiansPerSecond),
+                        setpointRight.`in`(RadiansPerSecond)
+                    )
+                )
+            )
             Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
             Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
@@ -89,7 +89,7 @@ object Shooter {
             }),
             SequentialCommandGroup(
                 // wait for the flywheels to get up to speed
-                Commands.waitSeconds(2.0),
+                Commands.waitSeconds(0.5),
                 // run the indexer
                 Commands.runEnd({
                     io.setIndexerVoltage(Volts.of(-10.0))
@@ -215,8 +215,9 @@ object Shooter {
         val io = AmpMechIOReal()
         val inputs = AmpMechIO.Inputs()
 
-        fun pivotTo(pos: Rotation2d){
-            io.pivotTo(pos)
+        fun pivotTo(pos: Rotation2d): Command
+        {
+            return InstantCommand({io.pivotTo(pos)})
         }
 
         override fun periodic() {
