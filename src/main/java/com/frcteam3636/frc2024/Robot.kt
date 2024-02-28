@@ -12,6 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
@@ -41,7 +42,7 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
-    private val joystickDev = Joystick(2)
+    private val joystickDev = Joystick(3)
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -139,6 +140,8 @@ object Robot : LoggedRobot() {
         JoystickButton(joystickDev, 2).whileTrue(Shooter.Pivot.doQuasistaticSysId(sysIdDirection()))
         JoystickButton(joystickDev, 3).whileTrue(Shooter.Flywheels.doDynamicSysId(sysIdDirection()))
         JoystickButton(joystickDev, 4).whileTrue(Shooter.Flywheels.doQuasistaticSysId(sysIdDirection()))
+        JoystickButton(joystickDev, 5).whileTrue(Drivetrain.doDynamicDrivingId(sysIdDirection()).beforeStarting(Commands.print("starting sysid")))
+        JoystickButton(joystickDev, 6).whileTrue(Drivetrain.doQuasistaticDrivingId(sysIdDirection()))
     }
 
     override fun robotPeriodic() {

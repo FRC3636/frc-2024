@@ -18,10 +18,12 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -38,6 +40,7 @@ object Drivetrain : Subsystem {
                 position.rotation
             )
         })
+
         Robot.Model.PRACTICE -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_PRACTICE).map { (position, ids) ->
             val (driveId, turnId) = ids
             MAXSwerveModule(
@@ -158,6 +161,55 @@ object Drivetrain : Subsystem {
     fun zeroGyro() {
         gyroRotation = Rotation3d()
     }
+
+    // This routine sucks, because it bypasses AKit. It should be rewritten.
+    val drivingIdRoutine = SysIdRoutine(
+        SysIdRoutine.Config(Volts.of(6.0).per(Second), null, null),
+        when (Robot.model) {
+            Robot.Model.COMPETITION -> SysIdRoutine.Mechanism(
+                { input ->
+                    io.modules.forEach {
+                        ((it as MAXSwerveModule).drivingMotor as DrivingTalon).current =
+                            Amps.of(input.baseUnitMagnitude())
+                    }
+                },
+                { log ->
+                    io.modules.mapWithCorner { module, corner ->
+                        log.motor(corner.name)
+                            .current(((module as MAXSwerveModule).drivingMotor as DrivingTalon).current)
+                            .linearPosition(Meters.of(module.position.distanceMeters))
+                            .linearVelocity(MetersPerSecond.of(module.state.speedMetersPerSecond))
+                    }
+                },
+                this
+            )
+
+            Robot.Model.PRACTICE -> SysIdRoutine.Mechanism(
+                { input ->
+                    io.modules.forEach {
+                        ((it as MAXSwerveModule).drivingMotor as DrivingSparkMAX).voltage = input
+                    }
+                },
+                { log ->
+                    io.modules.mapWithCorner { module, corner ->
+                        log.motor(corner.name)
+                            .voltage(((module as MAXSwerveModule).drivingMotor as DrivingSparkMAX).voltage)
+                            .linearPosition(Meters.of(module.position.distanceMeters))
+                            .linearVelocity(MetersPerSecond.of(module.state.speedMetersPerSecond))
+                    }
+                },
+                this
+            )
+
+            else -> TODO()
+        }
+    )
+
+    fun doDynamicDrivingId(direction: SysIdRoutine.Direction): Command =
+        drivingIdRoutine.dynamic(direction)
+
+    fun doQuasistaticDrivingId(direction: SysIdRoutine.Direction): Command =
+        drivingIdRoutine.quasistatic(direction)
 }
 
 abstract class DrivetrainIO {

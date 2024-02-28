@@ -2,6 +2,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.SlotConfigs
+import com.ctre.phoenix6.controls.TorqueCurrentFOC
 import com.ctre.phoenix6.controls.VelocityVoltage
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -13,6 +14,11 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Current
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units.Amps
+import edu.wpi.first.units.Units.Volts
+import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
 import kotlin.math.roundToInt
 
@@ -35,11 +41,14 @@ interface SwerveModule {
     // and magnitude equal to the total signed distance traveled by the wheel.
     val position: SwerveModulePosition
 
+    // The raw voltage of the turning motor.
+    var turningVoltage: Measure<Voltage>
+
     fun periodic() {}
 }
 
 class MAXSwerveModule(
-    private val drivingMotor: DrivingMotor, turningId: REVMotorControllerId, private val chassisAngle: Rotation2d
+    val drivingMotor: DrivingMotor, turningId: REVMotorControllerId, private val chassisAngle: Rotation2d
 ) : SwerveModule {
     private val turningSpark = CANSparkMax(turningId, CANSparkLowLevel.MotorType.kBrushless).apply {
         restoreFactoryDefaults()
@@ -89,9 +98,10 @@ class MAXSwerveModule(
         set(value) {
             val corrected = SwerveModuleState(value.speedMetersPerSecond, value.angle - chassisAngle)
             // optimize the state to avoid rotating more than 90 degrees
-            val optimized = SwerveModuleState.optimize(
-                corrected, Rotation2d.fromRadians(turningEncoder.position)
-            )
+//            val optimized = SwerveModuleState.optimize(
+//                corrected, Rotation2d.fromRadians(turningEncoder.position)
+//            )
+            val optimized = corrected;
 
             drivingMotor.velocity = optimized.speedMetersPerSecond
 
@@ -100,6 +110,12 @@ class MAXSwerveModule(
             )
 
             field = optimized
+        }
+
+    override var turningVoltage: Measure<Voltage>
+        get() = Volts.of(turningSpark.busVoltage) // TODO: is this actually the motor output voltage?
+        set(value) {
+            turningSpark.setVoltage(value.baseUnitMagnitude())
         }
 }
 
@@ -128,6 +144,12 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
         get() = inner.velocity.value
         set(value) {
             inner.setControl(VelocityVoltage(value).withSlot(0))
+        }
+
+    var current: Measure<Current>
+        get() = Amps.of(inner.torqueCurrent.value)
+        set(value) {
+            inner.setControl(TorqueCurrentFOC(value.baseUnitMagnitude()))
         }
 }
 
@@ -162,6 +184,12 @@ class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
         set(value) {
             inner.set(value)
         }
+
+    var voltage: Measure<Voltage>
+        get() = Volts.of(inner.busVoltage) // TODO: is this actually correct, or is this just the battery voltage?
+        set(value) {
+            inner.setVoltage(value.baseUnitMagnitude())
+        }
 }
 
 class SimSwerveModule : SwerveModule {
@@ -190,6 +218,10 @@ class SimSwerveModule : SwerveModule {
         get() = SwerveModulePosition(
             drivingMotor.angularPositionRad * WHEEL_RADIUS, Rotation2d.fromRadians(turningMotor.angularPositionRad)
         )
+
+    override var turningVoltage: Measure<Voltage>
+        get() = TODO()
+        set(value) { TODO() }
 
     override fun periodic() {
         turningMotor.update(Robot.period)
