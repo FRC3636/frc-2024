@@ -103,7 +103,7 @@ object Robot : LoggedRobot() {
 //        controller.b().whileTrue(Intake.intakeCommand())
 
         controller.a().whileTrue(Shooter.Flywheels.intake())
-        controller.b().whileTrue(Shooter.Flywheels.shoot(12.0, -0.0))
+        controller.b().whileTrue(Shooter.Flywheels.shoot(40.0, -20.0))
         controller.x().whileTrue(Shooter.Flywheels.shoot(3.5, 0.0))
         controller.y().whileTrue(Commands.startEnd({
             println("Shooting")
@@ -113,13 +113,7 @@ object Robot : LoggedRobot() {
             Shooter.Flywheels.setVoltage(Units.Volts.zero())
         }, Shooter.Flywheels))
 
-
-        controller.leftBumper().whileTrue(Shooter.Pivot.quasistaticIdCommand(SysIdRoutine.Direction.kForward))
-        controller.rightTrigger().whileTrue(Shooter.Pivot.dynamicIdCommand(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.Pivot.quasistaticIdCommand(SysIdRoutine.Direction.kReverse))
-        controller.leftTrigger().whileTrue(Shooter.Pivot.dynamicIdCommand(SysIdRoutine.Direction.kReverse))
-//        controller.leftTrigger().whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
-//        controller.rightTrigger().whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromRotations(0.5)))
+        controller.leftTrigger().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(80.0)))
 
         //Drive if triggered joystickLeft input
 

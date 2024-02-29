@@ -7,6 +7,7 @@ import com.frcteam3636.frc2024.WHITE
 import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Current
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Voltage
@@ -22,8 +23,8 @@ import kotlin.math.abs
 object Shooter {
 
     val pivotIdRoutine = SysIdRoutine(
-        SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), null, null, null), SysIdRoutine.Mechanism(
-            Pivot::setvoltage, Pivot::getState, Pivot
+        SysIdRoutine.Config(Volts.of(10.0).per(Seconds.of(2.0)), Volts.of(10.0), null, null), SysIdRoutine.Mechanism(
+            { Pivot.setCurrent(Amps.of(it.baseUnitMagnitude())) }, Pivot::getState, Pivot
         )
     )
 
@@ -57,20 +58,21 @@ object Shooter {
             }
             Logger.recordOutput("Shooter", mechanism)
 
-//            io.setVoltage(
-//                Volts.of(
-//                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
-//                        inputs.leftSpeed.`in`(RadiansPerSecond),
-//                        setpointLeft.`in`(RadiansPerSecond)
-//                    )
-//                ),
-//                Volts.of(
-//                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
-//                        inputs.rightSpeed.`in`(RadiansPerSecond),
-//                        setpointRight.`in`(RadiansPerSecond)
-//                    )
-//                )
-//            )
+            io.setFlywheelVoltage(
+                Volts.of(
+                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
+                        inputs.leftSpeed.`in`(RadiansPerSecond),
+                        setpointLeft.`in`(RadiansPerSecond)
+                    )
+                ),
+                Volts.of(
+                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
+                        inputs.rightSpeed.`in`(RadiansPerSecond),
+                        setpointRight.`in`(RadiansPerSecond)
+                    )
+                )
+            )
+
             Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
             Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
@@ -120,7 +122,6 @@ object Shooter {
         }
 
 
-
         fun setVoltage(volts: Measure<Voltage>) {
             io.setFlywheelVoltage(volts, volts)
         }
@@ -149,7 +150,7 @@ object Shooter {
         private val io: PivotIO = when (Robot.model) {
             Robot.Model.SIMULATION -> PivotIOSim()
             Robot.Model.COMPETITION -> PivotIOKraken()
-            Robot.Model.PRACTICE -> PivotIONeo()
+            Robot.Model.PRACTICE -> PivotIOSim()
         }
         private val inputs = PivotIO.Inputs()
         private var pivotOffset: Double = 0.0
@@ -176,14 +177,14 @@ object Shooter {
 
         fun getState(log: SysIdRoutineLog) {
             log.motor("pivot-left").voltage(
-                Volts.of(inputs.voltageLeft)
+                Volts.of(inputs.currentLeft)
             ).angularPosition(
                 Radians.of(inputs.rotorDistanceLeft)
             ).angularVelocity(
                 RadiansPerSecond.of(inputs.rotorVelocityLeft)
             )
             log.motor("pivot-right").voltage(
-                Volts.of(inputs.voltageRight)
+                Volts.of(inputs.currentRight)
             ).angularPosition(
                 Radians.of(inputs.rotorDistanceRight)
             ).angularVelocity(
@@ -191,16 +192,28 @@ object Shooter {
             )
         }
 
-        fun setvoltage(volts: Measure<Voltage>) {
-            io.driveVoltage(volts.magnitude())
+        fun setCurrent(current: Measure<Current>) {
+            io.driveCurrent(current.baseUnitMagnitude())
         }
 
-        fun dynamicIdCommand(direction: SysIdRoutine.Direction) : Command {
-              return  Shooter.pivotIdRoutine.dynamic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
+        fun dynamicIdCommand(direction: SysIdRoutine.Direction): Command {
+            return Shooter.pivotIdRoutine.dynamic(direction).until {
+                if (direction == SysIdRoutine.Direction.kForward) {
+                    inputs.position.rotations > 0.4
+                } else {
+                    inputs.position.rotations < -0.3
+                }
+            }.andThen(InstantCommand({ io.driveCurrent(0.0) }))
         }
 
         fun quasistaticIdCommand(direction: SysIdRoutine.Direction): Command {
-            return  Shooter.pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
+            return Shooter.pivotIdRoutine.quasistatic(direction).until {
+                if (direction == SysIdRoutine.Direction.kForward) {
+                    inputs.position.rotations > 0.4
+                } else {
+                    inputs.position.rotations < -0.3
+                }
+            }.andThen(InstantCommand({ io.driveCurrent(0.0) }))
         }
 
         fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command = run {
@@ -211,11 +224,12 @@ object Shooter {
             Handoff(Rotation2d()), Amp(Rotation2d())
         }
     }
-    object Amp: Subsystem {
+
+    object Amp : Subsystem {
         val io = AmpMechIOReal()
         val inputs = AmpMechIO.Inputs()
 
-        fun pivotTo(pos: Rotation2d){
+        fun pivotTo(pos: Rotation2d) {
             io.pivotTo(pos)
         }
 
@@ -224,6 +238,7 @@ object Shooter {
             Logger.processInputs("Shooter/AmpMech", inputs)
         }
     }
+
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
