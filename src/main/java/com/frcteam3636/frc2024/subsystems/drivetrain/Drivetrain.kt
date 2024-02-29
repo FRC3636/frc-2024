@@ -136,7 +136,7 @@ object Drivetrain : Subsystem {
                     ChassisSpeeds.fromFieldRelativeSpeeds(
                         -translationJoystick.y * FREE_SPEED,
                         -translationJoystick.x * FREE_SPEED,
-                        -rotationJoystick.x * TAU,
+                        -rotationJoystick.x * TAU * 8,
                         gyroRotation.toRotation2d()
                     )
             } else {
@@ -238,8 +238,8 @@ internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
 
 internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
-internal val FREE_SPEED = 7.0
-internal val JOYSTICK_DEADBAND = 0.02
+internal val FREE_SPEED = 17.0
+internal val JOYSTICK_DEADBAND = 0.04
 
 internal val MODULE_POSITIONS =
     PerCorner(
