@@ -5,6 +5,7 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.TAU
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
@@ -25,6 +26,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
@@ -38,6 +40,7 @@ object Drivetrain : Subsystem {
                 position.rotation
             )
         })
+
         Robot.Model.PRACTICE -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_PRACTICE).map { (position, ids) ->
             val (driveId, turnId) = ids
             MAXSwerveModule(
@@ -88,8 +91,11 @@ object Drivetrain : Subsystem {
         get() = inputs.measuredStates
         // Set the desired module states.
         set(value) {
-            io.setDesiredStates(value)
-            Logger.recordOutput("Drivetrain/DesiredStates", *value.toTypedArray())
+            val stateArr = value.toTypedArray()
+            SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, FREE_SPEED)
+
+            io.setDesiredStates(PerCorner.fromConventionalArray(stateArr))
+            Logger.recordOutput("Drivetrain/DesiredStates", *stateArr)
         }
 
     // The current speed of chassis relative to the ground, assuming that the wheels have perfect
@@ -109,11 +115,12 @@ object Drivetrain : Subsystem {
         }
 
     // Set the drivetrain to an X-formation to passively prevent movement in any direction.
-    fun brake() {
-        // set the modules to radiate outwards from the chassis origin
-        moduleStates =
-            MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.rotation) }
-    }
+    fun brake(): Command =
+        runOnce {
+            // set the modules to radiate outwards from the chassis origin
+            moduleStates =
+                MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+        }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
     val estimatedPose: Pose2d
@@ -121,13 +128,22 @@ object Drivetrain : Subsystem {
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
         run {
-            chassisSpeeds =
-                ChassisSpeeds.fromFieldRelativeSpeeds(
-                    translationJoystick.y,
-                    translationJoystick.x,
-                    rotationJoystick.x,
-                    gyroRotation.toRotation2d()
-                )
+            if (abs(translationJoystick.x) > JOYSTICK_DEADBAND
+                || abs(translationJoystick.y) > JOYSTICK_DEADBAND
+                || abs(rotationJoystick.x) > JOYSTICK_DEADBAND
+            ) {
+                chassisSpeeds =
+                    ChassisSpeeds.fromFieldRelativeSpeeds(
+                        -translationJoystick.y * FREE_SPEED,
+                        -translationJoystick.x * FREE_SPEED,
+                        -rotationJoystick.x * TAU,
+                        gyroRotation.toRotation2d()
+                    )
+            } else {
+                // set the modules to radiate outwards from the chassis origin
+                moduleStates =
+                    MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+            }
         }
 
     fun driveWithController(controller: CommandXboxController): Command =
@@ -222,29 +238,30 @@ internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
 
 internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
-internal val FREE_SPEED = 15.0
+internal val FREE_SPEED = 7.0
+internal val JOYSTICK_DEADBAND = 0.02
 
 internal val MODULE_POSITIONS =
     PerCorner(
         frontLeft =
         Pose2d(
             Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(-90.0)
+            Rotation2d.fromDegrees(0.0)
         ),
         backLeft =
         Pose2d(
             Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(0.0)
+            Rotation2d.fromDegrees(270.0)
         ),
         backRight =
         Pose2d(
             Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(90.0)
+            Rotation2d.fromDegrees(0.0)
         ),
         frontRight =
         Pose2d(
             Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(180.0)
+            Rotation2d.fromDegrees(270.0)
         ),
     )
 
