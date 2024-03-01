@@ -57,20 +57,21 @@ object Shooter {
             }
             Logger.recordOutput("Shooter", mechanism)
 
-//            io.setVoltage(
-//                Volts.of(
-//                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
-//                        inputs.leftSpeed.`in`(RadiansPerSecond),
-//                        setpointLeft.`in`(RadiansPerSecond)
-//                    )
-//                ),
-//                Volts.of(
-//                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
-//                        inputs.rightSpeed.`in`(RadiansPerSecond),
-//                        setpointRight.`in`(RadiansPerSecond)
-//                    )
-//                )
-//            )
+            io.setFlywheelVoltage(
+                Volts.of(
+                    ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
+                        inputs.leftSpeed.`in`(RadiansPerSecond),
+                        setpointLeft.`in`(RadiansPerSecond)
+                    )
+                ),
+                Volts.of(
+                    ffController.calculate(setpointRight.`in`(RadiansPerSecond)) + pidControllerRight.calculate(
+                        inputs.rightSpeed.`in`(RadiansPerSecond),
+                        setpointRight.`in`(RadiansPerSecond)
+                    )
+                )
+            )
+
             Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
             Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
@@ -153,21 +154,18 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
         private var pivotOffset: Double = 0.0
-        private val leftLimitSwitchUnpressed = DigitalInput(2)
-        private val rightLimitSwitchUnpressed = DigitalInput(3)
 
         override fun periodic() {
-//            if(!leftLimitSwitchUnpressed.get() || !rightLimitSwitchUnpressed.get()){
-//                pivotOffset = -inputs.position.radians
-//            }
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
             armLigament.angle = inputs.position.degrees
+
             Logger.recordOutput("Shooter", mechanism)
         }
 
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
+            Logger.recordOutput("Shooter/DesiredPosition", goal)
             io.pivotToAndStop(goal)
         }, Commands.waitUntil {
             (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
