@@ -14,6 +14,8 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Current
+import edu.wpi.first.units.Measure
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
 import kotlin.math.roundToInt
 
@@ -61,6 +63,8 @@ class MAXSwerveModule(
         velocityConversionFactor = TAU / 60
     }
 
+
+
     private val turningPIDController = turningSpark.pidController.apply {
         setFeedbackDevice(turningEncoder)
         pidGains = TURNING_PID_GAINS
@@ -102,6 +106,7 @@ class MAXSwerveModule(
 
             field = optimized
         }
+
 }
 
 interface DrivingMotor {
@@ -123,13 +128,15 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
     }
 
     override val position: Double
-        get() = inner.position.value * DRIVING_GEAR_RATIO_TALON
+        get() = inner.position.value * DRIVING_GEAR_RATIO_TALON * WHEEL_CIRCUMFERENCE
 
     override var velocity: Double
         get() = inner.velocity.value
         set(value) {
-            inner.setControl(VelocityTorqueCurrentFOC(value / DRIVING_GEAR_RATIO_TALON).withSlot(0))
+            inner.setControl(VelocityTorqueCurrentFOC(value / DRIVING_GEAR_RATIO_TALON / WHEEL_CIRCUMFERENCE).withSlot(0))
         }
+
+
 }
 
 class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {

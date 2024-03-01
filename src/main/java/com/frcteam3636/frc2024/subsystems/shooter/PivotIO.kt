@@ -16,6 +16,7 @@ import edu.wpi.first.math.controller.ArmFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
@@ -40,9 +41,11 @@ interface PivotIO {
 
         var rotorDistanceRight: Double = 0.0
         var rotorVelocityRight: Double = 0.0
+        var leftLimitSwitchUnpressed: Boolean = false
 
 
         override fun toLog(table: org.littletonrobotics.junction.LogTable) {
+            table.put("Left Limit Switch Unpressed", leftLimitSwitchUnpressed)
             table.put("Position", position)
             table.put("Velocity", velocity)
             table.put("Acceleration", acceleration)
@@ -55,6 +58,7 @@ interface PivotIO {
         }
 
         override fun fromLog(table: org.littletonrobotics.junction.LogTable) {
+            leftLimitSwitchUnpressed = table.get("Left Limit Switch Unpressed", leftLimitSwitchUnpressed)
             position = table.get("Position", position)[0]
             velocity = table.get("Velocity", velocity)[0]
             acceleration = table.get("Acceleration", acceleration)[0]
@@ -78,6 +82,7 @@ interface PivotIO {
 class PivotIOKraken : PivotIO {
     private val leftMotor = TalonFX(CTREMotorControllerId.LeftPivotMotor)
     private val rightMotor = TalonFX(CTREMotorControllerId.RightPivotMotor)
+    private val leftLimitSwitchUnpressed = DigitalInput(2)
 
     init {
         val config = TalonFXConfiguration().apply {
@@ -107,6 +112,13 @@ class PivotIOKraken : PivotIO {
     }
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
+
+        if(!leftLimitSwitchUnpressed.get()){
+            leftMotor.setPosition(LIMIT_SWITCH_OFFSET.rotations)
+            rightMotor.setPosition(LIMIT_SWITCH_OFFSET.rotations)
+        }
+
+        inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
         inputs.position = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.velocity = Rotation2d.fromRotations(leftMotor.velocity.value)
         inputs.acceleration = Rotation2d.fromRotations(leftMotor.acceleration.value)
@@ -154,18 +166,20 @@ class PivotIOKraken : PivotIO {
     }
 
     internal companion object Constants {
-        val GEAR_RATIO = 90.0
+        val GEAR_RATIO = 120.0
 
-        val PID_GAINS = PIDGains(4.0, 0.0, 0.0)
-        val FF_GAINS = MotorFFGains()
-        val GRAVITY_GAIN = 0.0
+        val PID_GAINS = PIDGains(50.0, 0.0, 0.0)
+        val FF_GAINS = MotorFFGains(4.4, 0.0, 0.0)
+        val GRAVITY_GAIN = 4.8
 
         val PROFILE_VELOCITY = TAU
         val PROFILE_ACCELERATION = TAU
         val PROFILE_JERK = 10 * TAU
 
         const val LEFT_ZERO_OFFSET = -0.496
-        const val RIGHT_ZERO_OFFSET = 0.506
+        const val RIGHT_ZERO_OFFSET = 0.38
+
+        val LIMIT_SWITCH_OFFSET = Rotation2d.fromDegrees(-22.0)
     }
 }
 
