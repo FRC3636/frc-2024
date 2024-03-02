@@ -52,7 +52,9 @@ class IntakeIOReal : IntakeIO {
         CANSparkMax(
             REVMotorControllerId.OverTheBumperIntakeFeed,
             CANSparkLowLevel.MotorType.kBrushless
-        )
+        ).apply{
+            inverted = true
+        }
     private var utbRollers =
         CANSparkFlex(
             REVMotorControllerId.UnderTheBumperIntakeRoller,
@@ -65,8 +67,8 @@ class IntakeIOReal : IntakeIO {
         inputs.utbRollerVelocity = Rotation2d(utbRollers.encoder.velocity)
         inputs.otbCurrent = otbRollers.outputCurrent
         inputs.utbCurrent = utbRollers.outputCurrent
-        inputs.isIntaking = utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD && !inputs.beamBreak
         inputs.beamBreak = beamBreakSensor.get()
+        inputs.isIntaking = utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD && !inputs.beamBreak
     }
 
     override fun setOverBumperRoller(speed: Double) {
