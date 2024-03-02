@@ -23,12 +23,12 @@ object Shooter {
 
     val pivotIdRoutine = SysIdRoutine(
         SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), null, null, null), SysIdRoutine.Mechanism(
-            Pivot::setvoltage, Pivot::getState, Pivot
+            Pivot::setVoltage, Pivot::getState, Pivot
         )
     )
 
     val flywheelIORoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Flywheels::setVoltage, Flywheels::getState, Flywheels)
+        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Pivot::setVoltage, Flywheels::getState, Flywheels)
     )
 
     object Flywheels : Subsystem {
@@ -120,12 +120,6 @@ object Shooter {
             })
         }
 
-
-
-        fun setVoltage(volts: Measure<Voltage>) {
-            io.setFlywheelVoltage(volts, volts)
-        }
-
         fun getState(log: SysIdRoutineLog) {
             log.motor("left-flywheels")
                 .voltage(
@@ -167,10 +161,18 @@ object Shooter {
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
             Logger.recordOutput("Shooter/DesiredPosition", goal)
             io.pivotToAndStop(goal)
-        }, Commands.waitUntil {
-            (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
-                    && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
+//            , Commands.waitUntil {
+//            (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
+//                    && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
+//        })
+
+
+        fun zeroPivot(){
+            io.zeroPosition()
+        }
+
+
 
         fun getState(log: SysIdRoutineLog) {
             log.motor("pivot-left").voltage(
@@ -189,7 +191,7 @@ object Shooter {
             )
         }
 
-        fun setvoltage(volts: Measure<Voltage>) {
+        fun setVoltage(volts: Measure<Voltage>) {
             io.driveVoltage(volts.magnitude())
         }
 
@@ -204,7 +206,6 @@ object Shooter {
         fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command = run {
             io.pivotToAndMove(positionProfile(), velocityProfile())
         }
-
         enum class PositionPresets(position: Rotation2d) {
             Handoff(Rotation2d()), Amp(Rotation2d())
         }

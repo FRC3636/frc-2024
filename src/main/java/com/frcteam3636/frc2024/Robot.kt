@@ -9,7 +9,9 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units
+import edu.wpi.first.units.Units.Volts
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -24,6 +26,7 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import java.time.Instant
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -100,6 +103,8 @@ object Robot : LoggedRobot() {
 
 
         controller.a().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(90.0)))
+
+        controller.b().onTrue(InstantCommand({Shooter.Pivot.zeroPivot()}))
         //Drive if triggered joystickLeft input
 
         JoystickButton(joystickLeft, 7).onTrue(
