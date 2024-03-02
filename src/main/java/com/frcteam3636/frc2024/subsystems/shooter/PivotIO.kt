@@ -180,9 +180,9 @@ class PivotIOKraken : PivotIO {
     internal companion object Constants {
         val GEAR_RATIO = 40.0
 
-        val PID_GAINS = PIDGains(0.0, 0.0, 0.0)
+        val PID_GAINS = PIDGains(37.0, 3.0, 4.0)
         val FF_GAINS = MotorFFGains(2.8, 0.0, 0.0)
-        val GRAVITY_GAIN = 17.0
+        val GRAVITY_GAIN = 13.0
 
         val PROFILE_VELOCITY = TAU
         val PROFILE_ACCELERATION = TAU

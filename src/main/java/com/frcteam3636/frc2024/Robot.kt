@@ -102,9 +102,28 @@ object Robot : LoggedRobot() {
 
 
 
-        controller.a().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(90.0)))
 
-        controller.b().onTrue(InstantCommand({Shooter.Pivot.zeroPivot()}))
+        controller.a().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(135.0)))
+
+        controller.b().onTrue(Shooter.Flywheels.shoot(40.0, 0.0))
+
+        controller.y().onTrue(InstantCommand({Shooter.Pivot.zeroPivot()}))
+
+        controller.leftBumper().onTrue(Shooter.Flywheels.index())
+
+        controller.rightBumper().whileTrue(Commands.sequence(
+            Commands.parallel(
+                Intake.intakeCommand(),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-27.0))
+            ),
+            Commands.parallel(
+                Shooter.Flywheels.intake(),
+                Intake.indexCommand()
+            ))).onFalse(
+                Intake.stopIntake()
+            )
+
+
         //Drive if triggered joystickLeft input
 
         JoystickButton(joystickLeft, 7).onTrue(
