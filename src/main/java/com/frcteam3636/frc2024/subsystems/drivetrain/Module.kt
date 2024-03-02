@@ -115,6 +115,7 @@ interface DrivingMotor {
 }
 
 class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
+
     private val inner = TalonFX(id).apply {
         configurator.apply(Slot0Configs().apply {
             pidGains = DRIVING_PID_GAINS_TALON
