@@ -10,7 +10,6 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Voltage
-import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
@@ -161,11 +160,10 @@ object Shooter {
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
             Logger.recordOutput("Shooter/DesiredPosition", goal)
             io.pivotToAndStop(goal)
+        }, Commands.waitUntil {
+            (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
+                    && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
-//            , Commands.waitUntil {
-//            (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
-//                    && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
-//        })
 
 
         fun zeroPivot(){
