@@ -167,7 +167,7 @@ object Shooter {
 
 
         fun zeroPivot(){
-            io.zeroPosition()
+            io.resetPivotToHardStop()
         }
 
 

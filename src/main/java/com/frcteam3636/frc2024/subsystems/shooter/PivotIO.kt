@@ -1,10 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import com.ctre.phoenix6.configs.FeedbackConfigs
-import com.ctre.phoenix6.configs.MotorOutputConfigs
-import com.ctre.phoenix6.configs.Slot0Configs
 import com.ctre.phoenix6.configs.TalonFXConfiguration
-import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.ctre.phoenix6.signals.GravityTypeValue
 import com.ctre.phoenix6.signals.InvertedValue
@@ -19,8 +15,6 @@ import edu.wpi.first.math.controller.ArmFeedforward
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.Timer
@@ -87,7 +81,7 @@ interface PivotIO {
 
     fun driveVoltage(volts: Double) {}
 
-    fun zeroPosition() {}
+    fun resetPivotToHardStop() {}
 }
 
 class PivotIOKraken : PivotIO {
@@ -113,7 +107,7 @@ class PivotIOKraken : PivotIO {
         leftMotor.configurator.apply(config)
         config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive
         rightMotor.configurator.apply(config)
-        zeroPosition()
+        resetPivotToHardStop()
     }
 
     private val leftLimitSwitchUnpressed = DigitalInput(2)
@@ -121,7 +115,7 @@ class PivotIOKraken : PivotIO {
     override fun updateInputs(inputs: PivotIO.Inputs) {
 
         if(!leftLimitSwitchUnpressed.get()){
-            zeroPosition()
+            resetPivotToHardStop()
         }
 
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
@@ -146,7 +140,7 @@ class PivotIOKraken : PivotIO {
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
     }
 
-    override fun zeroPosition() {
+    override fun resetPivotToHardStop() {
         leftMotor.setPosition(-LIMIT_SWITCH_OFFSET.rotations)
         rightMotor.setPosition(-LIMIT_SWITCH_OFFSET.rotations)
     }
