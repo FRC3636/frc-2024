@@ -41,7 +41,6 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
-    private val joystickDev = Joystick(3)
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
