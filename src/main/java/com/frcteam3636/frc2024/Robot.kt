@@ -9,9 +9,6 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units
-import edu.wpi.first.units.Units.Volts
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -19,14 +16,12 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import java.time.Instant
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -119,9 +114,12 @@ object Robot : LoggedRobot() {
             Commands.parallel(
                 Shooter.Flywheels.intake(),
                 Intake.indexCommand()
-            ))).onFalse(
-                Intake.stopIntake()
-            )
+            )))
+
+        controller.rightTrigger().whileTrue(Commands.parallel(
+            Shooter.Flywheels.intake(),
+            Intake.indexCommand()
+        ))
 
 
         //Drive if triggered joystickLeft input

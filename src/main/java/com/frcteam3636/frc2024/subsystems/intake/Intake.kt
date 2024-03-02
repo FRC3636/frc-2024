@@ -33,19 +33,12 @@ object Intake : Subsystem {
 
     }
 
-    fun stopIntake(): Command {
-        return InstantCommand({
-            io.setUnderBumperRoller(0.0)
-        })
-    }
-
-
-
     fun indexCommand(): Command {
         return Commands.sequence(
             InstantCommand ( {io.setUnderBumperRoller(0.8)}),
             WaitCommand(4.0),
-            InstantCommand( {io.setUnderBumperRoller(0.0)} ),
-        )
+        ).finallyDo(Runnable {
+            io.setUnderBumperRoller(0.0)
+        })
     }
 }
