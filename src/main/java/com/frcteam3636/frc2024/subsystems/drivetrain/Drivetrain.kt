@@ -242,7 +242,7 @@ internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
 internal val FREE_SPEED = 7.0
 internal val JOYSTICK_DEADBAND = 0.04
 
-internal val MODULE_POSITIONS =
+internal val COMP_MODULE_POSITIONS =
     PerCorner(
         frontLeft =
         Pose2d(
@@ -265,6 +265,37 @@ internal val MODULE_POSITIONS =
             Rotation2d.fromDegrees(270.0)
         ),
     )
+
+internal val PRACTICE_MODULE_POSITIONS =
+    PerCorner(
+        frontLeft =
+        Pose2d(
+            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(-90.0)
+        ),
+        backLeft =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(0.0)
+        ),
+        backRight =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(90.0)
+        ),
+        frontRight =
+        Pose2d(
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(180.0)
+        ),
+    )
+
+
+internal val MODULE_POSITIONS = when (Robot.model) {
+    Robot.Model.COMPETITION -> COMP_MODULE_POSITIONS
+    Robot.Model.PRACTICE -> PRACTICE_MODULE_POSITIONS
+    Robot.Model.SIMULATION -> PRACTICE_MODULE_POSITIONS
+}
 
 internal val MODULE_CAN_IDS_COMP =
     PerCorner(
