@@ -6,7 +6,6 @@ import com.frcteam3636.frc2024.Robot
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.FunctionalCommand
 import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
 
@@ -33,25 +32,23 @@ object Climber : Subsystem {
     }
 
     fun extendClimberCommand(): Command {
-        return FunctionalCommand(
-            {},
-            { io.moveClimber(1.0) },
-            { io.moveClimber(0.0) },
-            // wait until climber is extended
-            { inputs.climberPosition <= extendedPosition },
-            this
-        )
+        return runOnce {
+            io.moveClimber(1.0)
+        }
+            .until { inputs.climberPosition <= extendedPosition }
+            .finallyDo(Runnable {
+                io.moveClimber(0.0)
+            })
     }
 
     fun retractClimberCommand(): Command {
-        return FunctionalCommand(
-            {},
-            { io.moveClimber(-1.0) },
-            { io.moveClimber(0.0) },
-            // wait until climber is retracted
-            { inputs.climberPosition <= retractedPosition },
-            this
-        )
+        return runOnce {
+            io.moveClimber(1.0)
+        }
+            .until { inputs.climberPosition <= extendedPosition }
+            .finallyDo(Runnable {
+                io.moveClimber(0.0)
+            })
     }
 
 
