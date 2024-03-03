@@ -192,23 +192,23 @@ object Drivetrain : Subsystem {
                 )
         }
 
-    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command =
-        run {
-            val rotationController = PIDController(ROTATION_PID_GAINS)
-
-            val magnitude = rotationController.calculate(
+    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
+        val rotationPIDController = PIDController(ROTATION_PID_GAINS)
+        return run {
+            val magnitude = rotationPIDController.calculate(
                 estimatedPose.rotation.radians,
                 target.minus(estimatedPose.translation).angle.radians
             )
 
-            val chassisSpeeds = ChassisSpeeds(
-                FREE_SPEED.baseUnitMagnitude() * translationJoystick.x,
-                FREE_SPEED.baseUnitMagnitude() * translationJoystick.y,
-                0.0
+            chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
+                -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                magnitude,
+                gyroRotation.toRotation2d(),
             )
-
-            TODO()
         }
+    }
+
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()
@@ -278,8 +278,7 @@ class DrivetrainIOSim : DrivetrainIO() {
 internal val WHEEL_BASE: Double = Units.inchesToMeters(30.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(28.0)
 
-internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
-internal val JOYSTICK_DEADBAND = 0.04
+internal const val JOYSTICK_DEADBAND = 0.04
 
 internal val COMP_MODULE_POSITIONS =
     PerCorner(
@@ -340,7 +339,7 @@ internal val MODULE_POSITIONS = when (Robot.model) {
 internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
-internal val ROTATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
+internal val ROTATION_PID_GAINS = PIDGains(0.3, 0.0, 0.0)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
