@@ -35,8 +35,8 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import kotlin.math.abs
 import java.util.*
+import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
@@ -122,7 +122,7 @@ object Drivetrain : Subsystem {
         // Set the desired module states.
         set(value) {
             val stateArr = value.toTypedArray()
-            SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, FREE_SPEED)
+            SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, TRANSLATION_SPEED)
 
             io.setDesiredStates(PerCorner.fromConventionalArray(stateArr))
             Logger.recordOutput("Drivetrain/DesiredStates", *stateArr)
