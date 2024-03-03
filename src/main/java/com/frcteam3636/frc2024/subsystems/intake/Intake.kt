@@ -19,7 +19,7 @@ object Intake : Subsystem {
     }
 
     fun intakeCommand(): Command {
-        return StartEndCommand(
+        return startEnd(
             {
                 io.setUnderBumperRoller(0.5)
                 io.setOverBumperRoller(0.5)
@@ -30,16 +30,15 @@ object Intake : Subsystem {
             }
         )
             .until(inputs::isIntaking)
-            .also { it.addRequirements(this) }
+
     }
 
-
-
     fun indexCommand(): Command {
-        return SequentialCommandGroup(
-            runOnce { io.setUnderBumperRoller(0.4) },
-            WaitCommand(1.0),
-            runOnce { io.setUnderBumperRoller(0.0) }
-        )
+        return Commands.sequence(
+            InstantCommand ( {io.setUnderBumperRoller(0.8)}),
+            WaitCommand(4.0),
+        ).finallyDo(Runnable {
+            io.setUnderBumperRoller(0.0)
+        })
     }
 }

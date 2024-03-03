@@ -3,9 +3,10 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.kauailabs.navx.frc.AHRS
-import edu.wpi.first.math.geometry.Quaternion
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Translation2d
+import org.littletonrobotics.junction.Logger
+import kotlin.math.PI
 import kotlin.math.sign
 
 interface Gyro {
@@ -14,22 +15,18 @@ interface Gyro {
     fun periodic() {}
 }
 
-class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
+class GyroNavX(private var offset: Rotation3d = Rotation3d(0.0, 0.0, PI)) : Gyro {
     private val ahrs = AHRS()
 
+    init {
+        Logger.recordOutput("Gyro/Offset", offset)
+    }
+
     override var rotation: Rotation3d
-        get() =
-            offset +
-                    Rotation3d(
-                        Quaternion(
-                            ahrs.quaternionW.toDouble(),
-                            ahrs.quaternionX.toDouble(),
-                            ahrs.quaternionY.toDouble(),
-                            ahrs.quaternionZ.toDouble()
-                        )
-                    )
-        set(value) {
-            offset = value - rotation
+        get() = offset + ahrs.rotation3d
+        set(goal) {
+            offset = goal - ahrs.rotation3d
+            Logger.recordOutput("Gyro/Offset", offset)
         }
 }
 

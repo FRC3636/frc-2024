@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024
 
+import com.ctre.phoenix6.hardware.TalonFX
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
@@ -14,10 +15,10 @@ import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
@@ -82,9 +83,11 @@ object Robot : LoggedRobot() {
         // may be added.
 
         // initialize and register our subsystems
-//        Shooter.register()
+        Shooter.register()
         Drivetrain.register()
         Intake.register()
+
+        TalonFX(0) // init phoenix diagnostics server
 
         // Configure our button and joystick bindings
         configureBindings()
@@ -98,21 +101,33 @@ object Robot : LoggedRobot() {
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
 
-        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
+
+
+
+
+        controller.a().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(135.0)))
+
+        controller.b().onTrue(Shooter.Flywheels.shoot(40.0, 0.0))
+
+        controller.y().onTrue(InstantCommand({Shooter.Pivot.zeroPivot()}))
+
+        controller.leftBumper().onTrue(Shooter.Flywheels.index())
+
+        controller.rightBumper().whileTrue(Commands.sequence(
+            Commands.parallel(
+                Intake.intakeCommand(),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-27.0))
+            ),
+            Commands.parallel(
+                Shooter.Flywheels.intake(),
+                Intake.indexCommand()
+            )))
+
+        controller.rightTrigger().whileTrue(Commands.parallel(
+            Shooter.Flywheels.intake(),
             Intake.indexCommand()
-        )
+        ))
 
-//        controller.x().whileTrue(Shooter.shootCommand())
-//        controller.b().whileTrue(Intake.intakeCommand())
-
-//        controller.a().whileTrue(Shooter.Flywheels.intake())
-//        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
-
-
-        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
-        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
-        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
 
         //Drive if triggered joystickLeft input
 
@@ -130,11 +145,15 @@ object Robot : LoggedRobot() {
             })
         )
 
-//        JoystickButton(joystickLeft, 1).whileTrue(Shooter.Flywheels.shoot(1000.0, Units.rotationsToRadians(5.0)))
+        JoystickButton(joystickLeft, 8).onTrue(
+            InstantCommand({
+                Drivetrain.zeroGyro()
+                println("Gyro zeroed")
+            })
+        )
 
         JoystickButton(
-            joystickLeft,
-            2
+            joystickLeft, 2
         ).whileTrue(
             Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
                 { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })

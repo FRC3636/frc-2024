@@ -1,23 +1,18 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.CANSparkFlex
-import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.REVMotorControllerId
-import com.frcteam3636.frc2024.utils.math.MotorFFGains
-import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.pidGains
-import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
-import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Radians
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.units.Voltage
+import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import java.sql.ResultSetMetaData
 
 interface FlywheelIO {
     class Inputs : LoggableInputs {
@@ -41,9 +36,9 @@ interface FlywheelIO {
 
     fun updateInputs(inputs: Inputs)
 
-    fun setIndexerVoltage(volts: Measure<Voltage>) {}
+    fun setIndexerVoltage(voltage: Measure<Voltage>)
 
-    fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
+    fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
 }
 
 class FlywheelIOReal : FlywheelIO {
@@ -54,7 +49,7 @@ class FlywheelIOReal : FlywheelIO {
             inverted = false
             encoder.apply {
                 positionConversionFactor = Units.rotationsToRadians(1.0)
-                velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
+                velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0)
             }
         }
 
@@ -65,7 +60,7 @@ class FlywheelIOReal : FlywheelIO {
             inverted = false
             encoder.apply {
                 positionConversionFactor = Units.rotationsToRadians(1.0)
-                velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0) * GEAR_RATIO
+                velocityConversionFactor = Units.rotationsPerMinuteToRadiansPerSecond(1.0)
             }
         }
 
@@ -82,37 +77,43 @@ class FlywheelIOReal : FlywheelIO {
         inputs.rightPos = Radians.of(rightSpark.encoder.position)
     }
 
-    override fun setIndexerVoltage(volts: Measure<Voltage>) {
-        indexer.setVoltage(volts.baseUnitMagnitude())
+    override fun setIndexerVoltage(voltage: Measure<Voltage>) {
+        indexer.setVoltage(voltage.baseUnitMagnitude())
+
+        Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
 
-    override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+    override fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
         leftSpark.setVoltage(left.baseUnitMagnitude())
         rightSpark.setVoltage(right.baseUnitMagnitude())
 
         Logger.recordOutput("Shooter/Flywheels/Left Effort", left)
         Logger.recordOutput("Shooter/Flywheels/Right Effort", right)
     }
-
-
-
-    internal companion object {
-        const val GEAR_RATIO = 1.0
-    }
 }
 
 class FlywheelIOSim : FlywheelIO {
     // simulating the flywheels wouldn't actually allow us to test any more,
     // since we're just using onboard SPARK MAX feedback controllers
-    private var leftSpeed = RadiansPerSecond.zero()
-    private var rightSpeed = RadiansPerSecond.zero()
+    private val leftFlywheel = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, 0.01)
+    private val rightFlywheel = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, 0.01)
 
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
-        inputs.leftSpeed = leftSpeed
-        inputs.rightSpeed = rightSpeed
+        inputs.leftSpeed = RadiansPerSecond.of(leftFlywheel.angularVelocityRadPerSec)
+        inputs.rightSpeed = RadiansPerSecond.of(rightFlywheel.angularVelocityRadPerSec)
     }
 
-    override fun setVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
-        TODO()
+    override fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
+        leftFlywheel.setInputVoltage(left.baseUnitMagnitude())
+        rightFlywheel.setInputVoltage(right.baseUnitMagnitude())
+
+        Logger.recordOutput("Shooter/Flywheels/Left Effort", left)
+        Logger.recordOutput("Shooter/Flywheels/Right Effort", right)
+    }
+
+    override fun setIndexerVoltage(voltage: Measure<Voltage>) {
+        // no-op, we don't have an indexer in the sim
+
+        Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
 }

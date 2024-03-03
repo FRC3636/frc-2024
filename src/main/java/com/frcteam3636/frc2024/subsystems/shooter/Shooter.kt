@@ -10,31 +10,24 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Voltage
-import edu.wpi.first.wpilibj.DigitalInput
-import edu.wpi.first.wpilibj.Timer
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
-import edu.wpi.first.wpilibj.util.Color8Bit
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.Subsystem
-import edu.wpi.first.wpilibj2.command.WaitCommand
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
-import kotlin.math.sin
 
 object Shooter {
 
     val pivotIdRoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism(
-            Pivot::setvoltage, Pivot::getState, Pivot
+        SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), null, null, null), SysIdRoutine.Mechanism(
+            Pivot::setVoltage, Pivot::getState, Pivot
         )
     )
 
     val flywheelIORoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Flywheels::setVoltage, Flywheels::getState, Flywheels)
+        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Pivot::setVoltage, Flywheels::getState, Flywheels)
     )
 
     object Flywheels : Subsystem {
@@ -63,7 +56,7 @@ object Shooter {
             }
             Logger.recordOutput("Shooter", mechanism)
 
-            io.setVoltage(
+            io.setFlywheelVoltage(
                 Volts.of(
                     ffController.calculate(setpointLeft.`in`(RadiansPerSecond)) + pidControllerLeft.calculate(
                         inputs.leftSpeed.`in`(RadiansPerSecond),
@@ -77,32 +70,34 @@ object Shooter {
                     )
                 )
             )
+
             Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
             Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
 
         /** Shoot a ball at a given velocity and spin (in rad/s). */
-        fun shoot(velocity: Double, spin: Double): Command =
-            runOnce {
-            val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
-
-            setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
-            setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
-
-            // TODO: run rollers
-        }.alongWith(Commands.waitSeconds(2.0)).andThen( runEnd( {
+        fun shoot(velocity: Double, spin: Double): Command = ParallelCommandGroup(
+            // start the flywheels
+            runEnd({
                 val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
 
                 setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
                 setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
-
-                io.setIndexerVoltage(Volts.of(-6.78))
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
-
-                io.setIndexerVoltage(Volts.zero())
-            }) )
+            }),
+            SequentialCommandGroup(
+                // wait for the flywheels to get up to speed
+                Commands.waitSeconds(2.0),
+                // run the indexer
+                Commands.runEnd({
+                    io.setIndexerVoltage(Volts.of(-10.0))
+                }, {
+                    io.setIndexerVoltage(Volts.zero())
+                })
+            )
+        )
 
         fun index(): Command {
             return runEnd({
@@ -114,20 +109,14 @@ object Shooter {
 
         fun intake(): Command {
             return runEnd({
-                setpointLeft = RadiansPerSecond.of(50.0)
-                setpointRight = RadiansPerSecond.of(50.0)
+                setpointLeft = RadiansPerSecond.of(-50.0)
+                setpointRight = RadiansPerSecond.of(-50.0)
                 io.setIndexerVoltage(Volts.of(6.78))
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
                 io.setIndexerVoltage(Volts.of(0.0))
             })
-        }
-
-
-
-        fun setVoltage(volts: Measure<Voltage>) {
-            io.setVoltage(volts, volts)
         }
 
         fun getState(log: SysIdRoutineLog) {
@@ -158,26 +147,30 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
         private var pivotOffset: Double = 0.0
-        private val leftLimitSwitchUnpressed = DigitalInput(2)
-        private val rightLimitSwitchUnpressed = DigitalInput(3)
 
         override fun periodic() {
-//            if(!leftLimitSwitchUnpressed.get() || !rightLimitSwitchUnpressed.get()){
-//                pivotOffset = -inputs.position.radians
-//            }
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
             armLigament.angle = inputs.position.degrees
+
             Logger.recordOutput("Shooter", mechanism)
         }
 
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
+            Logger.recordOutput("Shooter/DesiredPosition", goal)
             io.pivotToAndStop(goal)
         }, Commands.waitUntil {
             (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
                     && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
+
+
+        fun zeroPivot(){
+            io.resetPivotToHardStop()
+        }
+
+
 
         fun getState(log: SysIdRoutineLog) {
             log.motor("pivot-left").voltage(
@@ -196,23 +189,43 @@ object Shooter {
             )
         }
 
-        fun setvoltage(volts: Measure<Voltage>) {
+        fun setVoltage(volts: Measure<Voltage>) {
             io.driveVoltage(volts.magnitude())
+        }
+
+        fun dynamicIdCommand(direction: SysIdRoutine.Direction) : Command {
+              return  Shooter.pivotIdRoutine.dynamic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
+        }
+
+        fun quasistaticIdCommand(direction: SysIdRoutine.Direction): Command {
+            return  Shooter.pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
         }
 
         fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command = run {
             io.pivotToAndMove(positionProfile(), velocityProfile())
         }
-
         enum class PositionPresets(position: Rotation2d) {
             Handoff(Rotation2d()), Amp(Rotation2d())
         }
     }
+    object Amp: Subsystem {
+        val io = AmpMechIOReal()
+        val inputs = AmpMechIO.Inputs()
 
+        fun pivotTo(pos: Rotation2d){
+            io.pivotTo(pos)
+        }
+
+        override fun periodic() {
+            io.updateInputs(inputs)
+            Logger.processInputs("Shooter/AmpMech", inputs)
+        }
+    }
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
         Pivot.register()
+        Amp.register()
     }
 
     private val mechanism = Mechanism2d(3.0, 3.0, BLACK)
