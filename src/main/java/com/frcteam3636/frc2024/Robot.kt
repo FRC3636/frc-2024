@@ -5,6 +5,8 @@ import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.pathplanner.lib.auto.AutoBuilder
+import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
@@ -93,16 +95,17 @@ object Robot : LoggedRobot() {
         configureBindings()
 
         // Configure the autonomous command
-        autoCommand = Drivetrain.pathfindToPose(Pose2d(Units.feetToMeters(3.0), Units.feetToMeters(3.0), Rotation2d()))
+        NamedCommands.registerCommand("intake", Intake.intakeCommand())
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.pivotAndStop(Rotation2d(Units.degreesToRadians(100.0))))
+        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0))
+        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
     }
 
     private fun configureBindings() {
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
-
-
-
 
 
         controller.a().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(135.0)))
