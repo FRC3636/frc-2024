@@ -122,7 +122,7 @@ object Drivetrain : Subsystem {
         // Set the desired module states.
         set(value) {
             val stateArr = value.toTypedArray()
-            SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, TRANSLATION_SPEED)
+            SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, FREE_SPEED)
 
             io.setDesiredStates(PerCorner.fromConventionalArray(stateArr))
             Logger.recordOutput("Drivetrain/DesiredStates", *stateArr)
@@ -169,8 +169,8 @@ object Drivetrain : Subsystem {
             ) {
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        -translationJoystick.y * TRANSLATION_SPEED.baseUnitMagnitude(),
-                        -translationJoystick.x * TRANSLATION_SPEED.baseUnitMagnitude(),
+                        -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                        -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
                         -rotationJoystick.x * TAU,
                         gyroRotation.toRotation2d()
                     )
@@ -202,8 +202,8 @@ object Drivetrain : Subsystem {
             )
 
             val chassisSpeeds = ChassisSpeeds(
-                TRANSLATION_SPEED.baseUnitMagnitude() * translationJoystick.x,
-                TRANSLATION_SPEED.baseUnitMagnitude() * translationJoystick.y,
+                FREE_SPEED.baseUnitMagnitude() * translationJoystick.x,
+                FREE_SPEED.baseUnitMagnitude() * translationJoystick.y,
                 0.0
             )
 
@@ -337,18 +337,18 @@ internal val MODULE_POSITIONS = when (Robot.model) {
 }
 
 // Chassis Control
-internal val TRANSLATION_SPEED = MetersPerSecond.of(8.132)
+internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
 internal val ROTATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
-    PathConstraints(TRANSLATION_SPEED.baseUnitMagnitude(), 3.879, ROTATION_SPEED.baseUnitMagnitude(), 24.961)
+    PathConstraints(FREE_SPEED.baseUnitMagnitude(), 3.879, ROTATION_SPEED.baseUnitMagnitude(), 24.961)
 internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
     TRANSLATION_PID_GAINS.toPPLib(),
     ROTATION_PID_GAINS.toPPLib(),
-    TRANSLATION_SPEED.baseUnitMagnitude(),
+    FREE_SPEED.baseUnitMagnitude(),
     MODULE_POSITIONS.frontLeft.translation.norm,
     ReplanningConfig(true, true, Units.inchesToMeters(3.0), Units.inchesToMeters(1.5)),
 )
