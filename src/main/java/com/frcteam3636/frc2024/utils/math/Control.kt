@@ -70,3 +70,5 @@ var Slot0Configs.pidGains: PIDGains
         kI = gains.i
         kD = gains.d
     }
+
+fun PIDGains.toPPLib() = com.pathplanner.lib.util.PIDConstants(p, i, d)
