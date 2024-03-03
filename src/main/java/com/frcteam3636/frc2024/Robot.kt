@@ -106,7 +106,7 @@ object Robot : LoggedRobot() {
         controller.rightBumper().whileTrue(
             Commands.deadline(
                 Commands.sequence(
-                    Intake.intakeCommand(),
+                    Intake.intakeCommand().until { Shooter.Pivot.isPointingTowards(Target.STOWED.profile.position()) },
                     Intake.indexCommand()
                 ),
                 Shooter.Flywheels.intake()

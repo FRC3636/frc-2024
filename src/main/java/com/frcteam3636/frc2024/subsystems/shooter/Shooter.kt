@@ -147,7 +147,6 @@ object Shooter {
             Robot.Model.PRACTICE -> PivotIONeo()
         }
         private val inputs = PivotIO.Inputs()
-        private var pivotOffset: Double = 0.0
 
         override fun periodic() {
             io.updateInputs(inputs)
@@ -165,6 +164,11 @@ object Shooter {
             (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
                     && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
+
+        fun isPointingTowards(target: Rotation2d): Boolean {
+            return abs((target - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians
+        }
+
 
 
         fun zeroPivot(){
@@ -202,10 +206,6 @@ object Shooter {
 
         fun followMotionProfile(profile: PivotProfile): Command = run {
             io.pivotToAndMove(profile.position(), profile.velocity())
-        }
-
-        enum class PositionPresets(position: Rotation2d) {
-            Handoff(Rotation2d()), Amp(Rotation2d())
         }
     }
     object Amp: Subsystem {
