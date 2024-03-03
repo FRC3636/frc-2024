@@ -115,11 +115,6 @@ object Robot : LoggedRobot() {
                 Intake.indexCommand()
             )))
 
-        controller.rightTrigger().whileTrue(Commands.parallel(
-            Shooter.Flywheels.intake(),
-            Intake.indexCommand()
-        ))
-
 
         //Drive if triggered joystickLeft input
 

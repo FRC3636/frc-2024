@@ -110,7 +110,7 @@ class PivotIOKraken : PivotIO {
         resetPivotToHardStop()
     }
 
-    private val leftLimitSwitchUnpressed = DigitalInput(2)
+    private val leftLimitSwitchUnpressed = DigitalInput(1)
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
 
@@ -174,7 +174,7 @@ class PivotIOKraken : PivotIO {
     internal companion object Constants {
         val GEAR_RATIO = 40.0
 
-        val PID_GAINS = PIDGains(37.0, 3.0, 4.0)
+        val PID_GAINS = PIDGains(175.0, 0.0, 0.0)
         val FF_GAINS = MotorFFGains(2.8, 0.0, 0.0)
         val GRAVITY_GAIN = 13.0
 
