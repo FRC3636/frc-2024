@@ -35,7 +35,7 @@ object Climber : Subsystem {
         return runOnce {
             io.moveClimber(1.0)
         }
-            .until { inputs.climberPosition <= extendedPosition }
+            .until { inputs.climberPosition >= extendedPosition }
             .finallyDo(Runnable {
                 io.moveClimber(0.0)
             })
@@ -43,9 +43,9 @@ object Climber : Subsystem {
 
     fun retractClimberCommand(): Command {
         return runOnce {
-            io.moveClimber(1.0)
+            io.moveClimber(-1.0)
         }
-            .until { inputs.climberPosition <= extendedPosition }
+            .until { inputs.climberPosition <= retractedPosition }
             .finallyDo(Runnable {
                 io.moveClimber(0.0)
             })
