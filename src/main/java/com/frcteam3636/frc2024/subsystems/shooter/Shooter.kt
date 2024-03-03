@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
 import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
+import java.time.Instant
 import kotlin.math.abs
 
 object Shooter {
@@ -89,7 +90,7 @@ object Shooter {
             }),
             SequentialCommandGroup(
                 // wait for the flywheels to get up to speed
-                Commands.waitSeconds(2.0),
+                Commands.waitSeconds(0.3),
                 // run the indexer
                 Commands.runEnd({
                     io.setIndexerVoltage(Volts.of(-10.0))
@@ -170,8 +171,6 @@ object Shooter {
             io.resetPivotToHardStop()
         }
 
-
-
         fun getState(log: SysIdRoutineLog) {
             log.motor("pivot-left").voltage(
                 Volts.of(inputs.voltageLeft)
@@ -201,9 +200,10 @@ object Shooter {
             return  Shooter.pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
         }
 
-        fun followMotionProfile(positionProfile: () -> Rotation2d, velocityProfile: () -> Rotation2d): Command = run {
-            io.pivotToAndMove(positionProfile(), velocityProfile())
+        fun followMotionProfile(profile: PivotProfile): Command = run {
+            io.pivotToAndMove(profile.position(), profile.velocity())
         }
+
         enum class PositionPresets(position: Rotation2d) {
             Handoff(Rotation2d()), Amp(Rotation2d())
         }
@@ -212,8 +212,30 @@ object Shooter {
         val io = AmpMechIOReal()
         val inputs = AmpMechIO.Inputs()
 
-        fun pivotTo(pos: Rotation2d){
-            io.pivotTo(pos)
+        fun pivotTo(pos: Rotation2d) : Command {
+            return Commands.sequence(
+                runOnce {
+                    io.pivotTo(pos)
+                },
+                WaitCommand(0.3)
+            )
+
+        }
+
+        fun stow(): Command {
+            return Commands.sequence(
+                runOnce{
+                    io.setVoltage(Volts.of(-2.0))
+                },
+                WaitCommand(0.3),
+                runOnce{
+                    io.zero()
+                }
+            ).finallyDo(
+                Runnable{
+                    io.setVoltage(Volts.of(0.0))
+                }
+            )
         }
 
         override fun periodic() {
@@ -221,6 +243,7 @@ object Shooter {
             Logger.processInputs("Shooter/AmpMech", inputs)
         }
     }
+
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
@@ -242,8 +265,14 @@ object Shooter {
     )
 }
 
+data class PivotProfile(
+    val position: () -> Rotation2d,
+    val velocity: () -> Rotation2d
+)
+
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
+internal val AMP_MECH_POSITION_TOLERANCE = Rotation2d.fromDegrees(3.0)
 
 internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)

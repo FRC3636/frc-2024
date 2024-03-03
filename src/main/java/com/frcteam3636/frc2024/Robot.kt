@@ -4,27 +4,29 @@ import com.ctre.phoenix6.hardware.TalonFX
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
+import com.frcteam3636.frc2024.subsystems.shooter.PivotProfile
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.wpilibj.*
+import edu.wpi.first.wpilibj.Joystick
+import edu.wpi.first.wpilibj.PowerDistribution
+import edu.wpi.first.wpilibj.Preferences
+import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
+import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -41,6 +43,7 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+    private var target: Target = Target.SPEAKER
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -94,27 +97,34 @@ object Robot : LoggedRobot() {
         )
 
 
+        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Target.STOWED.profile)
 
+        controller.y().run { target = Target.SPEAKER }
+        controller.a().run { target = Target.AMP }
+        controller.leftTrigger().whileTrue(Shooter.Pivot.followMotionProfile(target.profile))
 
+        controller.rightBumper().whileTrue(
+            Commands.deadline(
+                Commands.sequence(
+                    Intake.intakeCommand(),
+                    Intake.indexCommand()
+                ),
+                Shooter.Flywheels.intake()
+            )
+        )
 
-        controller.a().onTrue(Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(135.0)))
+        controller.x().onTrue(
+            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(170.0))
+        ).onFalse(
+            Shooter.Amp.stow()
+        )
 
-        controller.b().onTrue(Shooter.Flywheels.shoot(40.0, 0.0))
-
-        controller.y().onTrue(InstantCommand({Shooter.Pivot.zeroPivot()}))
-
-        controller.leftBumper().onTrue(Shooter.Flywheels.index())
-
-        controller.rightBumper().whileTrue(Commands.sequence(
-            Commands.parallel(
-                Intake.intakeCommand(),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-27.0))
-            ),
-            Commands.parallel(
-                Shooter.Flywheels.intake(),
-                Intake.indexCommand()
-            )))
-
+        Trigger(joystickRight::getTrigger).whileTrue(
+            Commands.either(
+                Shooter.Flywheels.shoot(40.0, 0.0),
+                Shooter.Flywheels.shoot(2.5, 0.0)
+            ) { target == Target.SPEAKER }
+        )
 
         //Drive if triggered joystickLeft input
 
@@ -138,13 +148,6 @@ object Robot : LoggedRobot() {
                 println("Gyro zeroed")
             })
         )
-
-        JoystickButton(
-            joystickLeft, 2
-        ).whileTrue(
-            Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
-                { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
-        )
     }
 
     override fun robotPeriodic() {
@@ -156,6 +159,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun teleopInit() {
+//        Shooter.Amp.stow().schedule()
         // TODO: cancel autonomous command
     }
 
@@ -167,6 +171,27 @@ object Robot : LoggedRobot() {
     // A model of robot, depending on where we're deployed to.
     enum class Model {
         SIMULATION, PRACTICE, COMPETITION,
+    }
+
+    enum class Target(val profile: PivotProfile) {
+        SPEAKER(
+            PivotProfile(
+                {Rotation2d.fromDegrees(95.0)},
+                {Rotation2d()}
+            )
+        ),
+        AMP(
+            PivotProfile(
+                {Rotation2d.fromDegrees(95.0)},
+                {Rotation2d()}
+            )
+        ),
+        STOWED(
+            PivotProfile(
+                {Rotation2d.fromDegrees(95.0)},
+                {Rotation2d()}
+            )
+        )
     }
 
     // The model of this robot.
