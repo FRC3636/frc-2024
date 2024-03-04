@@ -6,9 +6,15 @@ import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.TAU
+import com.frcteam3636.frc2024.utils.math.toPPLib
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
+import com.pathplanner.lib.auto.AutoBuilder
+import com.pathplanner.lib.path.PathConstraints
+import com.pathplanner.lib.pathfinding.Pathfinding
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig
+import com.pathplanner.lib.util.ReplanningConfig
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
@@ -19,6 +25,9 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Units.MetersPerSecond
+import edu.wpi.first.units.Units.RadiansPerSecond
+import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
@@ -26,6 +35,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import java.util.*
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -66,6 +76,25 @@ object Drivetrain : Subsystem {
             Pose2d() // initial pose
             // TODO: add odometry standard deviation
         )
+
+    init {
+        Pathfinding.setPathfinder(
+            when (Robot.model) {
+                Robot.Model.SIMULATION -> LocalADStarAK()
+                Robot.Model.COMPETITION, Robot.Model.PRACTICE -> RemoteADStarAK()
+            }
+        )
+
+        AutoBuilder.configureHolonomic(
+            this::estimatedPose,
+            this::estimatedPose::set,
+            this::chassisSpeeds,
+            this::chassisSpeeds::set,
+            PATH_FOLLOWER_CONFIG,
+            { DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red) },
+            this
+        )
+    }
 
     override fun periodic() {
         io.updateInputs(inputs)
@@ -124,8 +153,13 @@ object Drivetrain : Subsystem {
         }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
-    val estimatedPose: Pose2d
+    var estimatedPose: Pose2d
         get() = poseEstimator.estimatedPosition
+        set(value) = poseEstimator.resetPosition(
+            gyroRotation.toRotation2d(),
+            inputs.measuredPositions.toTypedArray(),
+            value
+        )
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
         run {
@@ -135,8 +169,8 @@ object Drivetrain : Subsystem {
             ) {
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        -translationJoystick.y * FREE_SPEED,
-                        -translationJoystick.x * FREE_SPEED,
+                        -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                        -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
                         -rotationJoystick.x * TAU,
                         gyroRotation.toRotation2d()
                     )
@@ -158,23 +192,29 @@ object Drivetrain : Subsystem {
                 )
         }
 
-    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command =
-        run {
-            val magnitude = ROTATION_PID_CONTROLLER.calculate(
+    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
+        val rotationPIDController = PIDController(ROTATION_PID_GAINS)
+        return run {
+            val magnitude = rotationPIDController.calculate(
                 estimatedPose.rotation.radians,
                 target.minus(estimatedPose.translation).angle.radians
             )
 
-            val chassisSpeeds = ChassisSpeeds(
-                translationJoystick.x * FREE_SPEED,
-                translationJoystick.y * FREE_SPEED,
-                0.0
+            chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
+                -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                magnitude,
+                gyroRotation.toRotation2d(),
             )
         }
+    }
+
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()
     }
+    fun pathfindToPose(target: Pose2d): Command =
+        AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
 }
 
 abstract class DrivetrainIO {
@@ -235,12 +275,10 @@ class DrivetrainIOSim : DrivetrainIO() {
 }
 
 // Constants
-internal val WHEEL_BASE: Double = Units.inchesToMeters(13.0)
-internal val TRACK_WIDTH: Double = Units.inchesToMeters(14.0)
+internal val WHEEL_BASE: Double = Units.inchesToMeters(30.0)
+internal val TRACK_WIDTH: Double = Units.inchesToMeters(28.0)
 
-internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
-internal val FREE_SPEED = 7.0
-internal val JOYSTICK_DEADBAND = 0.04
+internal const val JOYSTICK_DEADBAND = 0.04
 
 internal val COMP_MODULE_POSITIONS =
     PerCorner(
@@ -297,6 +335,24 @@ internal val MODULE_POSITIONS = when (Robot.model) {
     Robot.Model.SIMULATION -> PRACTICE_MODULE_POSITIONS
 }
 
+// Chassis Control
+internal val FREE_SPEED = MetersPerSecond.of(8.132)
+internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
+internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
+internal val ROTATION_PID_GAINS = PIDGains(0.3, 0.0, 0.0)
+
+// Pathing
+internal val DEFAULT_PATHING_CONSTRAINTS =
+    PathConstraints(FREE_SPEED.baseUnitMagnitude(), 3.879, ROTATION_SPEED.baseUnitMagnitude(), 24.961)
+internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
+    TRANSLATION_PID_GAINS.toPPLib(),
+    ROTATION_PID_GAINS.toPPLib(),
+    FREE_SPEED.baseUnitMagnitude(),
+    MODULE_POSITIONS.frontLeft.translation.norm,
+    ReplanningConfig(true, true, Units.inchesToMeters(3.0), Units.inchesToMeters(1.5)),
+)
+
+// CAN IDs
 internal val MODULE_CAN_IDS_COMP =
     PerCorner(
         frontLeft =

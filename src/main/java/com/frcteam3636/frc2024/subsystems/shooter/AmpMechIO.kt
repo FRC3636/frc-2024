@@ -1,8 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.CANSparkFlex
-import com.frcteam3636.frc2024.CANSparkMax
-import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.math.TAU
 import com.revrobotics.CANSparkBase
@@ -16,7 +14,7 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface AmpMechIO {
 
-    public class Inputs: LoggableInputs {
+    class Inputs: LoggableInputs {
 
         var position: Rotation2d = Rotation2d()
         var current: Double = 0.0
@@ -47,7 +45,7 @@ class AmpMechIOReal: AmpMechIO {
 
     val pivotMotor = CANSparkFlex(REVMotorControllerId.AmpMech, CANSparkLowLevel.MotorType.kBrushless).apply{
         restoreFactoryDefaults()
-        inverted = false;
+        inverted = false
         encoder.positionConversionFactor = TAU * GEAR_RATIO
         encoder.velocityConversionFactor = ( TAU * GEAR_RATIO  )/ 60
     }

@@ -18,7 +18,7 @@ object Climber : Subsystem {
     }
     var inputs = ClimberIO.ClimberInputs()
 
-    private var mech = Mechanism2d(2.0, 2.0, BLACK);
+    private var mech = Mechanism2d(2.0, 2.0, BLACK)
     private var climberRoot = mech.getRoot("climber", 1.0, 0.0)
     private var elevatorLigament = climberRoot.append(MechanismLigament2d("elevator", 0.0, 90.0, 10.0, BLUE))
 

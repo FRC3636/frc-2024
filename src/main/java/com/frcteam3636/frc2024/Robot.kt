@@ -9,12 +9,15 @@ import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
+import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj.PowerDistribution
 import edu.wpi.first.wpilibj.Preferences
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj.util.WPILibVersion
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
@@ -44,6 +47,8 @@ object Robot : LoggedRobot() {
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
     private var target: Target = Target.SPEAKER
+
+    private var autoCommand: Command? = null
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -89,6 +94,9 @@ object Robot : LoggedRobot() {
 
         // Configure our button and joystick bindings
         configureBindings()
+
+        // Configure the autonomous command
+        autoCommand = Drivetrain.pathfindToPose(Pose2d(Units.feetToMeters(3.0), Units.feetToMeters(3.0), Rotation2d()))
     }
 
     private fun configureBindings() {
@@ -155,12 +163,12 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        // TODO: start autonomous command
+        autoCommand!!.schedule()
     }
 
     override fun teleopInit() {
+        autoCommand!!.cancel()
 //        Shooter.Amp.stow().schedule()
-        // TODO: cancel autonomous command
     }
 
     override fun testInit() {
