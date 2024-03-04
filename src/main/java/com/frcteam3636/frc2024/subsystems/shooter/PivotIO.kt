@@ -101,6 +101,12 @@ class PivotIOKraken : PivotIO {
                 GravityType = GravityTypeValue.Arm_Cosine
                 kG = GRAVITY_GAIN
             }
+
+            MotionMagic.apply {
+                MotionMagicCruiseVelocity = PROFILE_VELOCITY
+                MotionMagicAcceleration = PROFILE_ACCELERATION
+                MotionMagicJerk = PROFILE_JERK
+            }
         }
 
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
