@@ -99,8 +99,8 @@ object Robot : LoggedRobot() {
 
         Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Target.STOWED.profile)
 
-        controller.y().run { target = Target.SPEAKER }
-        controller.a().run { target = Target.AMP }
+        controller.y().onTrue(InstantCommand({ target = Target.SPEAKER }))
+        controller.a().onTrue( InstantCommand({ target = Target.AMP }))
         controller.leftTrigger().whileTrue(Shooter.Pivot.followMotionProfile(target.profile))
 
         controller.rightBumper().whileTrue(
@@ -176,20 +176,20 @@ object Robot : LoggedRobot() {
     enum class Target(val profile: PivotProfile) {
         SPEAKER(
             PivotProfile(
-                {Rotation2d.fromDegrees(95.0)},
-                {Rotation2d()}
+                { Rotation2d.fromDegrees(95.0) },
+                { Rotation2d() }
             )
         ),
         AMP(
             PivotProfile(
-                {Rotation2d.fromDegrees(95.0)},
-                {Rotation2d()}
+                { Rotation2d.fromDegrees(95.0) },
+                { Rotation2d() }
             )
         ),
         STOWED(
             PivotProfile(
-                {Rotation2d.fromDegrees(95.0)},
-                {Rotation2d()}
+                { Rotation2d.fromDegrees(95.0) },
+                { Rotation2d() }
             )
         )
     }
