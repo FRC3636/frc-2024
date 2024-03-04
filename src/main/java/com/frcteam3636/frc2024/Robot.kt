@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024
 
 import com.ctre.phoenix6.hardware.TalonFX
+import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
@@ -127,6 +128,9 @@ object Robot : LoggedRobot() {
             Shooter.Flywheels.intake(),
             Intake.indexCommand()
         ))
+
+        controller.povUp().whileTrue(Climber.extendClimberCommand())
+        controller.povDown().whileTrue(Climber.retractClimberCommand())
 
 
         //Drive if triggered joystickLeft input

@@ -6,8 +6,6 @@ import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
 import com.frcteam3636.frc2024.utils.math.MotorFFGains
 import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.motorFFGains
-import com.frcteam3636.frc2024.utils.math.pidGains
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
@@ -64,20 +62,9 @@ class ClimberIOSim : ClimberIO {
 class ClimberIOReal : ClimberIO {
     private val climberMotor = TalonFX(CTREMotorControllerId.ClimberMotor).apply {
         val config = TalonFXConfiguration().apply {
-            Slot0.apply {
-                pidGains = PID_GAINS
-                motorFFGains = FF_GAINS
-            }
-
             Feedback.apply {
                 SensorToMechanismRatio = GEAR_RATIO
                 FeedbackRotorOffset = 0.0
-            }
-
-            MotionMagic.apply {
-                MotionMagicCruiseVelocity = PROFILE_VELOCITY
-                MotionMagicAcceleration = PROFILE_ACCELERATION
-                MotionMagicJerk = PROFILE_JERK
             }
 
             MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
@@ -87,6 +74,7 @@ class ClimberIOReal : ClimberIO {
 
     override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
         inputs.climberPosition = Units.rotationsToRadians(climberMotor.position.value)
+
     }
 
     override fun moveClimber(speed: Double) {
