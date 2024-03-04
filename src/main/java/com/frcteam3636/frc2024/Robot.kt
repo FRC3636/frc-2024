@@ -13,6 +13,9 @@ import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -45,6 +48,7 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+    private var autoChooser = SendableChooser<String>()
 
     private var autoCommand: Command? = null
 
@@ -95,11 +99,12 @@ object Robot : LoggedRobot() {
 
         // Configure the autonomous command
         NamedCommands.registerCommand("intake", Intake.intakeCommand())
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.pivotAndStop(Rotation2d(Units.degreesToRadians(100.0))))
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.pivotAndStop(Rotation2d(Units.degreesToRadians(110.0))))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0).withTimeout(3.0))
-
-        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
+        autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
+        autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
+        SmartDashboard.putData("Auto selector", autoChooser)
     }
 
     private fun configureBindings() {
@@ -168,6 +173,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
+        autoCommand = AutoBuilder.buildAuto(autoChooser.selected);
         autoCommand!!.schedule()
     }
 
