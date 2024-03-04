@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.drivetrain
 
+import com.ctre.phoenix6.Orchestra
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
@@ -209,6 +210,11 @@ object Drivetrain : Subsystem {
         }
     }
 
+    fun playMusic(name: String): Command = runEnd({
+        io.playMusic(name)
+    }, {
+        io.stopMusic()
+    })
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()
@@ -220,6 +226,13 @@ object Drivetrain : Subsystem {
 abstract class DrivetrainIO {
     abstract val gyro: Gyro
     abstract val modules: PerCorner<out SwerveModule>
+    private val orchestra = Orchestra().apply {
+        for (module in modules) {
+            if (module is MAXSwerveModule) {
+                module.addToOrchestra(this)
+            }
+        }
+    }
 
     class Inputs : LoggableInputs {
         var gyroRotation: Rotation3d = Rotation3d()
@@ -262,6 +275,15 @@ abstract class DrivetrainIO {
 
     fun setDesiredStates(states: PerCorner<SwerveModuleState>) {
         modules.zip(states).forEach { (module, state) -> module.desiredState = state }
+    }
+
+    fun playMusic(name: String) {
+        orchestra.loadMusic(name)
+        orchestra.play()
+    }
+
+    fun stopMusic() {
+        orchestra.stop()
     }
 }
 

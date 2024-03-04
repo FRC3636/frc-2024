@@ -128,6 +128,8 @@ object Robot : LoggedRobot() {
             Intake.indexCommand()
         ))
 
+        controller.leftTrigger().whileTrue(Drivetrain.playMusic("omfg-hello.chrp"))
+
 
         //Drive if triggered joystickLeft input
 

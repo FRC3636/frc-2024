@@ -1,8 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.drivetrain
 
+import com.ctre.phoenix6.Orchestra
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.Slot0Configs
-import com.ctre.phoenix6.configs.SlotConfigs
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -14,8 +14,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Current
-import edu.wpi.first.units.Measure
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
 import kotlin.math.roundToInt
 
@@ -39,6 +37,8 @@ interface SwerveModule {
     val position: SwerveModulePosition
 
     fun periodic() {}
+
+    fun addToOrchestra(orchestra: Orchestra) {}
 }
 
 class MAXSwerveModule(
@@ -107,6 +107,12 @@ class MAXSwerveModule(
             field = optimized
         }
 
+    override fun addToOrchestra(orchestra: Orchestra) {
+        if (drivingMotor is DrivingTalon) {
+            drivingMotor.addToOrchestra(orchestra)
+        }
+    }
+
 }
 
 interface DrivingMotor {
@@ -137,7 +143,9 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
             inner.setControl(VelocityTorqueCurrentFOC(value / DRIVING_GEAR_RATIO_TALON / WHEEL_CIRCUMFERENCE).withSlot(0))
         }
 
-
+    fun addToOrchestra(orchestra: Orchestra) {
+        orchestra.addInstrument(inner)
+    }
 }
 
 class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
