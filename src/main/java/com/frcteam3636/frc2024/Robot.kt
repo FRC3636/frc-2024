@@ -97,10 +97,8 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand("intake", Intake.intakeCommand())
         NamedCommands.registerCommand("pivot", Shooter.Pivot.pivotAndStop(Rotation2d(Units.degreesToRadians(100.0))))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
-        if (RobotBase.isSimulation())
-            NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0).withTimeout(3.0))
-        else
-            NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0).withTimeout(3.0))
+
         autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
     }
 
