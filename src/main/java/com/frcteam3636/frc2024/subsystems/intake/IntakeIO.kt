@@ -94,7 +94,7 @@ class IntakeIOSim : IntakeIO {
         utbRollers.update(Robot.period)
         inputs.otbRollerVelocity = Rotation2d(otbRollers.angularVelocityRadPerSec)
         inputs.utbRollerVelocity = Rotation2d(utbRollers.angularVelocityRadPerSec)
-        inputs.isIntaking = false
+        inputs.isIntaking = true
     }
 
     override fun setOverBumperRoller(speed: Double) {
