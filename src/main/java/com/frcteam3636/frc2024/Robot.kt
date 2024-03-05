@@ -4,7 +4,6 @@ import com.ctre.phoenix6.hardware.TalonFX
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
-import com.frcteam3636.frc2024.subsystems.shooter.PivotProfile
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
@@ -12,10 +11,7 @@ import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.PowerDistribution
-import edu.wpi.first.wpilibj.Preferences
-import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
@@ -46,9 +42,10 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
-    private var target: Target = Target.SPEAKER
 
     private var autoCommand: Command? = null
+
+    private val brakeModeToggle = DigitalInput(4)
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -105,16 +102,18 @@ object Robot : LoggedRobot() {
         )
 
 
-        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Target.STOWED.profile)
+//        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Target.STOWED.profile)
 
-        controller.y().onTrue(InstantCommand({ target = Target.SPEAKER }))
-        controller.a().onTrue( InstantCommand({ target = Target.AMP }))
-        controller.leftTrigger().whileTrue(Shooter.Pivot.followMotionProfile(target.profile))
+        // command not cancelling and requires me to use whileTrue, note to self: debug later wtf
+        controller.y().whileTrue(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.SPEAKER))
+        controller.a().whileTrue(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED))
+        controller.rightTrigger().whileTrue(Shooter.Pivot.neutralMode())
+//        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
 
         controller.rightBumper().whileTrue(
             Commands.deadline(
                 Commands.sequence(
-                    Intake.intakeCommand().until { Shooter.Pivot.isPointingTowards(Target.STOWED.profile.position()) },
+                    Intake.intakeCommand().until { Shooter.Pivot.isPointingTowards(Shooter.Pivot.Target.STOWED.profile.position()) },
                     Intake.indexCommand()
                 ),
                 Shooter.Flywheels.intake()
@@ -129,25 +128,18 @@ object Robot : LoggedRobot() {
 
         Trigger(joystickRight::getTrigger).whileTrue(
             Commands.either(
-                Shooter.Flywheels.shoot(40.0, 0.0),
+                Shooter.Flywheels.shoot(30.0, 15.0),
                 Shooter.Flywheels.shoot(2.5, 0.0)
-            ) { target == Target.SPEAKER }
+            ) { Shooter.Pivot.target == Shooter.Pivot.Target.SPEAKER }
         )
 
         //Drive if triggered joystickLeft input
 
-        JoystickButton(joystickLeft, 7).onTrue(
-            InstantCommand({
-                Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
+        Trigger(
+            joystickLeft::getTrigger)
+            .whileTrue(Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft, OrientationTarget.Speaker.position
                 )
-            })
-        ).onFalse(
-            InstantCommand({
-                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-                    translationJoystick = joystickLeft, rotationJoystick = joystickRight
-                )
-            })
         )
 
         JoystickButton(joystickLeft, 8).onTrue(
@@ -156,6 +148,11 @@ object Robot : LoggedRobot() {
                 println("Gyro zeroed")
             })
         )
+
+        Trigger { brakeModeToggle.get() }
+            .debounce(0.25)
+            .toggleOnTrue(Shooter.Pivot.neutralMode())
+
     }
 
     override fun robotPeriodic() {
@@ -180,28 +177,6 @@ object Robot : LoggedRobot() {
     enum class Model {
         SIMULATION, PRACTICE, COMPETITION,
     }
-
-    enum class Target(val profile: PivotProfile) {
-        SPEAKER(
-            PivotProfile(
-                { Rotation2d.fromDegrees(95.0) },
-                { Rotation2d() }
-            )
-        ),
-        AMP(
-            PivotProfile(
-                { Rotation2d.fromDegrees(95.0) },
-                { Rotation2d() }
-            )
-        ),
-        STOWED(
-            PivotProfile(
-                { Rotation2d.fromDegrees(95.0) },
-                { Rotation2d() }
-            )
-        )
-    }
-
     // The model of this robot.
     val model: Model = if (RobotBase.isSimulation()) {
         Model.SIMULATION

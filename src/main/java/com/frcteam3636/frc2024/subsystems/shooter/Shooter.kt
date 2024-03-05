@@ -143,9 +143,11 @@ object Shooter {
         private val io: PivotIO = when (Robot.model) {
             Robot.Model.SIMULATION -> PivotIOSim()
             Robot.Model.COMPETITION -> PivotIOKraken()
-            Robot.Model.PRACTICE -> PivotIONeo()
+            Robot.Model.PRACTICE -> TODO()
         }
         private val inputs = PivotIO.Inputs()
+
+        var target: Target = Target.SPEAKER
 
         override fun periodic() {
             io.updateInputs(inputs)
@@ -203,9 +205,48 @@ object Shooter {
             return  pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
         }
 
-        fun followMotionProfile(profile: PivotProfile): Command = run {
-            io.pivotToAndMove(profile.position(), profile.velocity())
+        fun followMotionProfile(profile: Target): Command = FunctionalCommand({
+            target = profile
+            print("Starting profile ${target.profile.position()}")
+            io.pivotToAndMove(target.profile.position(), target.profile.velocity())
+        }, {}, {
+            print("Holding after profile")
+            io.holdPosition()
+        }, {
+            abs(target.profile.position().degrees - inputs.position.degrees) <= 1
+                    && abs(target.profile.velocity().degrees - inputs.velocity.degrees) <= 1
+        })
+            .withInterruptBehavior(Command.InterruptionBehavior.kCancelSelf)
+
+        fun neutralMode(): Command = startEnd({
+            io.driveVoltage(0.0)
+            io.setBrakeMode(false)
+        }, {
+            io.setBrakeMode(true)
+        })
+            .ignoringDisable(true)
+
+        enum class Target(val profile: PivotProfile) {
+            SPEAKER(
+                PivotProfile(
+                    { Rotation2d.fromDegrees(112.0) },
+                    { Rotation2d() }
+                )
+            ),
+            AMP(
+                PivotProfile(
+                    { Rotation2d.fromDegrees(90.0) },
+                    { Rotation2d() }
+                )
+            ),
+            STOWED(
+                PivotProfile(
+                    { Rotation2d.fromDegrees(0.0) },
+                    { Rotation2d() }
+                )
+            )
         }
+
     }
     object Amp: Subsystem {
         val io = AmpMechIOReal()
