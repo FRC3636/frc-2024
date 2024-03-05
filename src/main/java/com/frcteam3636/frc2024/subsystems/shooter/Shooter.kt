@@ -158,7 +158,6 @@ object Shooter {
         }
 
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
-            println("pivoting")
             Logger.recordOutput("Shooter/DesiredPosition", goal)
             io.pivotToAndStop(goal)
         }, Commands.waitUntil {

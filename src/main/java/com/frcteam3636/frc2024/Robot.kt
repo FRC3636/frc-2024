@@ -52,6 +52,16 @@ object Robot : LoggedRobot() {
 
     private var autoCommand: Command? = null
 
+    private val intakeCommand: Command = Commands.sequence(
+        Commands.parallel(
+            Intake.intakeCommand(),
+            Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-27.0))
+        ),
+        Commands.parallel(
+            Shooter.Flywheels.intake(),
+            Intake.indexCommand()
+        ))
+
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
         HAL.report(
@@ -98,10 +108,11 @@ object Robot : LoggedRobot() {
         configureBindings()
 
         // Configure the autonomous command
-        NamedCommands.registerCommand("intake", Intake.intakeCommand())
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.pivotAndStop(Rotation2d(Units.degreesToRadians(110.0))))
-        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.pivotAndStop(Rotation2d(0.0)))
-        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0).withTimeout(3.0))
+
+        NamedCommands.registerCommand("intake", intakeCommand.withTimeout(2.0))
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.pivotAndStop(Rotation2d(Units.degreesToRadians(112.0))))
+        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.pivotAndStop(Rotation2d(-27.0)))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(15.0, 0.0).withTimeout(1.0))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
         autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
@@ -123,15 +134,7 @@ object Robot : LoggedRobot() {
 
         controller.leftBumper().onTrue(Shooter.Flywheels.index())
 
-        controller.rightBumper().whileTrue(Commands.sequence(
-            Commands.parallel(
-                Intake.intakeCommand(),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-27.0))
-            ),
-            Commands.parallel(
-                Shooter.Flywheels.intake(),
-                Intake.indexCommand()
-            )))
+        controller.rightBumper().whileTrue(intakeCommand)
 
         controller.rightTrigger().whileTrue(Commands.parallel(
             Shooter.Flywheels.intake(),
