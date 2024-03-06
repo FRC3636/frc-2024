@@ -106,8 +106,8 @@ object Robot : LoggedRobot() {
 
         NamedCommands.registerCommand("knockintake", Climber.knockIntake())
         NamedCommands.registerCommand("intake", intakeCommand())
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)).withTimeout(3.0))
-        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)).withTimeout(3.0))
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
+        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(2.0))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
@@ -127,16 +127,13 @@ object Robot : LoggedRobot() {
         Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
 
         controller.rightTrigger().whileTrue(Shooter.Pivot.followMotionProfile(null))
-        controller.a().onTrue(Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
-//        controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-//        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
-//        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
-//        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
+        controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 
         controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
         controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
         controller.povLeft().debounce(0.25).toggleOnTrue(Shooter.Pivot.neutralMode())
-        controller.povRight().onTrue(Climber.knockIntake())
 
         controller.rightBumper()
             .debounce(0.150)
