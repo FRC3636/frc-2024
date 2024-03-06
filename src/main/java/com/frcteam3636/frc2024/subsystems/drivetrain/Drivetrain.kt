@@ -176,9 +176,8 @@ object Drivetrain : Subsystem {
                     )
             } else {
                 // set the modules to radiate outwards from the chassis origin
-                chassisSpeeds = ChassisSpeeds()
-//                moduleStates =
-//                    MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+                moduleStates =
+                    MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
             }
         }
 

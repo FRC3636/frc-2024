@@ -21,12 +21,10 @@ object Intake : Subsystem {
     fun intakeCommand(): Command {
         return startEnd(
             {
-                println("Intaking")
                 io.setUnderBumperRoller(1.0)
                 io.setOverBumperRoller(0.5)
             },
             {
-                println("Intaking done")
                 io.setUnderBumperRoller(0.0)
                 io.setOverBumperRoller(0.0)
             }
@@ -37,10 +35,8 @@ object Intake : Subsystem {
 
     fun indexCommand(): Command {
         return Commands.sequence(
-            PrintCommand("Indexing"),
             InstantCommand ( {io.setUnderBumperRoller(0.5)}),
             WaitCommand(3.0),
-            PrintCommand("Indexing done"),
         ).finallyDo(Runnable {
             io.setUnderBumperRoller(0.0)
         })
