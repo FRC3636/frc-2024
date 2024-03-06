@@ -176,7 +176,6 @@ object Shooter {
         fun setTarget(target: Target): Command {
             return runOnce {
                 this.target = target
-                println("${this.target.profile.position()}")
             }
         }
 
