@@ -15,11 +15,9 @@ import com.pathplanner.lib.path.PathConstraints
 import com.pathplanner.lib.pathfinding.Pathfinding
 import com.pathplanner.lib.util.HolonomicPathFollowerConfig
 import com.pathplanner.lib.util.ReplanningConfig
+import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
-import edu.wpi.first.math.geometry.Pose2d
-import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.geometry.Rotation3d
-import edu.wpi.first.math.geometry.Translation2d
+import edu.wpi.first.math.geometry.*
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
@@ -28,6 +26,9 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
+import edu.wpi.first.units.Distance
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
@@ -62,6 +63,25 @@ object Drivetrain : Subsystem {
     }
     private val inputs = DrivetrainIO.Inputs()
 
+    private val absolutePoseIOs = mapOf(
+        "Fljorg" to PhotonVisionPoseIOReal(
+            "fljorg",
+            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785))
+        ),
+        "Bloop" to PhotonVisionPoseIOReal(
+            "bloop",
+            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570))
+        ),
+        "Freedom" to PhotonVisionPoseIOReal(
+            "freedom",
+            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0))
+        ),
+        "Brack" to PhotonVisionPoseIOReal(
+            "brack",
+            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
+        )
+    ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
+
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
         SwerveDriveKinematics(
@@ -73,8 +93,9 @@ object Drivetrain : Subsystem {
             kinematics, // swerve drive kinematics
             inputs.gyroRotation.toRotation2d(), // initial gyro rotation
             inputs.measuredPositions.toTypedArray(), // initial module positions
-            Pose2d() // initial pose
-            // TODO: add odometry standard deviation
+            Pose2d(), // initial pose
+            WHEEL_ODOMETRY_STD_DEV,
+            VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
         )
 
     init {
@@ -100,13 +121,21 @@ object Drivetrain : Subsystem {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
 
+        absolutePoseIOs.forEach { (_, ioPair) ->
+            val (io, inputs) = ioPair
+
+            io.updateInputs(inputs)
+            Logger.processInputs("Vision/$name", ioPair.second)
+
+            inputs.measurement?.let { poseEstimator.addAbsolutePoseMeasurement(it) }
+        }
+
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
-
-
-        Logger.recordOutput("Drivetrain/EstimatedPose", estimatedPose)
+        Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
+        Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
     }
 
     // The rotation of the robot as measured by the gyro.
@@ -121,11 +150,13 @@ object Drivetrain : Subsystem {
         get() = inputs.measuredStates
         // Set the desired module states.
         set(value) {
-            val stateArr = value.toTypedArray()
-            SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, FREE_SPEED)
+            synchronized(this) {
+                val stateArr = value.toTypedArray()
+                SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, FREE_SPEED)
 
-            io.setDesiredStates(PerCorner.fromConventionalArray(stateArr))
-            Logger.recordOutput("Drivetrain/DesiredStates", *stateArr)
+                io.setDesiredStates(PerCorner.fromConventionalArray(stateArr))
+                Logger.recordOutput("Drivetrain/Desired States", *stateArr)
+            }
         }
 
     // The current speed of chassis relative to the ground, assuming that the wheels have perfect
@@ -223,27 +254,30 @@ abstract class DrivetrainIO {
 
     class Inputs : LoggableInputs {
         var gyroRotation: Rotation3d = Rotation3d()
+            set(value: Rotation3d) {
+                synchronized(this) { field = value }
+            }
         var measuredStates: PerCorner<SwerveModuleState> =
             PerCorner.generate { SwerveModuleState() }
         var measuredPositions: PerCorner<SwerveModulePosition> =
             PerCorner.generate { SwerveModulePosition() }
 
         override fun fromLog(table: LogTable?) {
-            gyroRotation = table?.get("GyroRotation", gyroRotation)!![0]
+            gyroRotation = table?.get("Gyro Rotation", gyroRotation)!![0]
             measuredStates =
                 PerCorner.fromConventionalArray(
-                    table.get("MeasuredStates", *measuredStates.toTypedArray())
+                    table.get("Measured States", *measuredStates.toTypedArray())
                 )
             measuredPositions =
                 PerCorner.fromConventionalArray(
-                    table.get("MeasuredPositions", *measuredPositions.toTypedArray())
+                    table.get("Measured Positions", *measuredPositions.toTypedArray())
                 )
         }
 
         override fun toLog(table: LogTable?) {
-            table?.put("GyroRotation", gyroRotation)
-            table?.put("MeasuredStates", *measuredStates.toTypedArray())
-            table?.put("MeasuredPositions", *measuredPositions.toTypedArray())
+            table?.put("Gyro Rotation", gyroRotation)
+            table?.put("Measured States", *measuredStates.toTypedArray())
+            table?.put("Measured Positions", *measuredPositions.toTypedArray())
         }
     }
 
@@ -338,6 +372,7 @@ internal val MODULE_POSITIONS = when (Robot.model) {
 // Chassis Control
 internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
+internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
 internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.0)
 
@@ -376,6 +411,7 @@ internal val MODULE_CAN_IDS_COMP =
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )
+
 internal val MODULE_CAN_IDS_PRACTICE =
     PerCorner(
         frontLeft =
