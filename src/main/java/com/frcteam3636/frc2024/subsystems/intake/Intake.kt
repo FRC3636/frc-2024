@@ -22,7 +22,7 @@ object Intake : Subsystem {
         return startEnd(
             {
                 io.setUnderBumperRoller(-1.0)
-                io.setOverBumperRoller(-0.5)
+                io.setOverBumperRoller(-1.0)
             },
             {
                 io.setUnderBumperRoller(0.0)
@@ -35,7 +35,7 @@ object Intake : Subsystem {
         return startEnd(
             {
                 io.setUnderBumperRoller(1.0)
-                io.setOverBumperRoller(0.5)
+                io.setOverBumperRoller(1.0)
             },
             {
                 io.setUnderBumperRoller(0.0)

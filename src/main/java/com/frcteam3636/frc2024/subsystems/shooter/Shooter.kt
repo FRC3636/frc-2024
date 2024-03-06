@@ -53,6 +53,7 @@ object Shooter {
                 BLUE
             } else {
                 WHITE
+
             }
             Logger.recordOutput("Shooter", mechanism)
 
@@ -147,8 +148,8 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
 
-        var target: Target = Target.SPEAKER
-            get
+        var target: Target = Target.PODIUM
+
 
 
         override fun periodic() {
@@ -179,7 +180,7 @@ object Shooter {
             }
         }
 
-        fun zeroPivot(){
+        fun zeroPivot() {
             io.resetPivotToHardStop()
         }
 
@@ -201,22 +202,34 @@ object Shooter {
         }
 
 
-
         fun setVoltage(volts: Measure<Voltage>) {
             io.driveVoltage(volts.magnitude())
         }
 
-        fun dynamicIdCommand(direction: SysIdRoutine.Direction) : Command {
-              return  pivotIdRoutine.dynamic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
+        fun dynamicIdCommand(direction: SysIdRoutine.Direction): Command {
+            return pivotIdRoutine.dynamic(direction).until {
+                if (direction == SysIdRoutine.Direction.kForward) {
+                    inputs.position.rotations > 0.4
+                } else {
+                    inputs.position.rotations < -0.3
+                }
+            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
         }
 
         fun quasistaticIdCommand(direction: SysIdRoutine.Direction): Command {
-            return  pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
+            return pivotIdRoutine.quasistatic(direction).until {
+                if (direction == SysIdRoutine.Direction.kForward) {
+                    inputs.position.rotations > 0.4
+                } else {
+                    inputs.position.rotations < -0.3
+                }
+            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
         }
 
         fun followMotionProfile(targetOverride: Target?): Command {
-            val target = targetOverride ?: this.target
+            var target = targetOverride ?: this.target
             return FunctionalCommand({
+                target = targetOverride ?: this.target
                 io.pivotToAndMove(target.profile.position(), target.profile.velocity())
             }, {}, {
                 io.holdPosition()
@@ -238,13 +251,19 @@ object Shooter {
         enum class Target(val profile: PivotProfile) {
             SPEAKER(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(108.0) },
+                    { Rotation2d.fromDegrees(100.0) },
                     { Rotation2d() }
                 )
             ),
             AMP(
                 PivotProfile(
                     { Rotation2d.fromDegrees(90.0) },
+                    { Rotation2d() }
+                )
+            ),
+            PODIUM(
+                PivotProfile(
+                    { Rotation2d.fromDegrees(115.0) },
                     { Rotation2d() }
                 )
             ),
@@ -257,11 +276,12 @@ object Shooter {
         }
 
     }
-    object Amp: Subsystem {
+
+    object Amp : Subsystem {
         val io = AmpMechIOReal()
         val inputs = AmpMechIO.Inputs()
 
-        fun pivotTo(pos: Rotation2d) : Command {
+        fun pivotTo(pos: Rotation2d): Command {
             return Commands.sequence(
                 runOnce {
                     io.pivotTo(pos)
@@ -273,15 +293,15 @@ object Shooter {
 
         fun stow(): Command {
             return Commands.sequence(
-                runOnce{
+                runOnce {
                     io.setVoltage(Volts.of(-2.0))
                 },
                 WaitCommand(0.3),
-                runOnce{
+                runOnce {
                     io.zero()
                 }
             ).finallyDo(
-                Runnable{
+                Runnable {
                     io.setVoltage(Volts.of(0.0))
                 }
             )

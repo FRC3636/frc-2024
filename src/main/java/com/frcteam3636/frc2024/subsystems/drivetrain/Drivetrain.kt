@@ -37,6 +37,7 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
+import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -66,19 +67,19 @@ object Drivetrain : Subsystem {
     private val absolutePoseIOs = mapOf(
         "Fljorg" to PhotonVisionPoseIOReal(
             "fljorg",
-            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 0.785))
+            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0))
         ),
         "Bloop" to PhotonVisionPoseIOReal(
             "bloop",
-            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 1.31, 1.570))
+            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0))
         ),
         "Freedom" to PhotonVisionPoseIOReal(
             "freedom",
-            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 0.0))
+            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0))
         ),
         "Brack" to PhotonVisionPoseIOReal(
             "brack",
-            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 1.31, 4.71))
+            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0))
         )
     ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
 
@@ -125,10 +126,9 @@ object Drivetrain : Subsystem {
             val (io, inputs) = ioPair
 
             io.updateInputs(inputs)
-            Logger.processInputs("Vision/$name", ioPair.second)
-
             inputs.measurement?.let { poseEstimator.addAbsolutePoseMeasurement(it) }
         }
+
 
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),

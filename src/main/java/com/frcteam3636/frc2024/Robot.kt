@@ -126,8 +126,9 @@ object Robot : LoggedRobot() {
         controller.rightTrigger().whileTrue(Shooter.Pivot.followMotionProfile(null))
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 //        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
-        controller.povDown().toggleOnTrue(Shooter.Pivot.neutralMode())
+        controller.povDown().debounce(0.25).toggleOnTrue(Shooter.Pivot.neutralMode())
 
         controller.rightBumper()
             .debounce(0.150)
@@ -143,7 +144,7 @@ object Robot : LoggedRobot() {
             Commands.either(
                 Shooter.Flywheels.shoot(40.0, 0.0),
                 Shooter.Flywheels.shoot(2.5, 0.0)
-            ) { Shooter.Pivot.target == Shooter.Pivot.Target.SPEAKER }
+            ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP}
         )
 
         //Drive if triggered joystickLeft input
