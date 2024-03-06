@@ -144,8 +144,6 @@ class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
     private val inner = CANSparkMax(id, CANSparkLowLevel.MotorType.kBrushless).apply {
         restoreFactoryDefaults()
 
-        inverted = true
-
         idleMode = CANSparkBase.IdleMode.kBrake
         setSmartCurrentLimit(DRIVING_CURRENT_LIMIT.roundToInt())
     }
