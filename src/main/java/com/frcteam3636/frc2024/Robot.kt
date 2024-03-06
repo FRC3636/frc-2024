@@ -127,9 +127,10 @@ object Robot : LoggedRobot() {
         Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
 
         controller.rightTrigger().whileTrue(Shooter.Pivot.followMotionProfile(null))
-        controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
-        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
+        controller.a().onTrue(Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
+//        controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
+//        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+//        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 //        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
 
         controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
