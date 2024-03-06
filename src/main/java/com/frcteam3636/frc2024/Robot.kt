@@ -101,21 +101,19 @@ object Robot : LoggedRobot() {
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
 
+        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
 
-//        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Target.STOWED.profile)
-
-        // command not cancelling and requires me to use whileTrue, note to self: debug later wtf
-        controller.y().whileTrue(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.SPEAKER))
-        controller.a().whileTrue(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED))
-        controller.rightTrigger().whileTrue(Shooter.Pivot.neutralMode())
+        controller.leftBumper().whileTrue(Shooter.Pivot.followMotionProfile(null))
+        controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
+        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
 //        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
+        controller.povDown().toggleOnTrue(Shooter.Pivot.neutralMode())
 
-        controller.rightBumper().whileTrue(
-            Commands.deadline(
-                Commands.sequence(
-                    Intake.intakeCommand().until { Shooter.Pivot.isPointingTowards(Shooter.Pivot.Target.STOWED.profile.position()) },
-                    Intake.indexCommand()
-                ),
+        controller.rightBumper()
+            .debounce(0.150)
+            .whileTrue(
+            Commands.parallel(
+                Intake.intakeCommand(),
                 Shooter.Flywheels.intake()
             )
         )
@@ -128,7 +126,7 @@ object Robot : LoggedRobot() {
 
         Trigger(joystickRight::getTrigger).whileTrue(
             Commands.either(
-                Shooter.Flywheels.shoot(30.0, 15.0),
+                Shooter.Flywheels.shoot(40.0, 0.0),
                 Shooter.Flywheels.shoot(2.5, 0.0)
             ) { Shooter.Pivot.target == Shooter.Pivot.Target.SPEAKER }
         )
@@ -149,9 +147,9 @@ object Robot : LoggedRobot() {
             })
         )
 
-        Trigger { brakeModeToggle.get() }
-            .debounce(0.25)
-            .toggleOnTrue(Shooter.Pivot.neutralMode())
+//        Trigger { brakeModeToggle.get() }
+//            .debounce(0.25)
+//            .toggleOnTrue(Shooter.Pivot.neutralMode())
 
     }
 

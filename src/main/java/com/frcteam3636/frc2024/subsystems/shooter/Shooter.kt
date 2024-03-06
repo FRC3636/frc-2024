@@ -89,7 +89,7 @@ object Shooter {
             }),
             SequentialCommandGroup(
                 // wait for the flywheels to get up to speed
-                Commands.waitSeconds(0.3),
+                Commands.waitSeconds(0.7),
                 // run the indexer
                 Commands.runEnd({
                     io.setIndexerVoltage(Volts.of(-10.0))
@@ -148,6 +148,8 @@ object Shooter {
         private val inputs = PivotIO.Inputs()
 
         var target: Target = Target.SPEAKER
+            get
+
 
         override fun periodic() {
             io.updateInputs(inputs)
@@ -171,6 +173,12 @@ object Shooter {
         }
 
 
+        fun setTarget(target: Target): Command {
+            return runOnce {
+                this.target = target
+                println("${this.target.profile.position()}")
+            }
+        }
 
         fun zeroPivot(){
             io.resetPivotToHardStop()
@@ -193,6 +201,8 @@ object Shooter {
             )
         }
 
+
+
         fun setVoltage(volts: Measure<Voltage>) {
             io.driveVoltage(volts.magnitude())
         }
@@ -205,18 +215,18 @@ object Shooter {
             return  pivotIdRoutine.quasistatic(direction).until { if (direction == SysIdRoutine.Direction.kForward) { inputs.position.rotations > 0.4 } else { inputs.position.rotations < -0.3 } }.andThen(InstantCommand({io.driveVoltage(0.0)}))
         }
 
-        fun followMotionProfile(profile: Target): Command = FunctionalCommand({
-            target = profile
-            print("Starting profile ${target.profile.position()}")
-            io.pivotToAndMove(target.profile.position(), target.profile.velocity())
-        }, {}, {
-            print("Holding after profile")
-            io.holdPosition()
-        }, {
-            abs(target.profile.position().degrees - inputs.position.degrees) <= 1
-                    && abs(target.profile.velocity().degrees - inputs.velocity.degrees) <= 1
-        })
-            .withInterruptBehavior(Command.InterruptionBehavior.kCancelSelf)
+        fun followMotionProfile(targetOverride: Target?): Command {
+            val target = targetOverride ?: this.target
+            return FunctionalCommand({
+                io.pivotToAndMove(target.profile.position(), target.profile.velocity())
+            }, {}, {
+                io.holdPosition()
+            }, {
+                abs(target.profile.position().degrees - inputs.position.degrees) <= 1
+                        && abs(target.profile.velocity().degrees - inputs.velocity.degrees) <= 1
+            }, this)
+        }
+
 
         fun neutralMode(): Command = startEnd({
             io.driveVoltage(0.0)
@@ -229,7 +239,7 @@ object Shooter {
         enum class Target(val profile: PivotProfile) {
             SPEAKER(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(112.0) },
+                    { Rotation2d.fromDegrees(95.0) },
                     { Rotation2d() }
                 )
             ),
@@ -241,7 +251,7 @@ object Shooter {
             ),
             STOWED(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(0.0) },
+                    { Rotation2d.fromDegrees(-27.0) },
                     { Rotation2d() }
                 )
             )
