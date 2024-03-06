@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024
 
+import com.ctre.phoenix6.hardware.TalonFX
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
@@ -7,23 +8,24 @@ import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
+import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.util.WPILibVersion
+import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
+import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import kotlin.math.PI
-import kotlin.math.cos
-import kotlin.math.sin
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -40,6 +42,10 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+
+    private var autoCommand: Command? = null
+
+    private val brakeModeToggle = DigitalInput(4)
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -81,8 +87,13 @@ object Robot : LoggedRobot() {
         Drivetrain.register()
         Intake.register()
 
+        TalonFX(0) // init phoenix diagnostics server
+
         // Configure our button and joystick bindings
         configureBindings()
+
+        // Configure the autonomous command
+        autoCommand = Drivetrain.pathfindToPose(Pose2d(Units.feetToMeters(3.0), Units.feetToMeters(3.0), Rotation2d()))
     }
 
     private fun configureBindings() {
@@ -90,36 +101,43 @@ object Robot : LoggedRobot() {
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
 
-        controller.b().whileTrue(Intake.intakeCommand()).onFalse(
-            Intake.indexCommand()
+        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+
+        controller.leftBumper().whileTrue(Shooter.Pivot.followMotionProfile(null))
+        controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
+        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+//        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
+        controller.povDown().toggleOnTrue(Shooter.Pivot.neutralMode())
+
+        controller.rightBumper()
+            .debounce(0.150)
+            .whileTrue(
+            Commands.parallel(
+                Intake.intakeCommand(),
+                Shooter.Flywheels.intake()
+            )
         )
 
-//        controller.x().whileTrue(Shooter.shootCommand())
-//        controller.b().whileTrue(Intake.intakeCommand())
+        controller.x().onTrue(
+            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(170.0))
+        ).onFalse(
+            Shooter.Amp.stow()
+        )
 
-        controller.a().whileTrue(Shooter.Flywheels.intake())
-        controller.b().whileTrue(Shooter.Flywheels.shoot(-4.0, -0.0))
-
-
-        controller.leftBumper().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kReverse))
-        controller.rightTrigger().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kForward))
-        controller.rightBumper().whileTrue(Shooter.pivotIdRoutine.quasistatic(SysIdRoutine.Direction.kReverse))
-        controller.leftTrigger().whileTrue(Shooter.pivotIdRoutine.dynamic(SysIdRoutine.Direction.kForward))
+        Trigger(joystickRight::getTrigger).whileTrue(
+            Commands.either(
+                Shooter.Flywheels.shoot(40.0, 0.0),
+                Shooter.Flywheels.shoot(2.5, 0.0)
+            ) { Shooter.Pivot.target == Shooter.Pivot.Target.SPEAKER }
+        )
 
         //Drive if triggered joystickLeft input
 
-        JoystickButton(joystickLeft, 7).onTrue(
-            InstantCommand({
-                Drivetrain.defaultCommand = Drivetrain.driveWithJoystickPointingTowards(
+        Trigger(
+            joystickLeft::getTrigger)
+            .whileTrue(Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft, OrientationTarget.Speaker.position
                 )
-            })
-        ).onFalse(
-            InstantCommand({
-                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-                    translationJoystick = joystickLeft, rotationJoystick = joystickRight
-                )
-            })
         )
 
         JoystickButton(joystickLeft, 8).onTrue(
@@ -129,13 +147,10 @@ object Robot : LoggedRobot() {
             })
         )
 
-        JoystickButton(
-            joystickLeft,
-            2
-        ).whileTrue(
-            Shooter.Pivot.followMotionProfile({ Rotation2d(PI / 4 + sin(Timer.getFPGATimestamp()) / 2) },
-                { Rotation2d(cos(Timer.getFPGATimestamp()) / 2) })
-        )
+//        Trigger { brakeModeToggle.get() }
+//            .debounce(0.25)
+//            .toggleOnTrue(Shooter.Pivot.neutralMode())
+
     }
 
     override fun robotPeriodic() {
@@ -143,11 +158,12 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        // TODO: start autonomous command
+        autoCommand!!.schedule()
     }
 
     override fun teleopInit() {
-        // TODO: cancel autonomous command
+        autoCommand!!.cancel()
+//        Shooter.Amp.stow().schedule()
     }
 
     override fun testInit() {
@@ -159,7 +175,6 @@ object Robot : LoggedRobot() {
     enum class Model {
         SIMULATION, PRACTICE, COMPETITION,
     }
-
     // The model of this robot.
     val model: Model = if (RobotBase.isSimulation()) {
         Model.SIMULATION

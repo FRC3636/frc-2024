@@ -5,9 +5,16 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.TAU
+import com.frcteam3636.frc2024.utils.math.toPPLib
 import com.frcteam3636.frc2024.utils.swerve.PerCorner
 import com.frcteam3636.frc2024.utils.swerve.cornerStatesToChassisSpeeds
 import com.frcteam3636.frc2024.utils.swerve.toCornerSwerveModuleStates
+import com.pathplanner.lib.auto.AutoBuilder
+import com.pathplanner.lib.path.PathConstraints
+import com.pathplanner.lib.pathfinding.Pathfinding
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig
+import com.pathplanner.lib.util.ReplanningConfig
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.*
@@ -15,6 +22,10 @@ import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Units.MetersPerSecond
+import edu.wpi.first.units.Units.RadiansPerSecond
+import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Inches
@@ -25,6 +36,8 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import java.util.*
+import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
@@ -85,6 +98,25 @@ object Drivetrain : Subsystem {
             VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
         )
 
+    init {
+        Pathfinding.setPathfinder(
+            when (Robot.model) {
+                Robot.Model.SIMULATION -> LocalADStarAK()
+                Robot.Model.COMPETITION, Robot.Model.PRACTICE -> RemoteADStarAK()
+            }
+        )
+
+        AutoBuilder.configureHolonomic(
+            this::estimatedPose,
+            this::estimatedPose::set,
+            this::chassisSpeeds,
+            this::chassisSpeeds::set,
+            PATH_FOLLOWER_CONFIG,
+            { DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red) },
+            this
+        )
+    }
+
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
@@ -119,8 +151,11 @@ object Drivetrain : Subsystem {
         // Set the desired module states.
         set(value) {
             synchronized(this) {
-                io.setDesiredStates(value)
-                Logger.recordOutput("Drivetrain/Desired States", *value.toTypedArray())
+                val stateArr = value.toTypedArray()
+                SwerveDriveKinematics.desaturateWheelSpeeds(stateArr, FREE_SPEED)
+
+                io.setDesiredStates(PerCorner.fromConventionalArray(stateArr))
+                Logger.recordOutput("Drivetrain/Desired States", *stateArr)
             }
         }
 
@@ -141,25 +176,41 @@ object Drivetrain : Subsystem {
         }
 
     // Set the drivetrain to an X-formation to passively prevent movement in any direction.
-    fun brake() {
-        // set the modules to radiate outwards from the chassis origin
-        moduleStates =
-            MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.rotation) }
-    }
+    fun brake(): Command =
+        runOnce {
+            // set the modules to radiate outwards from the chassis origin
+            moduleStates =
+                MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+        }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
-    val estimatedPose: Pose2d
+    var estimatedPose: Pose2d
         get() = poseEstimator.estimatedPosition
+        set(value) = poseEstimator.resetPosition(
+            gyroRotation.toRotation2d(),
+            inputs.measuredPositions.toTypedArray(),
+            value
+        )
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
         run {
-            chassisSpeeds =
-                ChassisSpeeds.fromFieldRelativeSpeeds(
-                    -translationJoystick.y,
-                    -translationJoystick.x,
-                    -rotationJoystick.x,
-                    gyroRotation.toRotation2d()
-                )
+            if (abs(translationJoystick.x) > JOYSTICK_DEADBAND
+                || abs(translationJoystick.y) > JOYSTICK_DEADBAND
+                || abs(rotationJoystick.x) > JOYSTICK_DEADBAND
+            ) {
+                chassisSpeeds =
+                    ChassisSpeeds.fromFieldRelativeSpeeds(
+                        -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                        -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
+                        -rotationJoystick.x * TAU,
+                        gyroRotation.toRotation2d()
+                    )
+            } else {
+                // set the modules to radiate outwards from the chassis origin
+                chassisSpeeds = ChassisSpeeds()
+//                moduleStates =
+//                    MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+            }
         }
 
     fun driveWithController(controller: CommandXboxController): Command =
@@ -173,23 +224,29 @@ object Drivetrain : Subsystem {
                 )
         }
 
-    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command =
-        run {
-            val magnitude = ROTATION_PID_CONTROLLER.calculate(
+    fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
+        val rotationPIDController = PIDController(ROTATION_PID_GAINS)
+        return run {
+            val magnitude = rotationPIDController.calculate(
                 estimatedPose.rotation.radians,
                 target.minus(estimatedPose.translation).angle.radians
             )
 
-            val chassisSpeeds = ChassisSpeeds(
-                translationJoystick.x * FREE_SPEED,
-                translationJoystick.y * FREE_SPEED,
-                0.0
+            chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
+                -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
+                magnitude,
+                gyroRotation.toRotation2d(),
             )
         }
+    }
+
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()
     }
+    fun pathfindToPose(target: Pose2d): Command =
+        AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
 }
 
 abstract class DrivetrainIO {
@@ -252,41 +309,84 @@ class DrivetrainIOSim : DrivetrainIO() {
     override val gyro = GyroSim(modules.map { it })
 }
 
-// Physical dimensions
-internal val WHEEL_BASE: Measure<Distance> = Inches.of(30.0)
-internal val TRACK_WIDTH: Measure<Distance> = Inches.of(28.0)
-internal val MODULE_POSITIONS =
+// Constants
+internal val WHEEL_BASE: Double = Units.inchesToMeters(30.0)
+internal val TRACK_WIDTH: Double = Units.inchesToMeters(28.0)
+
+internal const val JOYSTICK_DEADBAND = 0.04
+
+internal val COMP_MODULE_POSITIONS =
     PerCorner(
         frontLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE.baseUnitMagnitude(), TRACK_WIDTH.baseUnitMagnitude()) / 2.0,
+            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(0.0)
+        ),
+        backLeft =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(270.0)
+        ),
+        backRight =
+        Pose2d(
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(0.0)
+        ),
+        frontRight =
+        Pose2d(
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
+            Rotation2d.fromDegrees(270.0)
+        ),
+    )
+
+internal val PRACTICE_MODULE_POSITIONS =
+    PerCorner(
+        frontLeft =
+        Pose2d(
+            Translation2d(WHEEL_BASE, TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(-90.0)
         ),
         backLeft =
         Pose2d(
-            Translation2d(WHEEL_BASE.negate().baseUnitMagnitude(), TRACK_WIDTH.baseUnitMagnitude()) / 2.0,
+            Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(0.0)
         ),
         backRight =
         Pose2d(
-            Translation2d(WHEEL_BASE.negate().baseUnitMagnitude(), TRACK_WIDTH.negate().baseUnitMagnitude()) / 2.0,
+            Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(90.0)
         ),
         frontRight =
         Pose2d(
-            Translation2d(WHEEL_BASE.baseUnitMagnitude(), TRACK_WIDTH.negate().baseUnitMagnitude()) / 2.0,
+            Translation2d(WHEEL_BASE, -TRACK_WIDTH) / 2.0,
             Rotation2d.fromDegrees(180.0)
         ),
     )
 
-// Performance characteristics
-internal val FREE_SPEED = 15.0
 
-// Wheel odometry
+internal val MODULE_POSITIONS = when (Robot.model) {
+    Robot.Model.COMPETITION -> COMP_MODULE_POSITIONS
+    Robot.Model.PRACTICE -> PRACTICE_MODULE_POSITIONS
+    Robot.Model.SIMULATION -> PRACTICE_MODULE_POSITIONS
+}
+
+// Chassis Control
+internal val FREE_SPEED = MetersPerSecond.of(8.132)
+internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
+internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
+internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.0)
 
-// Controller gains
-internal val ROTATION_PID_CONTROLLER = PIDController(PIDGains(0.3, 0.0, 0.0))
+// Pathing
+internal val DEFAULT_PATHING_CONSTRAINTS =
+    PathConstraints(FREE_SPEED.baseUnitMagnitude(), 3.879, ROTATION_SPEED.baseUnitMagnitude(), 24.961)
+internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
+    TRANSLATION_PID_GAINS.toPPLib(),
+    ROTATION_PID_GAINS.toPPLib(),
+    FREE_SPEED.baseUnitMagnitude(),
+    MODULE_POSITIONS.frontLeft.translation.norm,
+    ReplanningConfig(true, true, Units.inchesToMeters(3.0), Units.inchesToMeters(1.5)),
+)
 
 // CAN IDs
 internal val MODULE_CAN_IDS_COMP =

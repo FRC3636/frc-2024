@@ -1,9 +1,13 @@
 package com.frcteam3636.frc2024.subsystems.climber
 
-import com.frcteam3636.frc2024.CANSparkMax
-import com.frcteam3636.frc2024.REVMotorControllerId
-import com.revrobotics.CANSparkLowLevel
-import com.revrobotics.SparkAbsoluteEncoder
+import com.ctre.phoenix6.configs.TalonFXConfiguration
+import com.ctre.phoenix6.signals.InvertedValue
+import com.frcteam3636.frc2024.CTREMotorControllerId
+import com.frcteam3636.frc2024.TalonFX
+import com.frcteam3636.frc2024.utils.math.MotorFFGains
+import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.motorFFGains
+import com.frcteam3636.frc2024.utils.math.pidGains
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
@@ -31,7 +35,7 @@ class ClimberIOSim : ClimberIO {
     private var elevatorSim = ElevatorSim(
         ELEVATOR_KV,
         ELEVATOR_KA,
-        DCMotor.getNEO(1),
+        DCMotor.getKrakenX60(1),
         ELEVATOR_MIN_HEIGHT,
         ELEVATOR_MAX_HEIGHT,
         true,
@@ -58,26 +62,45 @@ class ClimberIOSim : ClimberIO {
 }
 
 class ClimberIOReal : ClimberIO {
-    private var climberMotor =
-        CANSparkMax(REVMotorControllerId.ClimberMotor, CANSparkLowLevel.MotorType.kBrushless)
-            .apply { burnFlash() }
-    private val climberEncoder =
-        climberMotor.getAbsoluteEncoder(SparkAbsoluteEncoder.Type.kDutyCycle).apply {
-            velocityConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO / 60
-            positionConversionFactor = Units.rotationsToRadians(1.0) * CLIMBER_GEAR_RATIO
+    private val climberMotor = TalonFX(CTREMotorControllerId.ClimberMotor).apply {
+        val config = TalonFXConfiguration().apply {
+            Slot0.apply {
+                pidGains = PID_GAINS
+                motorFFGains = FF_GAINS
+            }
+
+            Feedback.apply {
+                SensorToMechanismRatio = GEAR_RATIO
+                FeedbackRotorOffset = 0.0
+            }
+
+            MotionMagic.apply {
+                MotionMagicCruiseVelocity = PROFILE_VELOCITY
+                MotionMagicAcceleration = PROFILE_ACCELERATION
+                MotionMagicJerk = PROFILE_JERK
+            }
+
+            MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
         }
+        configurator.apply(config)
+    }
 
     override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
-        inputs.climberPosition = climberEncoder.position * ELEVATOR_TRAVEL_PER_ENCODER_ROTATION
+        inputs.climberPosition = Units.rotationsToRadians(climberMotor.position.value)
     }
 
     override fun moveClimber(speed: Double) {
         climberMotor.set(speed)
     }
 
-    companion object Constants {
-        const val CLIMBER_GEAR_RATIO = 1.0
-        //TODO: Find this value. The current value is an estimate
-        const val ELEVATOR_TRAVEL_PER_ENCODER_ROTATION = 0.003175
+    internal companion object Constants {
+        // todo: this is all perfect and will never need to be changed
+        val PID_GAINS = PIDGains()
+        val FF_GAINS = MotorFFGains(1.0, 1.0, 1.0)
+        const val GRAVITY_GAIN = 1.0
+        const val GEAR_RATIO = 1.0
+        const val PROFILE_VELOCITY = 1.0
+        const val PROFILE_ACCELERATION = 1.0
+        const val PROFILE_JERK = 1.0
     }
 }
