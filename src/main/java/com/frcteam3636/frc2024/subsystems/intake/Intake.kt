@@ -21,22 +21,26 @@ object Intake : Subsystem {
     fun intakeCommand(): Command {
         return startEnd(
             {
-                io.setUnderBumperRoller(0.5)
+                println("Intaking")
+                io.setUnderBumperRoller(1.0)
                 io.setOverBumperRoller(0.5)
             },
             {
+                println("Intaking done")
                 io.setUnderBumperRoller(0.0)
                 io.setOverBumperRoller(0.0)
             }
         )
-            .until(inputs::isIntaking)
+
 
     }
 
     fun indexCommand(): Command {
         return Commands.sequence(
-            InstantCommand ( {io.setUnderBumperRoller(0.8)}),
-            WaitCommand(4.0),
+            PrintCommand("Indexing"),
+            InstantCommand ( {io.setUnderBumperRoller(0.5)}),
+            WaitCommand(3.0),
+            PrintCommand("Indexing done"),
         ).finallyDo(Runnable {
             io.setUnderBumperRoller(0.0)
         })

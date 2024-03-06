@@ -6,7 +6,10 @@ import com.frcteam3636.frc2024.utils.math.TAU
 import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
+import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface AmpMechIO {
@@ -32,6 +35,10 @@ interface AmpMechIO {
 
     fun pivotTo(position: Rotation2d)
 
+    fun setVoltage(volts: Measure<Voltage>) {}
+
+    fun zero() {}
+
 }
 
 class AmpMechIOReal: AmpMechIO {
@@ -44,24 +51,42 @@ class AmpMechIOReal: AmpMechIO {
     }
 
     private val pid = pivotMotor.pidController.apply {
-        p = 0.0
+        p = 0.1
         i = 0.0
         d = 0.0
     }
 
     override fun updateInputs(inputs: AmpMechIO.Inputs) {
-        pivotMotor.encoder.position
-        pivotMotor.outputCurrent
+
+        inputs.current =  pivotMotor.outputCurrent
+        if(inputs.current > CURRENT_LIMIT){
+            pivotMotor.encoder.position = 0.0
+        }
+        inputs.position = Rotation2d(pivotMotor.encoder.position)
+
     }
 
     override fun pivotTo(position: Rotation2d) {
+        Logger.recordOutput("Shooter/Amp Mech Setpoint", position)
         pid.setReference(
             position.radians, CANSparkBase.ControlType.kPosition
         )
     }
 
+    override fun zero(){
+        pivotMotor.encoder.position = 0.0
+    }
+
+    override fun setVoltage(volts: Measure<Voltage>) {
+        pivotMotor.setVoltage(volts.baseUnitMagnitude())
+    }
+
+
+
     internal companion object Constants {
         const val GEAR_RATIO: Double = 2.0 / 3
+        const val CURRENT_LIMIT: Double = 120.0
+
     }
 
 }

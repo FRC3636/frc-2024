@@ -176,8 +176,9 @@ object Drivetrain : Subsystem {
                     )
             } else {
                 // set the modules to radiate outwards from the chassis origin
-                moduleStates =
-                    MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+                chassisSpeeds = ChassisSpeeds()
+//                moduleStates =
+//                    MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
             }
         }
 
@@ -201,8 +202,8 @@ object Drivetrain : Subsystem {
             )
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
                 -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
                 magnitude,
                 gyroRotation.toRotation2d(),
             )
@@ -339,7 +340,7 @@ internal val MODULE_POSITIONS = when (Robot.model) {
 internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
-internal val ROTATION_PID_GAINS = PIDGains(0.3, 0.0, 0.0)
+internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.0)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
