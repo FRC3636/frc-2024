@@ -1,6 +1,7 @@
 package com.frcteam3636.frc2024
 
 import com.ctre.phoenix6.hardware.TalonFX
+import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
@@ -94,6 +95,7 @@ object Robot : LoggedRobot() {
         Shooter.register()
         Drivetrain.register()
         Intake.register()
+        Climber.register()
 
         TalonFX(0) // init phoenix diagnostics server
 
@@ -102,6 +104,7 @@ object Robot : LoggedRobot() {
 
         // Configure the autonomous command
 
+        NamedCommands.registerCommand("knockintake", Climber.knockIntake())
         NamedCommands.registerCommand("intake", intakeCommand())
         NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
@@ -127,8 +130,10 @@ object Robot : LoggedRobot() {
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
-//        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
-        controller.povDown().debounce(0.25).toggleOnTrue(Shooter.Pivot.neutralMode())
+
+        controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
+        controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
+        controller.povLeft().debounce(0.25).toggleOnTrue(Shooter.Pivot.neutralMode())
 
         controller.rightBumper()
             .debounce(0.150)

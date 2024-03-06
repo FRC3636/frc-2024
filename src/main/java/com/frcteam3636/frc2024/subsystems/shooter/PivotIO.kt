@@ -156,17 +156,15 @@ class PivotIOKraken : PivotIO {
 
 
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
-        val leftControl = PositionTorqueCurrentFOC(0.0).apply {
+        val leftControl = MotionMagicTorqueCurrentFOC(0.0).apply {
             Slot = 0
             Position = position.rotations
-            Velocity = velocity.rotations
 
         }
         leftMotor.setControl(leftControl)
-        val rightControl = PositionTorqueCurrentFOC(0.0).apply {
+        val rightControl = MotionMagicTorqueCurrentFOC(0.0).apply {
             Slot = 0
             Position = position.rotations
-            Velocity = velocity.rotations
         }
         rightMotor.setControl(rightControl)
 
@@ -198,11 +196,11 @@ class PivotIOKraken : PivotIO {
     internal companion object Constants {
         val GEAR_RATIO = 40.0
 
-        val PID_GAINS = PIDGains(300.0, 0.0, 40.0)
+        val PID_GAINS = PIDGains(130.0, 0.0, 100.0)
 
 
 //        val PID_GAINS = PIDGains()
-        val FF_GAINS = MotorFFGains(7.0, 0.0, 0.0)
+        val FF_GAINS = MotorFFGains(7.8, 0.0, 0.0)
         val GRAVITY_GAIN = 10.0
 
         val PROFILE_VELOCITY = TAU / 2

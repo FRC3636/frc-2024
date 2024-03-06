@@ -1,13 +1,12 @@
 package com.frcteam3636.frc2024.subsystems.climber
 
+import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.BLACK
 import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.FunctionalCommand
-import edu.wpi.first.wpilibj2.command.Subsystem
+import edu.wpi.first.wpilibj2.command.*
 import org.littletonrobotics.junction.Logger
 
 object Climber : Subsystem {
@@ -30,6 +29,25 @@ object Climber : Subsystem {
         Logger.processInputs("Climber", inputs)
         elevatorLigament.length = inputs.climberPosition
         Logger.recordOutput("Climber", mech)
+    }
+
+    fun setClimberCommand(speed: Double): Command {
+        return runEnd( {
+            io.setNeutral(NeutralModeValue.Coast)
+            io.moveClimber(speed)
+        },{
+            io.moveClimber(0.0)
+            io.setNeutral(NeutralModeValue.Brake)
+        }
+        )
+    }
+
+    fun knockIntake(): Command {
+        return Commands.sequence(
+            setClimberCommand(0.9).withTimeout(0.3),
+            setClimberCommand(-0.8).withTimeout(0.5),
+            setClimberCommand(0.0).withTimeout(0.1)
+        )
     }
 
     fun extendClimberCommand(): Command {

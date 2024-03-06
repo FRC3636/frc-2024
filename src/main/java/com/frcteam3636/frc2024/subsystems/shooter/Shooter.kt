@@ -234,7 +234,7 @@ object Shooter {
             }, {}, {
                 io.holdPosition()
             }, {
-                abs(target.profile.position().degrees - inputs.position.degrees) <= 1
+                abs(target.profile.position().degrees - inputs.position.degrees) <= 3
                         && abs(target.profile.velocity().degrees - inputs.velocity.degrees) <= 1
             }, this)
         }
