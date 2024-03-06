@@ -18,6 +18,19 @@ object Intake : Subsystem {
         Logger.processInputs("Intake", inputs)
     }
 
+    fun outtakeComand() : Command {
+        return startEnd(
+            {
+                io.setUnderBumperRoller(-1.0)
+                io.setOverBumperRoller(-0.5)
+            },
+            {
+                io.setUnderBumperRoller(0.0)
+                io.setOverBumperRoller(0.0)
+            }
+        )
+    }
+
     fun intakeCommand(): Command {
         return startEnd(
             {

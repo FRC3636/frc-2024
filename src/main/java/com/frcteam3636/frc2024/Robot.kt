@@ -11,9 +11,7 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
-import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
@@ -104,10 +102,10 @@ object Robot : LoggedRobot() {
 
         // Configure the autonomous command
 
-        NamedCommands.registerCommand("intake", intakeCommand().withTimeout(2.0))
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
-        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
-        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(1.5))
+        NamedCommands.registerCommand("intake", intakeCommand())
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)).withTimeout(3.0))
+        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)).withTimeout(3.0))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(2.0))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
         autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
@@ -120,11 +118,14 @@ object Robot : LoggedRobot() {
             translationJoystick = joystickLeft, rotationJoystick = joystickRight
         )
 
+
+        controller.leftBumper().whileTrue(Intake.outtakeComand())
+
         Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
 
-        controller.leftBumper().whileTrue(Shooter.Pivot.followMotionProfile(null))
+        controller.rightTrigger().whileTrue(Shooter.Pivot.followMotionProfile(null))
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
 //        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
         controller.povDown().toggleOnTrue(Shooter.Pivot.neutralMode())
 
@@ -172,12 +173,12 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
+        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
         autoCommand!!.schedule()
     }
 
     override fun teleopInit() {
-        autoCommand!!.cancel()
+        autoCommand?.cancel()
 //        Shooter.Amp.stow().schedule()
     }
 

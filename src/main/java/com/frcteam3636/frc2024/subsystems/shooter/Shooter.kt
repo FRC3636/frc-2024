@@ -238,7 +238,7 @@ object Shooter {
         enum class Target(val profile: PivotProfile) {
             SPEAKER(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(95.0) },
+                    { Rotation2d.fromDegrees(108.0) },
                     { Rotation2d() }
                 )
             ),
