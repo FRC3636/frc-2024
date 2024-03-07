@@ -60,6 +60,7 @@ class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
 data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Matrix<N3, N1>) :
     StructSerializable {
     companion object {
+        @JvmField
         val struct = AbsolutePoseMeasurementStruct()
     }
 }
