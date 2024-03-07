@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.InstantCommand
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -137,7 +138,16 @@ object Robot : LoggedRobot() {
 
         controller.rightBumper()
             .debounce(0.150)
-            .whileTrue(intakeCommand())
+            .whileTrue(
+                Commands.sequence(
+                    Intake.intakeCommand(),
+                    WaitUntilCommand(Shooter.Pivot::isStowed),
+                    Commands.parallel(
+                        Shooter.Flywheels.intake(),
+                        Intake.indexCommand()
+                    )
+                )
+            )
 
         controller.x().onTrue(
             Shooter.Amp.pivotTo(Rotation2d.fromDegrees(170.0))
@@ -146,7 +156,6 @@ object Robot : LoggedRobot() {
         )
 
         Trigger(joystickRight::getTrigger)
-            .and(Shooter.Pivot.readyToShoot)
             .whileTrue(
                 Commands.either(
                     Shooter.Flywheels.shoot(40.0, 0.0),

@@ -161,6 +161,8 @@ object Shooter {
 
             armLigament.angle = inputs.position.degrees
 
+
+            Logger.recordOutput("Shooter/IsStowed", isStowed())
             Logger.recordOutput("Shooter", mechanism)
         }
 
@@ -177,8 +179,12 @@ object Shooter {
         }
 
         val readyToShoot = Trigger {
-            (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
-                    && inputs.position.degrees >= 90
+            inputs.position.degrees >= 90
+        }
+
+        fun isStowed(): Boolean {
+
+            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.2).radians)
         }
 
 

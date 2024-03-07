@@ -34,14 +34,14 @@ object Intake : Subsystem {
     fun intakeCommand(): Command {
         return startEnd(
             {
-                io.setUnderBumperRoller(1.0)
+                io.setUnderBumperRoller(0.4)
                 io.setOverBumperRoller(1.0)
             },
             {
                 io.setUnderBumperRoller(0.0)
                 io.setOverBumperRoller(0.0)
             }
-        )
+        ).until(inputs::isIntaking)
 
 
     }
