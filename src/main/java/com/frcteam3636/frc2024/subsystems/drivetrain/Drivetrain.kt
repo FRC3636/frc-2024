@@ -101,6 +101,9 @@ object Drivetrain : Subsystem {
     val gyroConnected
         get() = io.gyro.connected
 
+    val allCamerasConnected
+        get() = absolutePoseIOs.values.all { it.first.cameraConnected }
+
     init {
         Pathfinding.setPathfinder(
             when (Robot.model) {

@@ -17,18 +17,24 @@ object Dashboard {
         get() = autoChooser.selected
 
     init {
-        thread {
+        thread(isDaemon = true) {
             val visionPcAddr = InetAddress.getByName("10.36.36.10")
             while (true) {
-                val visionPcOnline = visionPcAddr.isReachable(1000)
-                SmartDashboard.putBoolean("Vision PC Online", visionPcOnline)
+                try {
+                    val visionPcOnline = visionPcAddr.isReachable(1000)
+                    SmartDashboard.putBoolean("Vision PC Connected", visionPcOnline)
+                } catch (err: Exception) {
+                    SmartDashboard.putBoolean("Vision PC Connected", false)
+                    err.printStackTrace()
+                }
                 Thread.sleep(1000)
             }
         }
     }
 
     fun update() {
-        SmartDashboard.putBoolean("Battery Ready", RobotController.getBatteryVoltage() >= 12.3)
-        SmartDashboard.putBoolean("NavX Connected", Drivetrain.gyroConnected)
+        SmartDashboard.putBoolean("Battery Full", RobotController.getBatteryVoltage() >= 12.3)
+        SmartDashboard.putBoolean("NavX OK", Drivetrain.gyroConnected)
+        SmartDashboard.putBoolean("All Cameras OK", Drivetrain.allCamerasConnected)
     }
 }

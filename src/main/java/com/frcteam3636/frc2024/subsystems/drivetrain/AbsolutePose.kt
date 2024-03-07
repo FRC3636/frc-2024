@@ -35,18 +35,21 @@ interface AbsolutePoseIO {
     }
 
     fun updateInputs(inputs: Inputs)
+
+    val cameraConnected: Boolean
 }
 
-class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
+class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d): AbsolutePoseIO {
+    private val camera = PhotonCamera(name).apply { driverMode = false }
     private val estimator =
         PhotonPoseEstimator(
             APRIL_TAG_FIELD_LAYOUT,
             PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            PhotonCamera(name).apply { driverMode = false },
+            camera,
             chassisToCamera
         )
 
-    fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+    override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
         estimator.update().ifPresent {
             inputs.measurement = AbsolutePoseMeasurement(
                 it.estimatedPose,
@@ -55,6 +58,9 @@ class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
             )
         }
     }
+
+    override val cameraConnected
+        get() = camera.isConnected
 }
 
 data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Matrix<N3, N1>) :
