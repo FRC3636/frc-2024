@@ -184,7 +184,7 @@ object Shooter {
 
         fun isStowed(): Boolean {
 
-            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.2).radians)
+            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.8).radians)
         }
 
 

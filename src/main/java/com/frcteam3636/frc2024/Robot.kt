@@ -16,11 +16,7 @@ import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.InstantCommand
-import edu.wpi.first.wpilibj2.command.WaitUntilCommand
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -52,9 +48,20 @@ object Robot : LoggedRobot() {
 
     private val brakeModeToggle = DigitalInput(4)
 
-    private fun intakeCommand(): Command = Commands.parallel(
+    private fun intakeCommand(): Command = Commands.sequence(
         Intake.intakeCommand(),
-        Shooter.Flywheels.intake()
+        Commands.race(
+            Commands.sequence(
+                WaitCommand(0.5),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0))
+            ),
+            WaitUntilCommand(Shooter.Pivot::isStowed),
+        ),
+        Commands.parallel(
+            Shooter.Flywheels.intake(),
+            Intake.indexCommand()
+        )
     )
 
     override fun robotInit() {
@@ -117,6 +124,7 @@ object Robot : LoggedRobot() {
         SmartDashboard.putData("Auto selector", autoChooser)
     }
 
+
     private fun configureBindings() {
        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
            joystickLeft, joystickRight
@@ -124,7 +132,7 @@ object Robot : LoggedRobot() {
 
 //       controller.leftBumper().whileTrue(Intake.outtakeComand())
 
-        controller.rightTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
+        controller.leftTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
             Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
         )
 
@@ -139,14 +147,7 @@ object Robot : LoggedRobot() {
         controller.rightBumper()
             .debounce(0.150)
             .whileTrue(
-                Commands.sequence(
-                    Intake.intakeCommand(),
-                    WaitUntilCommand(Shooter.Pivot::isStowed),
-                    Commands.parallel(
-                        Shooter.Flywheels.intake(),
-                        Intake.indexCommand()
-                    )
-                )
+                intakeCommand()
             )
 
         controller.x().onTrue(
@@ -221,3 +222,9 @@ object Robot : LoggedRobot() {
         }
     }
 }
+
+//private fun makePivotBinding(trigger: Trigger, setpoint: Shooter.Pivot.Target) {
+//    trigger.debounce(0.15).whileTrue(Shooter.Pivot.followMotionProfile(setpoint)).onFalse(
+//        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+//    )
+//}
