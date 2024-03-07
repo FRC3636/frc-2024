@@ -26,9 +26,6 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
-import edu.wpi.first.units.Distance
-import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
@@ -39,6 +36,8 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem {
@@ -98,6 +97,9 @@ object Drivetrain : Subsystem {
             WHEEL_ODOMETRY_STD_DEV,
             VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
         )
+
+    val gyroConnected
+        get() = io.gyro.connected
 
     init {
         Pathfinding.setPathfinder(
@@ -240,6 +242,35 @@ object Drivetrain : Subsystem {
         }
     }
 
+    fun translationStaticTest() = run {
+        chassisSpeeds = ChassisSpeeds(
+            0.25 * FREE_SPEED.baseUnitMagnitude(),
+            0.0,
+            0.0,
+        )
+    }
+
+    fun translationDynamicTest(): Command {
+        var angle = 0.0
+        return run {
+            angle += 0.05
+            val vX = cos(angle) * 0.25
+            val vY = sin(angle) * 0.25
+            chassisSpeeds = ChassisSpeeds(
+                vX * FREE_SPEED.baseUnitMagnitude(),
+                vY * FREE_SPEED.baseUnitMagnitude(),
+                0.0,
+            )
+        }
+    }
+
+    fun rotationStaticTest() = run {
+        chassisSpeeds = ChassisSpeeds(
+            0.0,
+            0.0,
+            0.25 * TAU,
+        )
+    }
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()

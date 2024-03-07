@@ -2,7 +2,6 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.Slot0Configs
-import com.ctre.phoenix6.configs.SlotConfigs
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -14,8 +13,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Current
-import edu.wpi.first.units.Measure
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
 import kotlin.math.roundToInt
 
@@ -126,6 +123,7 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
                 SupplyCurrentLimit = DRIVING_CURRENT_LIMIT
             }
         )
+
     }
 
     override val position: Double

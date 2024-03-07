@@ -6,7 +6,6 @@ import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
-import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
@@ -48,6 +47,7 @@ object Robot : LoggedRobot() {
     private var autoChooser = SendableChooser<String>()
 
     private var autoCommand: Command? = null
+    private var testCommand: Command? = null
 
     private val brakeModeToggle = DigitalInput(4)
 
@@ -176,11 +176,13 @@ object Robot : LoggedRobot() {
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
+        Dashboard.update()
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
-        autoCommand!!.schedule()
+        autoCommand = Dashboard.currentAuto.apply {
+            schedule()
+        }
     }
 
     override fun teleopInit() {
@@ -191,6 +193,13 @@ object Robot : LoggedRobot() {
     override fun testInit() {
         // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll()
+        testCommand = testSequence(tests, controller.hid).apply {
+            schedule()
+        }
+    }
+
+    override fun testExit() {
+        testCommand?.cancel()
     }
 
     // A model of robot, depending on where we're deployed to.
