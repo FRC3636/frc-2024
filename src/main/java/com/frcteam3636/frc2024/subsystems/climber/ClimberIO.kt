@@ -1,10 +1,12 @@
 package com.frcteam3636.frc2024.subsystems.climber
 
+import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
+import com.frcteam3636.frc2024.TalonFXStatusProvider
 import com.frcteam3636.frc2024.utils.math.MotorFFGains
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.motorFFGains
@@ -15,7 +17,7 @@ import edu.wpi.first.wpilibj.simulation.ElevatorSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
-interface ClimberIO {
+interface ClimberIO: TalonFXStatusProvider {
     class ClimberInputs : LoggableInputs {
         var climberPosition = 0.0
         override fun toLog(table: LogTable?) {
@@ -51,6 +53,8 @@ class ClimberIOSim : ClimberIO {
         elevatorSim.setInputVoltage(12.0 * speed)
         elevatorSim.update(0.02)
     }
+
+    override val talonCANStatuses = emptyList<StatusSignal<*>>()
 
     companion object Constants {
         //TODO: Find all of these
@@ -96,6 +100,8 @@ class ClimberIOReal : ClimberIO {
     override fun moveClimber(speed: Double) {
         climberMotor.set(speed)
     }
+
+    override val talonCANStatuses = listOf(climberMotor.version)
 
     internal companion object Constants {
         // todo: this is all perfect and will never need to be changed

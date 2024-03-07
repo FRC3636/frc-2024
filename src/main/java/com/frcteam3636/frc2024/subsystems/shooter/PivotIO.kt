@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
@@ -8,6 +9,7 @@ import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
+import com.frcteam3636.frc2024.TalonFXStatusProvider
 import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
@@ -17,7 +19,7 @@ import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
-interface PivotIO {
+interface PivotIO: TalonFXStatusProvider {
     class Inputs : LoggableInputs {
         /** The pitch of the pivot relative to the chassis. */
         var position: Rotation2d = Rotation2d()
@@ -212,6 +214,8 @@ class PivotIOKraken : PivotIO {
 
         val LIMIT_SWITCH_OFFSET = Rotation2d.fromDegrees(27.0)
     }
+
+    override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
 }
 
 
@@ -249,4 +253,6 @@ class PivotIOSim : PivotIO {
     override fun holdPosition() {
         TODO("Not yet implemented")
     }
+
+    override val talonCANStatuses: List<StatusSignal<*>> = emptyList()
 }

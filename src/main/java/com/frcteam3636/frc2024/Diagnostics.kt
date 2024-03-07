@@ -1,6 +1,10 @@
 package com.frcteam3636.frc2024
 
+import com.ctre.phoenix6.BaseStatusSignal
+import com.ctre.phoenix6.StatusCode
+import com.ctre.phoenix6.StatusSignal
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import edu.wpi.first.units.Units
 import edu.wpi.first.wpilibj.XboxController
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj2.command.Command
@@ -35,3 +39,17 @@ val tests: List<Pair<String, Command>> = listOf(
 //    "Drive Translation Dynamic" to Drivetrain.translationDynamicTest(),
     "Drive Rotation" to Drivetrain.rotationStaticTest(),
 )
+
+interface TalonFXStatusProvider {
+    val talonCANStatuses: List<StatusSignal<*>>
+}
+
+class TalonFXDiagnosticCollector(vararg providers: TalonFXStatusProvider) {
+    private val diagnostics = providers.flatMap { it.talonCANStatuses }
+    private val timeout = Units.Seconds.of(0.5)
+
+    fun tryReceivePeriodic(): Boolean {
+        val result = BaseStatusSignal.waitForAll(timeout.baseUnitMagnitude(), *diagnostics.toTypedArray())
+        return result == StatusCode.OK
+    }
+}

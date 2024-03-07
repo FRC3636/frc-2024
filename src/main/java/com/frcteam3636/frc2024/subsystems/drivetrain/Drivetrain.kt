@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.TalonFXStatusProvider
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.TAU
@@ -40,7 +41,7 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 // A singleton object representing the drivetrain.
-object Drivetrain : Subsystem {
+object Drivetrain : Subsystem, TalonFXStatusProvider {
     private val io = when (Robot.model) {
         Robot.Model.SIMULATION -> DrivetrainIOSim()
         Robot.Model.COMPETITION -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_COMP).map { (position, ids) ->
@@ -280,6 +281,8 @@ object Drivetrain : Subsystem {
     }
     fun pathfindToPose(target: Pose2d): Command =
         AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
+
+    override val talonCANStatuses = io.modules.flatMap { it.talonCANStatuses }
 }
 
 abstract class DrivetrainIO {

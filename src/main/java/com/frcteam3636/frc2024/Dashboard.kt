@@ -1,6 +1,8 @@
 package com.frcteam3636.frc2024
 
+import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import com.pathplanner.lib.auto.AutoBuilder
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
@@ -30,6 +32,15 @@ object Dashboard {
                 Thread.sleep(1000)
             }
         }
+
+        thread(isDaemon = true) {
+            val canDiagnostics = TalonFXDiagnosticCollector(Drivetrain, Climber, Shooter.Pivot)
+            while (true) {
+                val canOK = canDiagnostics.tryReceivePeriodic()
+                SmartDashboard.putBoolean("CAN Bus OK", canOK)
+                Thread.sleep(250)
+            }
+        }
     }
 
     fun update() {
@@ -38,3 +49,4 @@ object Dashboard {
         SmartDashboard.putBoolean("All Cameras OK", Drivetrain.allCamerasConnected)
     }
 }
+
