@@ -108,7 +108,7 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand("intake", intakeCommand())
         NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
-        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(2.0))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
         autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
@@ -117,23 +117,23 @@ object Robot : LoggedRobot() {
     }
 
     private fun configureBindings() {
-        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-            translationJoystick = joystickLeft, rotationJoystick = joystickRight
+       Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+           joystickLeft, joystickRight
+       )
+
+//       controller.leftBumper().whileTrue(Intake.outtakeComand())
+
+        controller.rightTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
+            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
         )
 
-
-        controller.leftBumper().whileTrue(Intake.outtakeComand())
-
-        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
-
-        controller.rightTrigger().whileTrue(Shooter.Pivot.followMotionProfile(null))
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 
         controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
         controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
-        controller.povLeft().debounce(0.25).toggleOnTrue(Shooter.Pivot.neutralMode())
+        controller.povRight().onTrue(Climber.knockIntake())
 
         controller.rightBumper()
             .debounce(0.150)
@@ -145,12 +145,14 @@ object Robot : LoggedRobot() {
             Shooter.Amp.stow()
         )
 
-        Trigger(joystickRight::getTrigger).whileTrue(
-            Commands.either(
-                Shooter.Flywheels.shoot(40.0, 0.0),
-                Shooter.Flywheels.shoot(2.5, 0.0)
-            ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP}
-        )
+        Trigger(joystickRight::getTrigger)
+            .and(Shooter.Pivot.readyToShoot)
+            .whileTrue(
+                Commands.either(
+                    Shooter.Flywheels.shoot(40.0, 0.0),
+                    Shooter.Flywheels.shoot(2.5, 0.0)
+                ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
+            )
 
         //Drive if triggered joystickLeft input
 
@@ -168,6 +170,8 @@ object Robot : LoggedRobot() {
             })
         )
 
+        JoystickButton(joystickRight, 8).debounce(0.25).whileTrue(Shooter.Pivot.neutralMode())
+
 //        Trigger { brakeModeToggle.get() }
 //            .debounce(0.25)
 //            .toggleOnTrue(Shooter.Pivot.neutralMode())
@@ -179,7 +183,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
+        autoCommand = AutoBuilder.buildAuto("Right 2 Piece")
         autoCommand!!.schedule()
     }
 

@@ -21,8 +21,8 @@ object Intake : Subsystem {
     fun outtakeComand() : Command {
         return startEnd(
             {
-                io.setUnderBumperRoller(-1.0)
-                io.setOverBumperRoller(-1.0)
+                io.setUnderBumperRoller(-0.2)
+                io.setOverBumperRoller(-0.2)
             },
             {
                 io.setUnderBumperRoller(0.0)

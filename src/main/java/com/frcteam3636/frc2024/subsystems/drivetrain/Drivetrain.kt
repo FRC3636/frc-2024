@@ -30,6 +30,7 @@ import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
+import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -122,11 +123,16 @@ object Drivetrain : Subsystem {
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
 
-        absolutePoseIOs.forEach { (_, ioPair) ->
+        absolutePoseIOs.forEach { (name, ioPair) ->
             val (io, inputs) = ioPair
 
             io.updateInputs(inputs)
-            inputs.measurement?.let { poseEstimator.addAbsolutePoseMeasurement(it) }
+            Logger.processInputs("Absolute Pose/$name", inputs)
+
+
+            inputs.measurement?.let {
+                poseEstimator.addAbsolutePoseMeasurement(it)
+            }
         }
 
 
@@ -134,6 +140,7 @@ object Drivetrain : Subsystem {
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
+
         Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
         Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
     }
@@ -198,11 +205,13 @@ object Drivetrain : Subsystem {
                 || abs(translationJoystick.y) > JOYSTICK_DEADBAND
                 || abs(rotationJoystick.x) > JOYSTICK_DEADBAND
             ) {
+                val translationInput = Translation2d(-translationJoystick.y, -translationJoystick.x).rotateBy(DRIVER_ROTATION)
+
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
-                        -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
-                        -rotationJoystick.x * TAU,
+                        translationInput.x * FREE_SPEED.baseUnitMagnitude(),
+                        translationInput.y * FREE_SPEED.baseUnitMagnitude(),
+                        -rotationJoystick.x * TAU * 1.25,
                         gyroRotation.toRotation2d()
                     )
             } else {
@@ -211,6 +220,7 @@ object Drivetrain : Subsystem {
                     MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
             }
         }
+
 
     fun driveWithController(controller: CommandXboxController): Command =
         run {
@@ -386,6 +396,12 @@ internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
     MODULE_POSITIONS.frontLeft.translation.norm,
     ReplanningConfig(true, true, Units.inchesToMeters(3.0), Units.inchesToMeters(1.5)),
 )
+
+// ddrive with joysticks
+val DRIVER_ROTATION = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
+    DriverStation.Alliance.Red -> Rotation2d.fromRotations(0.5)
+    DriverStation.Alliance.Blue -> Rotation2d()
+}
 
 // CAN IDs
 internal val MODULE_CAN_IDS_COMP =

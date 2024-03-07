@@ -47,6 +47,7 @@ class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
         )
 
     fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+        inputs.measurement = null
         estimator.update().ifPresent {
             inputs.measurement = AbsolutePoseMeasurement(
                 it.estimatedPose,
@@ -60,6 +61,7 @@ class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
 data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Matrix<N3, N1>) :
     StructSerializable {
     companion object {
+        @JvmField
         val struct = AbsolutePoseMeasurementStruct()
     }
 }
