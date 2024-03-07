@@ -10,6 +10,7 @@
   },
   "NTProvider": {
     "types": {
+      "/AdvantageKit/RealOutputs/Climber": "Mechanism2d",
       "/AdvantageKit/RealOutputs/Shooter": "Mechanism2d",
       "/FMSInfo": "FMSInfo",
       "/SmartDashboard/Auto selector": "String Chooser"

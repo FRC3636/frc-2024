@@ -34,7 +34,7 @@ object Intake : Subsystem {
     fun intakeCommand(): Command {
         return startEnd(
             {
-                io.setUnderBumperRoller(0.4)
+                io.setUnderBumperRoller(0.7)
                 io.setOverBumperRoller(1.0)
             },
             {

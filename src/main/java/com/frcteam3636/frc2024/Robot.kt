@@ -193,7 +193,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto("Right 2 Piece")
+        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
         autoCommand!!.schedule()
     }
 

@@ -383,8 +383,9 @@ internal val MODULE_POSITIONS = when (Robot.model) {
 internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
+
 internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
-internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.0)
+internal val ROTATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
