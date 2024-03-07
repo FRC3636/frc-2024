@@ -53,8 +53,8 @@ object Robot : LoggedRobot() {
         Commands.race(
             Commands.sequence(
                 WaitCommand(0.5),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0))
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)).withTimeout(0.4),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0)).withTimeout(0.5)
             ),
             WaitUntilCommand(Shooter.Pivot::isStowed),
         ),
