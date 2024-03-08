@@ -6,6 +6,7 @@ import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
@@ -180,9 +181,8 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = Dashboard.currentAuto.apply {
-            schedule()
-        }
+        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
+        autoCommand!!.schedule()
     }
 
     override fun teleopInit() {
