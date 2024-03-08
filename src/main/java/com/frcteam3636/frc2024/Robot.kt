@@ -16,10 +16,7 @@ import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.InstantCommand
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -52,9 +49,20 @@ object Robot : LoggedRobot() {
 
     private val brakeModeToggle = DigitalInput(4)
 
-    private fun intakeCommand(): Command = Commands.parallel(
+    private fun intakeCommand(): Command = Commands.sequence(
         Intake.intakeCommand(),
-        Shooter.Flywheels.intake()
+        Commands.race(
+            Commands.sequence(
+                WaitCommand(0.5),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)).withTimeout(0.4),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0)).withTimeout(0.5)
+            ),
+            WaitUntilCommand(Shooter.Pivot::isStowed),
+        ),
+        Commands.parallel(
+            Shooter.Flywheels.intake(),
+            Intake.indexCommand()
+        )
     )
 
     override fun robotInit() {
@@ -109,36 +117,39 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand("intake", intakeCommand())
         NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
-        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(2.0))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
-        autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
-        autoChooser.addOption("Open Speaker Side 2 Piece", "Right 2 Piece")
+        autoChooser.addOption("Middle 3 Piece", "Middle 3 Piece")
+        autoChooser.addOption("Source Side 2 Piece", "Right 2 Piece")
         SmartDashboard.putData("Auto selector", autoChooser)
     }
 
+
     private fun configureBindings() {
-        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-            translationJoystick = joystickLeft, rotationJoystick = joystickRight
+       Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+           joystickLeft, joystickRight
+       )
+
+//       controller.leftBumper().whileTrue(Intake.outtakeComand())
+
+        controller.leftTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
+            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
         )
 
-
-        controller.leftBumper().whileTrue(Intake.outtakeComand())
-
-        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
-
-        controller.rightTrigger().whileTrue(Shooter.Pivot.followMotionProfile(null))
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 
         controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
         controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
-        controller.povLeft().debounce(0.25).toggleOnTrue(Shooter.Pivot.neutralMode())
+        controller.povRight().onTrue(Climber.knockIntake())
 
         controller.rightBumper()
             .debounce(0.150)
-            .whileTrue(intakeCommand())
+            .whileTrue(
+                intakeCommand()
+            )
 
         controller.x().onTrue(
             Shooter.Amp.pivotTo(Rotation2d.fromDegrees(170.0))
@@ -146,12 +157,13 @@ object Robot : LoggedRobot() {
             Shooter.Amp.stow()
         )
 
-        Trigger(joystickRight::getTrigger).whileTrue(
-            Commands.either(
-                Shooter.Flywheels.shoot(40.0, 0.0),
-                Shooter.Flywheels.shoot(2.5, 0.0)
-            ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP}
-        )
+        Trigger(joystickRight::getTrigger)
+            .whileTrue(
+                Commands.either(
+                    Shooter.Flywheels.shoot(40.0, 0.0),
+                    Shooter.Flywheels.shoot(2.5, 0.0)
+                ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
+            )
 
         //Drive if triggered joystickLeft input
 
@@ -169,6 +181,8 @@ object Robot : LoggedRobot() {
             })
         )
 
+        JoystickButton(joystickRight, 8).debounce(0.25).whileTrue(Shooter.Pivot.neutralMode())
+
 //        Trigger { brakeModeToggle.get() }
 //            .debounce(0.25)
 //            .toggleOnTrue(Shooter.Pivot.neutralMode())
@@ -181,7 +195,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto("Middle 2 Piece")
+        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
         autoCommand!!.schedule()
     }
 
@@ -217,3 +231,9 @@ object Robot : LoggedRobot() {
         }
     }
 }
+
+//private fun makePivotBinding(trigger: Trigger, setpoint: Shooter.Pivot.Target) {
+//    trigger.debounce(0.15).whileTrue(Shooter.Pivot.followMotionProfile(setpoint)).onFalse(
+//        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+//    )
+//}

@@ -32,6 +32,8 @@ interface ClimberIO: TalonFXStatusProvider {
     fun updateInputs(inputs: ClimberInputs)
 
     fun moveClimber(speed: Double)
+
+   fun setNeutral(mode: NeutralModeValue) {}
 }
 
 class ClimberIOSim : ClimberIO {
@@ -69,9 +71,6 @@ class ClimberIOSim : ClimberIO {
 class ClimberIOReal : ClimberIO {
     private val climberMotor = TalonFX(CTREMotorControllerId.ClimberMotor).apply {
         val config = TalonFXConfiguration().apply {
-            MotorOutput.apply {
-                NeutralMode = NeutralModeValue.Brake
-            }
             Slot0.apply {
                 pidGains = PID_GAINS
                 motorFFGains = FF_GAINS
@@ -99,6 +98,11 @@ class ClimberIOReal : ClimberIO {
 
     override fun moveClimber(speed: Double) {
         climberMotor.set(speed)
+    }
+
+
+    override fun setNeutral(mode: NeutralModeValue) {
+        climberMotor.setNeutralMode(mode)
     }
 
     override val talonCANStatuses = listOf(climberMotor.version)

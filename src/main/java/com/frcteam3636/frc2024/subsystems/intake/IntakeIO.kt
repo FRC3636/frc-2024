@@ -68,7 +68,7 @@ class IntakeIOReal : IntakeIO {
         inputs.otbCurrent = otbRollers.outputCurrent
         inputs.utbCurrent = utbRollers.outputCurrent
         inputs.beamBreak = beamBreakSensor.get()
-        inputs.isIntaking = utbRollers.outputCurrent > Constants.BEAM_BREAK_CURRENT_THRESHOLD && !inputs.beamBreak
+        inputs.isIntaking = !inputs.beamBreak
     }
 
     override fun setOverBumperRoller(speed: Double) {

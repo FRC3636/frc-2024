@@ -76,7 +76,6 @@ interface PivotIO: TalonFXStatusProvider {
 
     fun pivotToAndStop(position: Rotation2d)
     fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d)
-    fun holdPosition()
 
     fun driveVoltage(volts: Double) {}
     fun setBrakeMode(enabled: Boolean) {}
@@ -158,6 +157,7 @@ class PivotIOKraken : PivotIO {
 
 
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
+        Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
         val leftControl = MotionMagicTorqueCurrentFOC(0.0).apply {
             Slot = 0
             Position = position.rotations
@@ -169,25 +169,12 @@ class PivotIOKraken : PivotIO {
             Position = position.rotations
         }
         rightMotor.setControl(rightControl)
-
-        Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
     }
 
     override fun setBrakeMode(enabled: Boolean) {
         leftMotor.setNeutralMode(if (enabled) { NeutralModeValue.Brake } else { NeutralModeValue.Coast })
         rightMotor.setNeutralMode(if (enabled) { NeutralModeValue.Brake } else { NeutralModeValue.Coast })
-    }
-
-    override fun holdPosition() {
-        val request = PositionTorqueCurrentFOC(leftMotor.position.value).apply {
-            Slot = 0
-        }
-        leftMotor.setControl(request)
-        rightMotor.setControl(request)
-
-        Logger.recordOutput("Shooter/Pivot/Position Setpoint", request.Position)
-        Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
     }
 
     override fun driveVoltage(volts: Double) {
@@ -198,10 +185,7 @@ class PivotIOKraken : PivotIO {
     internal companion object Constants {
         val GEAR_RATIO = 40.0
 
-        val PID_GAINS = PIDGains(130.0, 0.0, 100.0)
-
-
-//        val PID_GAINS = PIDGains()
+        val PID_GAINS = PIDGains(120.0, 0.0, 100.0)
         val FF_GAINS = MotorFFGains(7.8, 0.0, 0.0)
         val GRAVITY_GAIN = 10.0
 
@@ -248,10 +232,6 @@ class PivotIOSim : PivotIO {
 
         Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
-    }
-
-    override fun holdPosition() {
-        TODO("Not yet implemented")
     }
 
     override val talonCANStatuses: List<StatusSignal<*>> = emptyList()

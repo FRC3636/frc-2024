@@ -1,8 +1,13 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.*
+import com.frcteam3636.frc2024.BLACK
+import com.frcteam3636.frc2024.BLUE
+import com.frcteam3636.frc2024.WHITE
+import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
@@ -11,9 +16,11 @@ import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
 import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.button.Trigger
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
+import kotlin.math.atan
 
 object Shooter {
 
@@ -87,7 +94,7 @@ object Shooter {
             }),
             SequentialCommandGroup(
                 // wait for the flywheels to get up to speed
-                Commands.waitSeconds(0.7),
+                Commands.waitSeconds(0.4),
                 // run the indexer
                 Commands.runEnd({
                     io.setIndexerVoltage(Volts.of(-10.0))
@@ -148,13 +155,14 @@ object Shooter {
         var target: Target = Target.PODIUM
 
 
-
         override fun periodic() {
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
             armLigament.angle = inputs.position.degrees
 
+
+            Logger.recordOutput("Shooter/IsStowed", isStowed())
             Logger.recordOutput("Shooter", mechanism)
         }
 
@@ -166,8 +174,17 @@ object Shooter {
                     && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
 
-        fun isPointingTowards(target: Rotation2d): Boolean {
-            return abs((target - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians
+        fun isPointingTowards(target: Rotation2d) = Trigger {
+            abs((target - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians
+        }
+
+        val readyToShoot = Trigger {
+            inputs.position.degrees >= 90
+        }
+
+        fun isStowed(): Boolean {
+
+            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.8).radians)
         }
 
 
@@ -225,15 +242,13 @@ object Shooter {
 
         fun followMotionProfile(targetOverride: Target?): Command {
             var target = targetOverride ?: this.target
-            return FunctionalCommand({
+            return run {
                 target = targetOverride ?: this.target
                 io.pivotToAndMove(target.profile.position(), target.profile.velocity())
-            }, {}, {
-                io.holdPosition()
-            }, {
-                abs(target.profile.position().degrees - inputs.position.degrees) <= 3
+            }.until {
+                abs(target.profile.position().degrees - inputs.position.degrees) <= 5
                         && abs(target.profile.velocity().degrees - inputs.velocity.degrees) <= 1
-            }, this)
+            }
         }
 
 
@@ -248,6 +263,16 @@ object Shooter {
         override val talonCANStatuses = io.talonCANStatuses
 
         enum class Target(val profile: PivotProfile) {
+            AIM(
+                PivotProfile(
+                    {
+                        val distance = SPEAKER_POSE.toTranslation2d().minus(Drivetrain.estimatedPose.translation).norm
+                        val targetHeight = SPEAKER_POSE.z
+                        Rotation2d(atan(targetHeight / distance))
+                    },
+                    { Rotation2d() }
+                )
+            ),
             SPEAKER(
                 PivotProfile(
                     { Rotation2d.fromDegrees(100.0) },
@@ -338,6 +363,8 @@ data class PivotProfile(
     val velocity: () -> Rotation2d
 )
 
+
+internal val SPEAKER_POSE = Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val AMP_MECH_POSITION_TOLERANCE = Rotation2d.fromDegrees(3.0)

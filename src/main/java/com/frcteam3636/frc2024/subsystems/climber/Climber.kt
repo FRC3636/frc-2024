@@ -1,15 +1,13 @@
 package com.frcteam3636.frc2024.subsystems.climber
 
+import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.BLACK
 import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.TalonFXStatusProvider
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.FunctionalCommand
-import edu.wpi.first.wpilibj2.command.Subsystem
+import edu.wpi.first.wpilibj2.command.*
 import org.littletonrobotics.junction.Logger
 
 object Climber : Subsystem, TalonFXStatusProvider {
@@ -36,9 +34,11 @@ object Climber : Subsystem, TalonFXStatusProvider {
 
     fun setClimberCommand(speed: Double): Command {
         return runEnd( {
+            io.setNeutral(NeutralModeValue.Coast)
             io.moveClimber(speed)
         },{
             io.moveClimber(0.0)
+            io.setNeutral(NeutralModeValue.Brake)
         }
         )
     }
