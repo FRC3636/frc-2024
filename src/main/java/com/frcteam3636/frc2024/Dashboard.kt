@@ -24,9 +24,9 @@ object Dashboard {
             while (true) {
                 try {
                     val visionPcOnline = visionPcAddr.isReachable(1000)
-                    SmartDashboard.putBoolean("Vision PC Connected", visionPcOnline)
+                    SmartDashboard.putBoolean("Vision PC OK", visionPcOnline)
                 } catch (err: Exception) {
-                    SmartDashboard.putBoolean("Vision PC Connected", false)
+                    SmartDashboard.putBoolean("Vision PC OK", false)
                     err.printStackTrace()
                 }
                 Thread.sleep(1000)
