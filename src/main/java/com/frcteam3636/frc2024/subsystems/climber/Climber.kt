@@ -4,12 +4,13 @@ import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.BLACK
 import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.TalonFXStatusProvider
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj2.command.*
 import org.littletonrobotics.junction.Logger
 
-object Climber : Subsystem {
+object Climber : Subsystem, TalonFXStatusProvider {
     private var io: ClimberIO = when (Robot.model) {
         Robot.Model.PRACTICE -> ClimberIOReal()
         Robot.Model.COMPETITION -> ClimberIOReal()
@@ -72,5 +73,5 @@ object Climber : Subsystem {
         )
     }
 
-
+    override val talonCANStatuses = io.talonCANStatuses
 }

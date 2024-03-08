@@ -6,11 +6,11 @@ import com.kauailabs.navx.frc.AHRS
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Translation2d
 import org.littletonrobotics.junction.Logger
-import kotlin.math.PI
 import kotlin.math.sign
 
 interface Gyro {
     var rotation: Rotation3d
+    val connected: Boolean
 
     fun periodic() {}
 }
@@ -28,10 +28,15 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
             offset = goal - ahrs.rotation3d
             Logger.recordOutput("Gyro/Offset", offset)
         }
+
+
+    override val connected
+        get() = ahrs.isConnected
 }
 
 class GyroSim(private val modules: PerCorner<SwerveModule>) : Gyro {
     override var rotation = Rotation3d()
+    override val connected = true
 
     override fun periodic() {
         val moduleVelocities =

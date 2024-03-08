@@ -1,8 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.drivetrain
 
+import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.Slot0Configs
-import com.ctre.phoenix6.configs.SlotConfigs
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -14,12 +14,10 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Current
-import edu.wpi.first.units.Measure
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
 import kotlin.math.roundToInt
 
-interface SwerveModule {
+interface SwerveModule: TalonFXStatusProvider {
     // The current "state" of the swerve module.
     //
     // This is essentially the velocity of the wheel,
@@ -43,7 +41,7 @@ interface SwerveModule {
 
 class MAXSwerveModule(
     private val drivingMotor: DrivingMotor, turningId: REVMotorControllerId, private val chassisAngle: Rotation2d
-) : SwerveModule {
+) : SwerveModule, TalonFXStatusProvider {
     private val turningSpark = CANSparkMax(turningId, CANSparkLowLevel.MotorType.kBrushless).apply {
         restoreFactoryDefaults()
 
@@ -107,9 +105,11 @@ class MAXSwerveModule(
             field = optimized
         }
 
+
+    override val talonCANStatuses = drivingMotor.talonCANStatuses
 }
 
-interface DrivingMotor {
+interface DrivingMotor: TalonFXStatusProvider {
     val position: Double
     var velocity: Double
 }
@@ -126,6 +126,7 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
                 SupplyCurrentLimit = DRIVING_CURRENT_LIMIT
             }
         )
+
     }
 
     override val position: Double
@@ -137,7 +138,7 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
             inner.setControl(VelocityTorqueCurrentFOC(value / DRIVING_GEAR_RATIO_TALON / WHEEL_CIRCUMFERENCE).withSlot(0))
         }
 
-
+    override val talonCANStatuses = listOf(inner.version)
 }
 
 class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
@@ -173,6 +174,8 @@ class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
         set(value) {
             inner.set(value)
         }
+
+    override val talonCANStatuses = emptyList<StatusSignal<*>>()
 }
 
 class SimSwerveModule : SwerveModule {
@@ -216,6 +219,8 @@ class SimSwerveModule : SwerveModule {
             )
         )
     }
+
+    override val talonCANStatuses = emptyList<StatusSignal<*>>()
 }
 
 // take the known wheel diameter, divide it by two to get the radius, then get the

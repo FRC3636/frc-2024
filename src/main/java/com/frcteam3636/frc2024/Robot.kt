@@ -45,6 +45,7 @@ object Robot : LoggedRobot() {
     private var autoChooser = SendableChooser<String>()
 
     private var autoCommand: Command? = null
+    private var testCommand: Command? = null
 
     private val brakeModeToggle = DigitalInput(4)
 
@@ -190,6 +191,7 @@ object Robot : LoggedRobot() {
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
+        Dashboard.update()
     }
 
     override fun autonomousInit() {
@@ -205,6 +207,13 @@ object Robot : LoggedRobot() {
     override fun testInit() {
         // Cancels all running commands at the start of test mode.
         CommandScheduler.getInstance().cancelAll()
+        testCommand = testSequence(tests, controller.hid).apply {
+            schedule()
+        }
+    }
+
+    override fun testExit() {
+        testCommand?.cancel()
     }
 
     // A model of robot, depending on where we're deployed to.

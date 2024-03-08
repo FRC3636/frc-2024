@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
+import com.frcteam3636.frc2024.TalonFXStatusProvider
 import com.frcteam3636.frc2024.utils.math.PIDController
 import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.TAU
@@ -26,9 +27,6 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
-import edu.wpi.first.units.Distance
-import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
@@ -40,9 +38,11 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.sin
 
 // A singleton object representing the drivetrain.
-object Drivetrain : Subsystem {
+object Drivetrain : Subsystem, TalonFXStatusProvider {
     private val io = when (Robot.model) {
         Robot.Model.SIMULATION -> DrivetrainIOSim()
         Robot.Model.COMPETITION -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_COMP).map { (position, ids) ->
@@ -99,6 +99,12 @@ object Drivetrain : Subsystem {
             WHEEL_ODOMETRY_STD_DEV,
             VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
         )
+
+    val gyroConnected
+        get() = io.gyro.connected
+
+    val allCamerasConnected
+        get() = absolutePoseIOs.values.all { it.first.cameraConnected }
 
     init {
         Pathfinding.setPathfinder(
@@ -250,12 +256,43 @@ object Drivetrain : Subsystem {
         }
     }
 
+    fun translationStaticTest() = run {
+        chassisSpeeds = ChassisSpeeds(
+            0.25 * FREE_SPEED.baseUnitMagnitude(),
+            0.0,
+            0.0,
+        )
+    }
+
+    fun translationDynamicTest(): Command {
+        var angle = 0.0
+        return run {
+            angle += 0.05
+            val vX = cos(angle) * 0.25
+            val vY = sin(angle) * 0.25
+            chassisSpeeds = ChassisSpeeds(
+                vX * FREE_SPEED.baseUnitMagnitude(),
+                vY * FREE_SPEED.baseUnitMagnitude(),
+                0.0,
+            )
+        }
+    }
+
+    fun rotationStaticTest() = run {
+        chassisSpeeds = ChassisSpeeds(
+            0.0,
+            0.0,
+            0.25 * TAU,
+        )
+    }
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()
     }
     fun pathfindToPose(target: Pose2d): Command =
         AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
+
+    override val talonCANStatuses = io.modules.flatMap { it.talonCANStatuses }
 }
 
 abstract class DrivetrainIO {
