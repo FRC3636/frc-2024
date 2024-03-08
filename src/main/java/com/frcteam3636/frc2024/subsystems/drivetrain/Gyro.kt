@@ -15,7 +15,7 @@ interface Gyro {
     fun periodic() {}
 }
 
-class GyroNavX(private var offset: Rotation3d = Rotation3d(0.0, 0.0, PI)) : Gyro {
+class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
     private val ahrs = AHRS()
 
     init {

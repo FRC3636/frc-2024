@@ -1,22 +1,22 @@
 package com.frcteam3636.frc2024
 
 import com.ctre.phoenix6.hardware.TalonFX
+import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.pathplanner.lib.auto.AutoBuilder
+import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.*
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.InstantCommand
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -42,10 +42,27 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+    private var autoChooser = SendableChooser<String>()
 
     private var autoCommand: Command? = null
 
     private val brakeModeToggle = DigitalInput(4)
+
+    private fun intakeCommand(): Command = Commands.sequence(
+        Intake.intakeCommand(),
+        Commands.race(
+            Commands.sequence(
+                WaitCommand(0.5),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)).withTimeout(0.4),
+                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0)).withTimeout(0.5)
+            ),
+            WaitUntilCommand(Shooter.Pivot::isStowed),
+        ),
+        Commands.parallel(
+            Shooter.Flywheels.intake(),
+            Intake.indexCommand()
+        )
+    )
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -86,6 +103,7 @@ object Robot : LoggedRobot() {
         Shooter.register()
         Drivetrain.register()
         Intake.register()
+        Climber.register()
 
         TalonFX(0) // init phoenix diagnostics server
 
@@ -93,30 +111,44 @@ object Robot : LoggedRobot() {
         configureBindings()
 
         // Configure the autonomous command
-        autoCommand = Drivetrain.pathfindToPose(Pose2d(Units.feetToMeters(3.0), Units.feetToMeters(3.0), Rotation2d()))
+
+        NamedCommands.registerCommand("knockintake", Climber.knockIntake())
+        NamedCommands.registerCommand("intake", intakeCommand())
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
+        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
+        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
+        autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
+        autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
+        autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
+        autoChooser.addOption("Open Speaker Side 2 Piece", "Right 2 Piece")
+        SmartDashboard.putData("Auto selector", autoChooser)
     }
 
+
     private fun configureBindings() {
-        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-            translationJoystick = joystickLeft, rotationJoystick = joystickRight
+       Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+           joystickLeft, joystickRight
+       )
+
+//       controller.leftBumper().whileTrue(Intake.outtakeComand())
+
+        controller.leftTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
+            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
         )
 
-        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
-
-        controller.leftBumper().whileTrue(Shooter.Pivot.followMotionProfile(null))
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
-//        controller.rightTrigger().onTrue(Shooter.Pivot.pivotAndStop(Target.SPEAKER.profile.position()))
-        controller.povDown().toggleOnTrue(Shooter.Pivot.neutralMode())
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+        controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
+
+        controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
+        controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
+        controller.povRight().onTrue(Climber.knockIntake())
 
         controller.rightBumper()
             .debounce(0.150)
             .whileTrue(
-            Commands.parallel(
-                Intake.intakeCommand(),
-                Shooter.Flywheels.intake()
+                intakeCommand()
             )
-        )
 
         controller.x().onTrue(
             Shooter.Amp.pivotTo(Rotation2d.fromDegrees(170.0))
@@ -124,12 +156,13 @@ object Robot : LoggedRobot() {
             Shooter.Amp.stow()
         )
 
-        Trigger(joystickRight::getTrigger).whileTrue(
-            Commands.either(
-                Shooter.Flywheels.shoot(40.0, 0.0),
-                Shooter.Flywheels.shoot(2.5, 0.0)
-            ) { Shooter.Pivot.target == Shooter.Pivot.Target.SPEAKER }
-        )
+        Trigger(joystickRight::getTrigger)
+            .whileTrue(
+                Commands.either(
+                    Shooter.Flywheels.shoot(40.0, 0.0),
+                    Shooter.Flywheels.shoot(2.5, 0.0)
+                ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
+            )
 
         //Drive if triggered joystickLeft input
 
@@ -147,6 +180,8 @@ object Robot : LoggedRobot() {
             })
         )
 
+        JoystickButton(joystickRight, 8).debounce(0.25).whileTrue(Shooter.Pivot.neutralMode())
+
 //        Trigger { brakeModeToggle.get() }
 //            .debounce(0.25)
 //            .toggleOnTrue(Shooter.Pivot.neutralMode())
@@ -158,11 +193,12 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
+        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
         autoCommand!!.schedule()
     }
 
     override fun teleopInit() {
-        autoCommand!!.cancel()
+        autoCommand?.cancel()
 //        Shooter.Amp.stow().schedule()
     }
 
@@ -186,3 +222,9 @@ object Robot : LoggedRobot() {
         }
     }
 }
+
+//private fun makePivotBinding(trigger: Trigger, setpoint: Shooter.Pivot.Target) {
+//    trigger.debounce(0.15).whileTrue(Shooter.Pivot.followMotionProfile(setpoint)).onFalse(
+//        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+//    )
+//}

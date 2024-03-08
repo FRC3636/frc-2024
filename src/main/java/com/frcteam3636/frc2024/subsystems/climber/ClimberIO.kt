@@ -2,6 +2,7 @@ package com.frcteam3636.frc2024.subsystems.climber
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.signals.InvertedValue
+import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
 import com.frcteam3636.frc2024.utils.math.MotorFFGains
@@ -29,6 +30,8 @@ interface ClimberIO {
     fun updateInputs(inputs: ClimberInputs)
 
     fun moveClimber(speed: Double)
+
+   fun setNeutral(mode: NeutralModeValue) {}
 }
 
 class ClimberIOSim : ClimberIO {
@@ -91,6 +94,11 @@ class ClimberIOReal : ClimberIO {
 
     override fun moveClimber(speed: Double) {
         climberMotor.set(speed)
+    }
+
+
+    override fun setNeutral(mode: NeutralModeValue) {
+        climberMotor.setNeutralMode(mode)
     }
 
     internal companion object Constants {

@@ -18,29 +18,38 @@ object Intake : Subsystem {
         Logger.processInputs("Intake", inputs)
     }
 
-    fun intakeCommand(): Command {
+    fun outtakeComand() : Command {
         return startEnd(
             {
-                println("Intaking")
-                io.setUnderBumperRoller(1.0)
-                io.setOverBumperRoller(0.5)
+                io.setUnderBumperRoller(-0.2)
+                io.setOverBumperRoller(-0.2)
             },
             {
-                println("Intaking done")
                 io.setUnderBumperRoller(0.0)
                 io.setOverBumperRoller(0.0)
             }
         )
+    }
+
+    fun intakeCommand(): Command {
+        return startEnd(
+            {
+                io.setUnderBumperRoller(0.7)
+                io.setOverBumperRoller(1.0)
+            },
+            {
+                io.setUnderBumperRoller(0.0)
+                io.setOverBumperRoller(0.0)
+            }
+        ).until(inputs::isIntaking)
 
 
     }
 
     fun indexCommand(): Command {
         return Commands.sequence(
-            PrintCommand("Indexing"),
             InstantCommand ( {io.setUnderBumperRoller(0.5)}),
             WaitCommand(3.0),
-            PrintCommand("Indexing done"),
         ).finallyDo(Runnable {
             io.setUnderBumperRoller(0.0)
         })
