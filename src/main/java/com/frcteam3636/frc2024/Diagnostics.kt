@@ -48,16 +48,15 @@ class TalonFXDiagnosticCollector(vararg providers: TalonFXStatusProvider) {
     private val diagnostics = providers.flatMap { it.talonCANStatuses }
     private val timeout = Units.Seconds.of(0.5)
 
-    fun tryReceivePeriodic(): Boolean {
-        if (diagnostics.isNotEmpty()) {
+    fun tryReceivePeriodic(): StatusCode {
+        return if (diagnostics.isNotEmpty()) {
             try {
-                val result = BaseStatusSignal.waitForAll(timeout.baseUnitMagnitude(), *diagnostics.toTypedArray())
-                return result == StatusCode.OK
+                BaseStatusSignal.waitForAll(timeout.baseUnitMagnitude(), *diagnostics.toTypedArray())
             } catch (e: Exception) {
-                return false
+                StatusCode.GeneralError
             }
         } else {
-            return true
+            StatusCode.OK
         }
     }
 }
