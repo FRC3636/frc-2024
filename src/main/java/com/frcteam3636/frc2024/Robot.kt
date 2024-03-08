@@ -119,8 +119,8 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
-        autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
-        autoChooser.addOption("Open Speaker Side 2 Piece", "Right 2 Piece")
+        autoChooser.addOption("Middle 3 Piece", "Middle 3 Piece")
+        autoChooser.addOption("Source Side 2 Piece", "Right 2 Piece")
         SmartDashboard.putData("Auto selector", autoChooser)
     }
 

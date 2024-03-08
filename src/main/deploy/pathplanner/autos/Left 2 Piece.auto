@@ -30,7 +30,7 @@
           }
         },
         {
-          "type": "race",
+          "type": "deadline",
           "data": {
             "commands": [
               {
@@ -40,7 +40,7 @@
                     {
                       "type": "path",
                       "data": {
-                        "pathName": "Left Stage 1"
+                        "pathName": "Left Stage 1.1"
                       }
                     },
                     {
@@ -52,7 +52,7 @@
                     {
                       "type": "path",
                       "data": {
-                        "pathName": "Left Stage 2"
+                        "pathName": "Left Stage 2.1"
                       }
                     }
                   ]
