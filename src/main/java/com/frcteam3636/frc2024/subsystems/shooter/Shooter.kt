@@ -191,7 +191,7 @@ object Shooter {
         }
 
         fun zeroPivot() {
-            io.resetPivotToHardStop()
+            io.zeroPivotEncoderToHardStop()
         }
 
         fun followMotionProfile(targetOverride: Target?): Command {

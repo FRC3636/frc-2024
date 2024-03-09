@@ -82,7 +82,7 @@ interface PivotIO {
     fun driveVelocity(velocity: Measure<Velocity<Angle>>)
     fun setBrakeMode(enabled: Boolean)
 
-    fun resetPivotToHardStop()
+    fun zeroPivotEncoderToHardStop()
 }
 
 class PivotIOKraken : PivotIO {
@@ -118,7 +118,7 @@ class PivotIOKraken : PivotIO {
         leftMotor.configurator.apply(config)
         config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive
         rightMotor.configurator.apply(config)
-        resetPivotToHardStop()
+        zeroPivotEncoderToHardStop()
     }
 
     private val leftLimitSwitchUnpressed = DigitalInput(1)
@@ -126,7 +126,7 @@ class PivotIOKraken : PivotIO {
     override fun updateInputs(inputs: PivotIO.Inputs) {
 
         if (!leftLimitSwitchUnpressed.get()) {
-            resetPivotToHardStop()
+            zeroPivotEncoderToHardStop()
         }
 
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
@@ -151,7 +151,7 @@ class PivotIOKraken : PivotIO {
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
     }
 
-    override fun resetPivotToHardStop() {
+    override fun zeroPivotEncoderToHardStop() {
         leftMotor.setPosition(-LIMIT_SWITCH_OFFSET.rotations)
         rightMotor.setPosition(-LIMIT_SWITCH_OFFSET.rotations)
     }
@@ -262,7 +262,7 @@ class PivotIOSim : PivotIO {
     override fun setBrakeMode(enabled: Boolean) {
     }
 
-    override fun resetPivotToHardStop() {
+    override fun zeroPivotEncoderToHardStop() {
         TODO("Not yet implemented")
     }
 }
