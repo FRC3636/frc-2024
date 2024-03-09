@@ -1,0 +1,61 @@
+{
+  "NetworkTables": {
+    "transitory": {
+      "AdvantageKit": {
+        "RealOutputs": {
+          "open": true
+        },
+        "Shooter": {
+          "open": true
+        },
+        "SystemStats": {
+          "6vRail": {
+            "open": true
+          },
+          "open": true
+        },
+        "open": true
+      },
+      "FMSInfo": {
+        "open": true
+      },
+      "LiveWindow": {
+        "open": true
+      },
+      "Preferences": {
+        "open": true
+      }
+    },
+    "types": {
+      "/AdvantageKit/RealOutputs/Climber": "Mechanism2d",
+      "/AdvantageKit/RealOutputs/Shooter": "Mechanism2d",
+      "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Auto selector": "String Chooser"
+    }
+  },
+  "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Connections": {
+      "open": true
+    },
+    "Server": {
+      "Publishers": {
+        "open": true
+      },
+      "Subscribers": {
+        "open": true
+      },
+      "open": true
+    }
+  },
+  "NetworkTables Settings": {
+    "mode": "Client (NT3)",
+    "serverTeam": "3636",
+    "visible": false
+  },
+  "NetworkTables View": {
+    "visible": false
+  }
+}
