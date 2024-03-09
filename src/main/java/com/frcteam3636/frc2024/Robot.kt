@@ -48,6 +48,7 @@ object Robot : LoggedRobot() {
         addOption("Amp 2 Piece", "Left 2 Piece")
         addOption("Middle 3 Piece", "Middle 3 Piece")
         addOption("Source Side 2 Piece", "Right 2 Piece")
+        addOption("Source Mobility 1 Piece", "Source Mobility 1 Piece")
         addOption("No Auto", "")
         SmartDashboard.putData("Auto selector", this)
     }
