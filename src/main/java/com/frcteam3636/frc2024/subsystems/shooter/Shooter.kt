@@ -12,6 +12,7 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
 import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -149,10 +150,19 @@ object Shooter {
         private val inputs = PivotIO.Inputs()
 
         var target: Target = Target.PODIUM
+        var autoZeroPivot = true
+            set(value) {
+                field = value
+                SmartDashboard.putBoolean("Pivot Auto Zero", value)
+            }
+
+        init {
+            autoZeroPivot = true // add to dashboard
+        }
 
 
         override fun periodic() {
-            io.updateInputs(inputs)
+            io.updateInputs(inputs, autoZeroPivot)
             Logger.processInputs("Shooter/Pivot", inputs)
 
             armLigament.angle = inputs.position.degrees
@@ -219,7 +229,14 @@ object Shooter {
                 io.driveVelocity(DegreesPerSecond.of(-60.0))
             }, {
                 io.driveVoltage(0.0)
-            }).onlyWhile { inputs.leftLimitSwitchUnpressed }
+                if (!autoZeroPivot) {
+                    io.zeroPivotEncoderToHardStop()
+                }
+            }).onlyWhile { inputs.leftLimitSwitchUnpressed || !autoZeroPivot }
+
+        fun toggleAutoZero(): Command = runOnce {
+            autoZeroPivot = !autoZeroPivot
+        }
 
         enum class Target(val profile: PivotProfile) {
             AIM(

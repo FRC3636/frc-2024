@@ -42,7 +42,15 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
-    private var autoChooser = SendableChooser<String>()
+    private var autoChooser = SendableChooser<String>().apply {
+        setDefaultOption("No Auto", "")
+        addOption("Middle 2 Piece", "Middle 2 Piece")
+        addOption("Amp 2 Piece", "Left 2 Piece")
+        addOption("Middle 3 Piece", "Middle 3 Piece")
+        addOption("Source Side 2 Piece", "Right 2 Piece")
+        addOption("No Auto", "")
+        SmartDashboard.putData("Auto selector", this)
+    }
 
     private var autoCommand: Command? = null
 
@@ -50,14 +58,7 @@ object Robot : LoggedRobot() {
 
     private fun intakeCommand(): Command = Commands.sequence(
         Intake.intakeCommand(),
-        Commands.race(
-            Commands.sequence(
-                WaitCommand(0.5),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)).withTimeout(0.4),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0)).withTimeout(0.5)
-            ),
-            WaitUntilCommand(Shooter.Pivot::isStowed),
-        ),
+        WaitUntilCommand(Shooter.Pivot::isStowed),
         Commands.parallel(
             Shooter.Flywheels.intake(),
             Intake.indexCommand()
@@ -117,11 +118,6 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)).withTimeout(1.0))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
-        autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
-        autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
-        autoChooser.addOption("Middle 3 Piece", "Middle 3 Piece")
-        autoChooser.addOption("Source Side 2 Piece", "Right 2 Piece")
-        SmartDashboard.putData("Auto selector", autoChooser)
     }
 
 
@@ -191,8 +187,13 @@ object Robot : LoggedRobot() {
             })
         )
 
-        JoystickButton(joystickLeft, 11).whileTrue(
+        controller.button(8).whileTrue(
             Shooter.Pivot.runToZero()
+        )
+
+        controller.button(7).onTrue(
+            Shooter.Pivot.toggleAutoZero()
+
         )
 
         JoystickButton(joystickRight, 8).debounce(0.25).whileTrue(Shooter.Pivot.neutralMode())
@@ -208,7 +209,11 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
+        autoCommand = if (autoChooser.selected.isEmpty()) {
+            Commands.none()
+        } else {
+            AutoBuilder.buildAuto(autoChooser.selected)
+        }
         autoCommand!!.schedule()
     }
 

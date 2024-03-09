@@ -73,7 +73,7 @@ interface PivotIO {
         }
     }
 
-    fun updateInputs(inputs: Inputs)
+    fun updateInputs(inputs: Inputs, autoZeroPivot: Boolean)
 
     fun pivotToAndStop(position: Rotation2d)
     fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d)
@@ -123,9 +123,9 @@ class PivotIOKraken : PivotIO {
 
     private val leftLimitSwitchUnpressed = DigitalInput(1)
 
-    override fun updateInputs(inputs: PivotIO.Inputs) {
+    override fun updateInputs(inputs: PivotIO.Inputs, autoZeroPivot: Boolean) {
 
-        if (!leftLimitSwitchUnpressed.get()) {
+        if (!leftLimitSwitchUnpressed.get() && autoZeroPivot) {
             zeroPivotEncoderToHardStop()
         }
 
@@ -232,7 +232,7 @@ class PivotIOSim : PivotIO {
     private var start = TrapezoidProfile.State()
     private var goal = TrapezoidProfile.State()
 
-    override fun updateInputs(inputs: PivotIO.Inputs) {
+    override fun updateInputs(inputs: PivotIO.Inputs, autoZeroPivot: Boolean) {
         val state = profile.calculate(profileTimer.get(), start, goal)
         inputs.position = Rotation2d(state.position)
         inputs.velocity = Rotation2d(state.velocity)
