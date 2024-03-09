@@ -159,11 +159,8 @@ object Robot : LoggedRobot() {
             Shooter.Amp.stow()
         )
 
-        val readyToShootTrigger = Shooter.Pivot.readyToShoot
 
-
-
-        Trigger(joystickRight::getTrigger).and(readyToShootTrigger)
+        Trigger(joystickRight::getTrigger).and(Shooter.Pivot.readyToShoot)
             .whileTrue(
             Commands.either(
                 Shooter.Flywheels.shoot(40.0, 0.0),
@@ -171,7 +168,7 @@ object Robot : LoggedRobot() {
             ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
         )
 
-        Trigger(joystickRight::getTrigger).and(readyToShootTrigger.negate())
+        Trigger(joystickRight::getTrigger).and(Shooter.Pivot.readyToShoot.negate())
             .whileTrue(
                 Shooter.Flywheels.intake()
             )
