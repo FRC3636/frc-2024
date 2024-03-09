@@ -159,13 +159,21 @@ object Robot : LoggedRobot() {
             Shooter.Amp.stow()
         )
 
-        Trigger(joystickRight::getTrigger)
-            .and(Shooter.Pivot.readyToShoot)
+        val readyToShootTrigger = Shooter.Pivot.readyToShoot
+
+
+
+        Trigger(joystickRight::getTrigger).and(readyToShootTrigger)
             .whileTrue(
-                Commands.either(
-                    Shooter.Flywheels.shoot(40.0, 0.0),
-                    Shooter.Flywheels.shoot(2.5, 0.0)
-                ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
+            Commands.either(
+                Shooter.Flywheels.shoot(40.0, 0.0),
+                Shooter.Flywheels.shoot(2.5, 0.0)
+            ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
+        )
+
+        Trigger(joystickRight::getTrigger).and(readyToShootTrigger.negate())
+            .whileTrue(
+                Shooter.Flywheels.intake()
             )
 
         //Drive if triggered joystickLeft input
