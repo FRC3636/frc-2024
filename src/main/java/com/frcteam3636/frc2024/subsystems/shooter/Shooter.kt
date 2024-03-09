@@ -9,31 +9,17 @@ import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
-import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
 import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.Trigger
-import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
 import kotlin.math.atan
 
 object Shooter {
-
-    val pivotIdRoutine = SysIdRoutine(
-        SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), null, null, null), SysIdRoutine.Mechanism(
-            Pivot::setVoltage, Pivot::getState, Pivot
-        )
-    )
-
-    val flywheelIORoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Pivot::setVoltage, Flywheels::getState, Flywheels)
-    )
-
     object Flywheels : Subsystem {
         private val io: FlywheelIO = when (Robot.model) {
             Robot.Model.SIMULATION -> FlywheelIOSim()
@@ -206,48 +192,6 @@ object Shooter {
 
         fun zeroPivot() {
             io.resetPivotToHardStop()
-        }
-
-        fun getState(log: SysIdRoutineLog) {
-            log.motor("pivot-left").voltage(
-                Volts.of(inputs.voltageLeft)
-            ).angularPosition(
-                Radians.of(inputs.rotorDistanceLeft)
-            ).angularVelocity(
-                RadiansPerSecond.of(inputs.rotorVelocityLeft)
-            )
-            log.motor("pivot-right").voltage(
-                Volts.of(inputs.voltageRight)
-            ).angularPosition(
-                Radians.of(inputs.rotorDistanceRight)
-            ).angularVelocity(
-                RadiansPerSecond.of(inputs.rotorVelocityRight)
-            )
-        }
-
-
-        fun setVoltage(volts: Measure<Voltage>) {
-            io.driveVoltage(volts.magnitude())
-        }
-
-        fun dynamicIdCommand(direction: SysIdRoutine.Direction): Command {
-            return pivotIdRoutine.dynamic(direction).until {
-                if (direction == SysIdRoutine.Direction.kForward) {
-                    inputs.position.rotations > 0.4
-                } else {
-                    inputs.position.rotations < -0.3
-                }
-            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
-        }
-
-        fun quasistaticIdCommand(direction: SysIdRoutine.Direction): Command {
-            return pivotIdRoutine.quasistatic(direction).until {
-                if (direction == SysIdRoutine.Direction.kForward) {
-                    inputs.position.rotations > 0.4
-                } else {
-                    inputs.position.rotations < -0.3
-                }
-            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
         }
 
         fun followMotionProfile(targetOverride: Target?): Command {
