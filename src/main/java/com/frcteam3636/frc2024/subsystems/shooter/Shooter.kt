@@ -274,10 +274,8 @@ object Shooter {
             runEnd({
                 io.driveVelocity(DegreesPerSecond.of(-60.0))
             }, {
-                io.driveVelocity(DegreesPerSecond.zero())
-            }).until {
-                inputs.leftLimitSwitchUnpressed == false
-            }
+                io.driveVoltage(0.0)
+            }).onlyWhile { inputs.leftLimitSwitchUnpressed }
 
         enum class Target(val profile: PivotProfile) {
             AIM(
