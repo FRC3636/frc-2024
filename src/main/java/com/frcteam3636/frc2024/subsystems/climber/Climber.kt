@@ -33,11 +33,9 @@ object Climber : Subsystem {
 
     fun setClimberCommand(speed: Double): Command {
         return runEnd( {
-            io.setNeutral(NeutralModeValue.Coast)
             io.moveClimber(speed)
         },{
             io.moveClimber(0.0)
-            io.setNeutral(NeutralModeValue.Brake)
         }
         )
     }

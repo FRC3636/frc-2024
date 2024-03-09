@@ -2,7 +2,7 @@ package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.ctre.phoenix6.signals.GravityTypeValue
 import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
@@ -12,6 +12,9 @@ import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Angle
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
@@ -75,10 +78,11 @@ interface PivotIO {
     fun pivotToAndStop(position: Rotation2d)
     fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d)
 
-    fun driveVoltage(volts: Double) {}
-    fun setBrakeMode(enabled: Boolean) {}
+    fun driveVoltage(volts: Double)
+    fun driveVelocity(velocity: Measure<Velocity<Angle>>)
+    fun setBrakeMode(enabled: Boolean)
 
-    fun resetPivotToHardStop() {}
+    fun resetPivotToHardStop()
 }
 
 class PivotIOKraken : PivotIO {
@@ -86,12 +90,12 @@ class PivotIOKraken : PivotIO {
     private val rightMotor = TalonFX(CTREMotorControllerId.RightPivotMotor)
 
     init {
-        val config = TalonFXConfiguration().apply{
+        val config = TalonFXConfiguration().apply {
             MotorOutput.apply {
                 NeutralMode = NeutralModeValue.Brake
             }
 
-            Feedback.apply{
+            Feedback.apply {
                 SensorToMechanismRatio = GEAR_RATIO
                 FeedbackRotorOffset = 0.0
             }
@@ -121,7 +125,7 @@ class PivotIOKraken : PivotIO {
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
 
-        if(!leftLimitSwitchUnpressed.get()){
+        if (!leftLimitSwitchUnpressed.get()) {
             resetPivotToHardStop()
         }
 
@@ -153,7 +157,6 @@ class PivotIOKraken : PivotIO {
     }
 
 
-
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
         Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
         val leftControl = MotionMagicTorqueCurrentFOC(0.0).apply {
@@ -171,8 +174,20 @@ class PivotIOKraken : PivotIO {
     }
 
     override fun setBrakeMode(enabled: Boolean) {
-        leftMotor.setNeutralMode(if (enabled) { NeutralModeValue.Brake } else { NeutralModeValue.Coast })
-        rightMotor.setNeutralMode(if (enabled) { NeutralModeValue.Brake } else { NeutralModeValue.Coast })
+        leftMotor.setNeutralMode(
+            if (enabled) {
+                NeutralModeValue.Brake
+            } else {
+                NeutralModeValue.Coast
+            }
+        )
+        rightMotor.setNeutralMode(
+            if (enabled) {
+                NeutralModeValue.Brake
+            } else {
+                NeutralModeValue.Coast
+            }
+        )
     }
 
     override fun driveVoltage(volts: Double) {
@@ -180,10 +195,16 @@ class PivotIOKraken : PivotIO {
         rightMotor.setVoltage(volts)
     }
 
+    override fun driveVelocity(velocity: Measure<Velocity<Angle>>) {
+        val request = VelocityTorqueCurrentFOC(velocity.baseUnitMagnitude())
+        leftMotor.setControl(request)
+        rightMotor.setControl(request)
+    }
+
     internal companion object Constants {
         val GEAR_RATIO = 40.0
 
-        val PID_GAINS = PIDGains(120.0, 0.0, 100.0)
+        val PID_GAINS = PIDGains(120.0, 0.0, 107.0)
         val FF_GAINS = MotorFFGains(7.8, 0.0, 0.0)
         val GRAVITY_GAIN = 10.0
 
@@ -228,5 +249,20 @@ class PivotIOSim : PivotIO {
 
         Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
+    }
+
+    override fun driveVoltage(volts: Double) {
+        TODO()
+    }
+
+    override fun driveVelocity(velocity: Measure<Velocity<Angle>>) {
+        TODO("Not yet implemented")
+    }
+
+    override fun setBrakeMode(enabled: Boolean) {
+    }
+
+    override fun resetPivotToHardStop() {
+        TODO("Not yet implemented")
     }
 }

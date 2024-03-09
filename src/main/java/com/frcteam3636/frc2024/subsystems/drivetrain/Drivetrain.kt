@@ -65,24 +65,25 @@ object Drivetrain : Subsystem {
     }
     private val inputs = DrivetrainIO.Inputs()
 
-    private val absolutePoseIOs = mapOf(
-        "Fljorg" to PhotonVisionPoseIOReal(
-            "fljorg",
-            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Bloop" to PhotonVisionPoseIOReal(
-            "bloop",
-            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Freedom" to PhotonVisionPoseIOReal(
-            "freedom",
-            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Brack" to PhotonVisionPoseIOReal(
-            "brack",
-            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0))
-        )
-    ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
+//    private val absolutePoseIOs = mapOf(
+//        "Fljorg" to PhotonVisionPoseIOReal(
+//            "fljorg",
+//            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0))
+//        ),
+//        "Bloop" to PhotonVisionPoseIOReal(
+//            "bloop",
+//            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0))
+//        ),
+//        "Freedom" to PhotonVisionPoseIOReal(
+//            "freedom",
+//            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0))
+//        ),
+//        "Brack" to PhotonVisionPoseIOReal(
+//            "brack",
+//            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0))
+//        )
+//    ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
+    private val absolutePoseIOs = emptyMap<String, Pair<AbsolutePoseIO, AbsolutePoseIO.Inputs>>()
 
     // Create swerve drivetrain kinematics using the translation parts of the module positions.
     private val kinematics =
@@ -101,12 +102,12 @@ object Drivetrain : Subsystem {
         )
 
     init {
-        Pathfinding.setPathfinder(
-            when (Robot.model) {
-                Robot.Model.SIMULATION -> LocalADStarAK()
-                Robot.Model.COMPETITION, Robot.Model.PRACTICE -> RemoteADStarAK()
-            }
-        )
+//        Pathfinding.setPathfinder(
+//            when (Robot.model) {
+//                Robot.Model.SIMULATION -> LocalADStarAK()
+//                Robot.Model.COMPETITION, Robot.Model.PRACTICE -> RemoteADStarAK()
+//            }
+//        )
 
         AutoBuilder.configureHolonomic(
             this::estimatedPose,

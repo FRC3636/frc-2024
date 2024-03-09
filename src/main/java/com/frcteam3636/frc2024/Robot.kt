@@ -114,7 +114,7 @@ object Robot : LoggedRobot() {
 
         NamedCommands.registerCommand("knockintake", Climber.knockIntake())
         NamedCommands.registerCommand("intake", intakeCommand())
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)).withTimeout(1.0))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
@@ -126,14 +126,17 @@ object Robot : LoggedRobot() {
 
 
     private fun configureBindings() {
-       Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-           joystickLeft, joystickRight
-       )
+        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+            joystickLeft, joystickRight
+        )
 
-//       controller.leftBumper().whileTrue(Intake.outtakeComand())
+        controller.leftBumper().whileTrue(Commands.parallel(
+            Intake.outtakeCommand(),
+            Shooter.Flywheels.outtake().onlyIf { true /* Shooter.Pivot.pointingAt(Stowed) */ }
+        ))
 
         controller.leftTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
-            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED).andThen(Shooter.Pivot.neutralMode())
         )
 
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
@@ -157,6 +160,7 @@ object Robot : LoggedRobot() {
         )
 
         Trigger(joystickRight::getTrigger)
+            .and(Shooter.Pivot.readyToShoot)
             .whileTrue(
                 Commands.either(
                     Shooter.Flywheels.shoot(40.0, 0.0),
@@ -167,17 +171,23 @@ object Robot : LoggedRobot() {
         //Drive if triggered joystickLeft input
 
         Trigger(
-            joystickLeft::getTrigger)
-            .whileTrue(Drivetrain.driveWithJoystickPointingTowards(
+            joystickLeft::getTrigger
+        )
+            .whileTrue(
+                Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft, OrientationTarget.Speaker.position
                 )
-        )
+            )
 
         JoystickButton(joystickLeft, 8).onTrue(
             InstantCommand({
                 Drivetrain.zeroGyro()
                 println("Gyro zeroed")
             })
+        )
+
+        JoystickButton(joystickLeft, 11).whileTrue(
+            Shooter.Pivot.runToZero()
         )
 
         JoystickButton(joystickRight, 8).debounce(0.25).whileTrue(Shooter.Pivot.neutralMode())
@@ -211,6 +221,7 @@ object Robot : LoggedRobot() {
     enum class Model {
         SIMULATION, PRACTICE, COMPETITION,
     }
+
     // The model of this robot.
     val model: Model = if (RobotBase.isSimulation()) {
         Model.SIMULATION

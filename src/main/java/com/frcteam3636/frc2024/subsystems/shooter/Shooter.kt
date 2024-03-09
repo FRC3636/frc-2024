@@ -124,6 +124,16 @@ object Shooter {
             })
         }
 
+        fun outtake(): Command = runEnd({
+            setpointLeft = RadiansPerSecond.of(50.0)
+            setpointRight = RadiansPerSecond.of(50.0)
+            io.setIndexerVoltage(Volts.of(-6.78))
+        }, {
+            setpointLeft = RadiansPerSecond.zero()
+            setpointRight = RadiansPerSecond.zero()
+            io.setIndexerVoltage(Volts.zero())
+        })
+
         fun getState(log: SysIdRoutineLog) {
             log.motor("left-flywheels")
                 .voltage(
@@ -179,7 +189,7 @@ object Shooter {
         }
 
         val readyToShoot = Trigger {
-            inputs.position.degrees >= 90
+            inputs.position.degrees >= 90 && abs(inputs.velocity.degrees) <= 10.0 && target != Target.STOWED
         }
 
         fun isStowed(): Boolean {
@@ -260,6 +270,15 @@ object Shooter {
         })
             .ignoringDisable(true)
 
+        fun runToZero(): Command =
+            runEnd({
+                io.driveVelocity(DegreesPerSecond.of(-60.0))
+            }, {
+                io.driveVelocity(DegreesPerSecond.zero())
+            }).until {
+                inputs.leftLimitSwitchUnpressed == false
+            }
+
         enum class Target(val profile: PivotProfile) {
             AIM(
                 PivotProfile(
@@ -291,7 +310,7 @@ object Shooter {
             ),
             STOWED(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(-27.0) },
+                    { Rotation2d.fromDegrees(-28.0) },
                     { Rotation2d() }
                 )
             )
