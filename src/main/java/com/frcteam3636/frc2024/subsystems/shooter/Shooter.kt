@@ -263,7 +263,7 @@ object Shooter {
             ),
             PODIUM(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(115.0) },
+                    { Rotation2d.fromDegrees(120.0) },
                     { Rotation2d() }
                 )
             ),
@@ -341,7 +341,7 @@ data class PivotProfile(
 
 
 internal val SPEAKER_POSE = Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
-internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
+internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(4.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val AMP_MECH_POSITION_TOLERANCE = Rotation2d.fromDegrees(3.0)
 

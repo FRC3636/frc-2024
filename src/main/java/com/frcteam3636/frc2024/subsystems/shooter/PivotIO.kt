@@ -232,7 +232,8 @@ class PivotIOSim : PivotIO {
     private var start = TrapezoidProfile.State()
     private var goal = TrapezoidProfile.State()
 
-    override fun updateInputs(inputs: PivotIO.Inputs, autoZeroPivot: Boolean) {
+    override fun updateInputs(inputs: PivotIO.Inputs, autoZeroPivot: Boolean
+    ) {
         val state = profile.calculate(profileTimer.get(), start, goal)
         inputs.position = Rotation2d(state.position)
         inputs.velocity = Rotation2d(state.velocity)

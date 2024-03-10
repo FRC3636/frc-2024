@@ -116,7 +116,7 @@ object Robot : LoggedRobot() {
 
         NamedCommands.registerCommand("knockintake", Climber.knockIntake())
         NamedCommands.registerCommand("intake", intakeCommand())
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)).withTimeout(1.0))
+        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
     }
@@ -164,11 +164,11 @@ object Robot : LoggedRobot() {
                 Shooter.Flywheels.shoot(2.5, 0.0)
             ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
         )
-
-        Trigger(joystickRight::getTrigger).and(Shooter.Pivot.readyToShoot.negate())
-            .whileTrue(
-                Shooter.Flywheels.intake()
-            )
+//
+//        Trigger(joystickRight::getTrigger).and(Shooter.Pivot.readyToShoot.negate())
+//            .whileTrue(
+//                Shooter.Flywheels.intake()
+//            )
 
         //Drive if triggered joystickLeft input
 
