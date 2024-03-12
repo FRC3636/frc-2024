@@ -74,6 +74,4 @@ object Climber : Subsystem {
             this
         )
     }
-
-
 }

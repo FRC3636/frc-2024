@@ -75,8 +75,8 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
 //                (update.timestamp * 1e-6) * (latency * 1e-3),
                 stdDeviation = stddev
             ).also {
-                Logger.recordOutput("Drivetrain/Limelight pose", it.pose)
-                Logger.recordOutput("Drivetrain/Limelight tag count", tagCount)
+                Logger.recordOutput("Absolute Pose/Limelight/Pose", it.pose)
+                Logger.recordOutput("Absolute Pose/Limelight/Tag Count", tagCount)
             }
         }
     }
@@ -122,7 +122,7 @@ fun SwerveDrivePoseEstimator.addAbsolutePoseMeasurement(measurement: AbsolutePos
 
 class AbsolutePoseMeasurementStruct : Struct<AbsolutePoseMeasurement> {
     override fun getTypeClass(): Class<AbsolutePoseMeasurement> = AbsolutePoseMeasurement::class.java
-    override fun getTypeString(): String = "struct:VisionPoseMeasurement"
+    override fun getTypeString(): String = "struct:AbsolutePoseMeasurement"
     override fun getSize(): Int = Pose3d.struct.size + Struct.kSizeDouble + 3 * Struct.kSizeDouble
     override fun getSchema(): String = "Pose3d pose; double timestamp; double stdDeviation[3];"
     override fun unpack(bb: ByteBuffer): AbsolutePoseMeasurement =

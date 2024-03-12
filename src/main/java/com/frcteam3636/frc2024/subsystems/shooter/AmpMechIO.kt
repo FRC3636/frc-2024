@@ -67,7 +67,7 @@ class AmpMechIOReal : AmpMechIO {
     }
 
     override fun pivotTo(position: Rotation2d) {
-        Logger.recordOutput("Shooter/Amp Mech Setpoint", position)
+        Logger.recordOutput("Shooter/Amp/Setpoint", position)
         pid.setReference(
             position.radians, CANSparkBase.ControlType.kPosition
         )

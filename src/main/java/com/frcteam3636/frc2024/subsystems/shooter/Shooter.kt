@@ -49,7 +49,6 @@ object Shooter {
 
         var lastVelocity = RadiansPerSecond.zero()
 
-
         private val pidControllerLeft = PIDController(FLYWHEEL_PID_GAINS)
         private val pidControllerRight = PIDController(FLYWHEEL_PID_GAINS)
         private val ffController = SimpleMotorFeedforward(FLYWHEEL_FF_GAINS)
@@ -69,10 +68,10 @@ object Shooter {
         val atDesiredVelocity: Boolean
             get() {
                 val velocityDifference = (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue)
-                Logger.recordOutput("Shooter/Flywheels/velocity difference", velocityDifference)
+                Logger.recordOutput("Shooter/Flywheels/Velocity Difference", velocityDifference)
                 Logger.recordOutput(
-                    "shooter/Flywheels/at deired velocirty", velocityDifference <
-                            FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()
+                    "Shooter/Flywheels/At Desired Velocity",
+                    velocityDifference < FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()
                 )
                 return velocityDifference <
                         FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude() && inputs.leftSpeed > RadiansPerSecond.of(30.0)
@@ -89,11 +88,11 @@ object Shooter {
                 WHITE
             }
 
-            Logger.recordOutput("Shooter/Flywheels/at desired velocity", atDesiredVelocity)
             Logger.recordOutput("Shooter", mechanism)
-            Logger.recordOutput("Shooter/Flywheels/above current threshold", aboveIntakeThreshold)
+            Logger.recordOutput("Shooter/Flywheels/At Desired Velocity", atDesiredVelocity)
+            Logger.recordOutput("Shooter/Flywheels/Above Intake Current Threshold", aboveIntakeThreshold)
             Logger.recordOutput(
-                "Shooter/Flywheels/average current squared",
+                "Shooter/Flywheels/Average Current Cubed",
                 inputs.leftCurrent.baseUnitMagnitude().pow(3)
             )
 
@@ -223,12 +222,12 @@ object Shooter {
 
             armLigament.angle = inputs.leftPosition.degrees
 
-            Logger.recordOutput("Shooter/IsStowed", isStowed())
             Logger.recordOutput("Shooter", mechanism)
+            Logger.recordOutput("Shooter/Pivot/Is Stowed", isStowed())
         }
 
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
-            Logger.recordOutput("Shooter/DesiredPosition", goal)
+            Logger.recordOutput("Shooter/Pivot/Desired Position", goal)
             io.pivotToAndStop(goal)
         }, Commands.waitUntil {
             (abs((goal - inputs.leftPosition).radians) < PIVOT_POSITION_TOLERANCE.radians)
@@ -325,13 +324,11 @@ object Shooter {
                             Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
                             Rotation2d()
                         )
-                        Logger.recordOutput("Drivetrain/Speaker Vector", speakerPose)
                         val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                             .minus(Translation2d(0.3, 0.0)).norm
-
-                        Logger.recordOutput("Drivetrain/distance to speaker", distance)
+                        Logger.recordOutput("Shooter/Distance To Speaker", distance)
                         val targetHeight = SPEAKER_POSE.z
-                        Logger.recordOutput("Drivetrain/Speaker height", targetHeight)
+                        Logger.recordOutput("Shooter/Speaker Height", targetHeight)
                         Rotation2d((TAU / 2) - atan(targetHeight / distance))
                     },
                     { Rotation2d() }
@@ -380,7 +377,6 @@ object Shooter {
         var posReference: Rotation2d = Rotation2d(0.0)
 
         fun pivotTo(pos: Rotation2d): Command = runOnce {
-            Logger.recordOutput("Shooter/Amp/setpoint", pos)
             posReference = pos
         }
 
@@ -403,7 +399,7 @@ object Shooter {
         override fun periodic() {
             io.updateInputs(inputs)
             io.pivotTo(posReference)
-            Logger.processInputs("Shooter/AmpMech", inputs)
+            Logger.processInputs("Shooter/Amp", inputs)
         }
     }
 
