@@ -138,7 +138,6 @@ object Drivetrain : Subsystem {
     }
 
     override fun periodic() {
-
         dawg.reset()
 
 
@@ -150,11 +149,12 @@ object Drivetrain : Subsystem {
 
             io.updateInputs(inputs)
             Logger.processInputs("Absolute Pose/$name", inputs)
+            Logger.recordOutput("Absolute Pose/$name/Is Null", inputs.measurement == null)
 
             inputs.measurement?.let {
                 poseEstimator.addAbsolutePoseMeasurement(it)
+                Logger.recordOutput("Drivetrain/Last Added Pose", it.pose)
             }
-
         }
 
         poseEstimator.update(
@@ -440,7 +440,7 @@ internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
     ReplanningConfig(true, true, Units.inchesToMeters(3.0), Units.inchesToMeters(1.5)),
 )
 
-// ddrive with joysticks
+// drive with joysticks
 val DRIVER_ROTATION = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
     DriverStation.Alliance.Red -> Rotation2d.fromRotations(0.5)
     DriverStation.Alliance.Blue -> Rotation2d()
@@ -494,9 +494,3 @@ internal val MODULE_CAN_IDS_PRACTICE =
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )
-
-enum class OrientationTarget(val position: Translation2d) {
-    Speaker(Translation2d()),
-    Amp(Translation2d()),
-    Source(Translation2d())
-}

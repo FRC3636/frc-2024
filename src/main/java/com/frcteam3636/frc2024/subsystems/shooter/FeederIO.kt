@@ -28,8 +28,7 @@ interface FeederIO {
 
 class FeederIOReal : FeederIO {
 
-    private val indexer =
-        CANSparkFlex(REVMotorControllerId.Indexer, CANSparkLowLevel.MotorType.kBrushless)
+    private val indexer = CANSparkFlex(REVMotorControllerId.Indexer, CANSparkLowLevel.MotorType.kBrushless)
 
 
     override fun updateInputs(inputs: FeederIO.Inputs) {
