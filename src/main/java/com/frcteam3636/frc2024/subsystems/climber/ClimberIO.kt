@@ -10,14 +10,18 @@ import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.motorFFGains
 import com.frcteam3636.frc2024.utils.math.pidGains
 import edu.wpi.first.math.system.plant.DCMotor
-import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Distance
+import edu.wpi.first.units.MutableMeasure
+import edu.wpi.first.units.Units.Millimeters
+import edu.wpi.first.units.Units.Meters
 import edu.wpi.first.wpilibj.simulation.ElevatorSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface ClimberIO {
-    class ClimberInputs : LoggableInputs {
-        var climberPosition = 0.0
+    class Inputs : LoggableInputs {
+        var climberPosition: MutableMeasure<Distance> = MutableMeasure.zero(Meters)
+
         override fun toLog(table: LogTable?) {
             table?.put("Climber Position", climberPosition)
         }
@@ -27,11 +31,10 @@ interface ClimberIO {
         }
     }
 
-    fun updateInputs(inputs: ClimberInputs)
+    fun updateInputs(inputs: Inputs)
 
-    fun moveClimber(speed: Double)
-
-   fun setNeutral(mode: NeutralModeValue) {}
+    fun setDutyCycle(dutyCycle: Double)
+    fun setNeutral(mode: NeutralModeValue)
 }
 
 class ClimberIOSim : ClimberIO {
@@ -45,14 +48,16 @@ class ClimberIOSim : ClimberIO {
         ELEVATOR_START_HEIGHT
     )
 
-    override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
-        inputs.climberPosition = elevatorSim.positionMeters
+    override fun updateInputs(inputs: ClimberIO.Inputs) {
+        inputs.climberPosition.mut_setMagnitude(elevatorSim.positionMeters)
     }
 
-    override fun moveClimber(speed: Double) {
-        elevatorSim.setInputVoltage(12.0 * speed)
+    override fun setDutyCycle(dutyCycle: Double) {
+        elevatorSim.setInputVoltage(12.0 * dutyCycle)
         elevatorSim.update(0.02)
     }
+
+    override fun setNeutral(mode: NeutralModeValue) {}
 
     companion object Constants {
         //TODO: Find all of these
@@ -88,14 +93,13 @@ class ClimberIOReal : ClimberIO {
         configurator.apply(config)
     }
 
-    override fun updateInputs(inputs: ClimberIO.ClimberInputs) {
-        inputs.climberPosition = Units.rotationsToRadians(climberMotor.position.value)
+    override fun updateInputs(inputs: ClimberIO.Inputs) {
+        inputs.climberPosition.mut_setMagnitude(climberMotor.position.value * EFFECTIVE_WINCH_RADIUS.baseUnitMagnitude())
     }
 
-    override fun moveClimber(speed: Double) {
-        climberMotor.set(speed)
+    override fun setDutyCycle(dutyCycle: Double) {
+        climberMotor.set(dutyCycle)
     }
-
 
     override fun setNeutral(mode: NeutralModeValue) {
         climberMotor.setNeutralMode(mode)
@@ -106,9 +110,10 @@ class ClimberIOReal : ClimberIO {
         val PID_GAINS = PIDGains()
         val FF_GAINS = MotorFFGains(1.0, 1.0, 1.0)
         const val GRAVITY_GAIN = 1.0
-        const val GEAR_RATIO = 1.0
+        const val GEAR_RATIO = 9.0
         const val PROFILE_VELOCITY = 1.0
         const val PROFILE_ACCELERATION = 1.0
         const val PROFILE_JERK = 1.0
+        val EFFECTIVE_WINCH_RADIUS = Millimeters.of(13.75 / 2.0)
     }
 }

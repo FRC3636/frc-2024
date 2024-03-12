@@ -140,8 +140,8 @@ object Robot : LoggedRobot() {
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 
-        controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
-        controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
+        controller.povUp().debounce(0.15).whileTrue(Climber.runClimber(0.5))
+        controller.povDown().debounce(0.15).whileTrue(Climber.runClimber(-0.5))
         controller.povRight().onTrue(Climber.knockIntake())
 
         controller.rightBumper()

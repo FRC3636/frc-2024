@@ -15,62 +15,32 @@ object Climber : Subsystem {
         Robot.Model.COMPETITION -> ClimberIOReal()
         Robot.Model.SIMULATION -> ClimberIOSim()
     }
-    var inputs = ClimberIO.ClimberInputs()
+    var inputs = ClimberIO.Inputs()
 
     private var mech = Mechanism2d(2.0, 2.0, BLACK)
     private var climberRoot = mech.getRoot("climber", 1.0, 0.0)
     private var elevatorLigament = climberRoot.append(MechanismLigament2d("elevator", 0.0, 90.0, 10.0, BLUE))
 
-    const val extendedPosition = 1.0 //todo: find this
-    const val retractedPosition = 0.0 //todo: find this
-
     override fun periodic() {
         io.updateInputs(inputs)
         Logger.processInputs("Climber", inputs)
-        elevatorLigament.length = inputs.climberPosition
+        elevatorLigament.length = inputs.climberPosition.baseUnitMagnitude()
         Logger.recordOutput("Climber", mech)
     }
 
-    fun setClimberCommand(speed: Double): Command {
-        return runEnd( {
+    fun runClimber(speed: Double): Command =
+        runEnd({
             io.setNeutral(NeutralModeValue.Coast)
-            io.moveClimber(speed)
-        },{
-            io.moveClimber(0.0)
+            io.setDutyCycle(speed)
+        }, {
+            io.setDutyCycle(0.0)
             io.setNeutral(NeutralModeValue.Brake)
-        }
+        })
+
+    fun knockIntake(): Command =
+        Commands.sequence(
+            runClimber(0.9).withTimeout(0.3),
+            runClimber(-0.8).withTimeout(0.5),
+            runClimber(0.0).withTimeout(0.1)
         )
-    }
-
-    fun knockIntake(): Command {
-        return Commands.sequence(
-            setClimberCommand(0.9).withTimeout(0.3),
-            setClimberCommand(-0.8).withTimeout(0.5),
-            setClimberCommand(0.0).withTimeout(0.1)
-        )
-    }
-
-    fun extendClimberCommand(): Command {
-        return FunctionalCommand(
-            {},
-            { io.moveClimber(1.0) },
-            { io.moveClimber(0.0) },
-            // wait until climber is extended
-            { inputs.climberPosition <= extendedPosition },
-            this
-        )
-    }
-
-    fun retractClimberCommand(): Command {
-        return FunctionalCommand(
-            {},
-            { io.moveClimber(-1.0) },
-            { io.moveClimber(0.0) },
-            // wait until climber is retracted
-            { inputs.climberPosition <= retractedPosition },
-            this
-        )
-    }
-
-
 }
