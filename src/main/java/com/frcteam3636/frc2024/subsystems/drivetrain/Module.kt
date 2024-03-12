@@ -2,7 +2,6 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.Slot0Configs
-import com.ctre.phoenix6.configs.SlotConfigs
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -14,8 +13,6 @@ import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Current
-import edu.wpi.first.units.Measure
 import edu.wpi.first.wpilibj.simulation.DCMotorSim
 import kotlin.math.roundToInt
 
@@ -62,8 +59,6 @@ class MAXSwerveModule(
         positionConversionFactor = TAU
         velocityConversionFactor = TAU / 60
     }
-
-
 
     private val turningPIDController = turningSpark.pidController.apply {
         setFeedbackDevice(turningEncoder)
@@ -115,7 +110,6 @@ interface DrivingMotor {
 }
 
 class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
-
     private val inner = TalonFX(id).apply {
         configurator.apply(Slot0Configs().apply {
             pidGains = DRIVING_PID_GAINS_TALON
@@ -136,8 +130,6 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
         set(value) {
             inner.setControl(VelocityTorqueCurrentFOC(value / DRIVING_GEAR_RATIO_TALON / WHEEL_CIRCUMFERENCE).withSlot(0))
         }
-
-
 }
 
 class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
@@ -176,7 +168,6 @@ class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
 }
 
 class SimSwerveModule : SwerveModule {
-
     // TODO: figure out what the moment of inertia actually is and if it even matters
     private val turningMotor = DCMotorSim(DCMotor.getNeo550(1), TAU, 0.0001)
     private val drivingMotor = DCMotorSim(DCMotor.getKrakenX60(1), 6.75, 0.0025)

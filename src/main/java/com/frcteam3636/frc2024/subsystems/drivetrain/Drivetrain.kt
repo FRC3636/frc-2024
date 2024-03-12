@@ -182,14 +182,6 @@ object Drivetrain : Subsystem {
             moduleStates = states
         }
 
-    // Set the drivetrain to an X-formation to passively prevent movement in any direction.
-    fun brake(): Command =
-        runOnce {
-            // set the modules to radiate outwards from the chassis origin
-            moduleStates =
-                MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
-        }
-
     // Get the estimated pose of the drivetrain using the pose estimator.
     var estimatedPose: Pose2d
         get() = poseEstimator.estimatedPosition
@@ -198,6 +190,14 @@ object Drivetrain : Subsystem {
             inputs.measuredPositions.toTypedArray(),
             value
         )
+
+    // Set the drivetrain to an X-formation to passively prevent movement in any direction.
+    fun brake(): Command =
+        runOnce {
+            // set the modules to radiate outwards from the chassis origin
+            moduleStates =
+                MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
+        }
 
     fun driveWithJoysticks(translationJoystick: Joystick, rotationJoystick: Joystick): Command =
         run {
@@ -264,7 +264,7 @@ abstract class DrivetrainIO {
 
     class Inputs : LoggableInputs {
         var gyroRotation: Rotation3d = Rotation3d()
-            set(value: Rotation3d) {
+            set(value) {
                 synchronized(this) { field = value }
             }
         var measuredStates: PerCorner<SwerveModuleState> =
