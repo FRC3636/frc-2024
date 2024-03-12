@@ -18,8 +18,8 @@ object Intake : Subsystem {
         Logger.processInputs("Intake", inputs)
     }
 
-    fun outtakeComand() : Command {
-        return startEnd(
+    fun outtake() : Command =
+        startEnd(
             {
                 io.setUnderBumperRoller(-0.2)
                 io.setOverBumperRoller(-0.2)
@@ -29,10 +29,9 @@ object Intake : Subsystem {
                 io.setOverBumperRoller(0.0)
             }
         )
-    }
 
-    fun intakeCommand(): Command {
-        return startEnd(
+    fun intake(): Command =
+        startEnd(
             {
                 io.setUnderBumperRoller(0.7)
                 io.setOverBumperRoller(1.0)
@@ -41,17 +40,13 @@ object Intake : Subsystem {
                 io.setUnderBumperRoller(0.0)
                 io.setOverBumperRoller(0.0)
             }
-        ).until(inputs::isIntaking)
+        ).until(inputs::beamBroken)
 
-
-    }
-
-    fun indexCommand(): Command {
-        return Commands.sequence(
+    fun index(): Command =
+        Commands.sequence(
             InstantCommand ( {io.setUnderBumperRoller(0.5)}),
             WaitCommand(3.0),
         ).finallyDo(Runnable {
             io.setUnderBumperRoller(0.0)
         })
-    }
 }

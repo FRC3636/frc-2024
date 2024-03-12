@@ -49,7 +49,7 @@ object Robot : LoggedRobot() {
     private val brakeModeToggle = DigitalInput(4)
 
     private fun intakeCommand(): Command = Commands.sequence(
-        Intake.intakeCommand(),
+        Intake.intake(),
         Commands.race(
             Commands.sequence(
                 WaitCommand(0.5),
@@ -60,7 +60,7 @@ object Robot : LoggedRobot() {
         ),
         Commands.parallel(
             Shooter.Flywheels.intake(),
-            Intake.indexCommand()
+            Intake.index()
         )
     )
 
