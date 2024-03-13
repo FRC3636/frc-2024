@@ -136,12 +136,12 @@ object Robot : LoggedRobot() {
                 SysIdRoutine.Direction.kReverse
             }
         }
-        JoystickButton(joystickDev, 1).whileTrue(Shooter.Pivot.doDynamicSysId(sysIdDirection()))
-        JoystickButton(joystickDev, 2).whileTrue(Shooter.Pivot.doQuasistaticSysId(sysIdDirection()))
-        JoystickButton(joystickDev, 3).whileTrue(Shooter.Flywheels.doDynamicSysId(sysIdDirection()))
-        JoystickButton(joystickDev, 4).whileTrue(Shooter.Flywheels.doQuasistaticSysId(sysIdDirection()))
-        JoystickButton(joystickDev, 5).whileTrue(Drivetrain.doDynamicDrivingId(sysIdDirection()).beforeStarting(Commands.print("starting sysid")))
-        JoystickButton(joystickDev, 6).whileTrue(Drivetrain.doQuasistaticDrivingId(sysIdDirection()))
+        JoystickButton(joystickDev, 1).whileTrue(Shooter.Pivot.defer { Shooter.Pivot.doDynamicSysId(sysIdDirection()) })
+        JoystickButton(joystickDev, 2).whileTrue(Shooter.Pivot.defer { Shooter.Pivot.doQuasistaticSysId(sysIdDirection()) })
+        JoystickButton(joystickDev, 3).whileTrue(Shooter.Flywheels.defer { Shooter.Flywheels.doDynamicSysId(sysIdDirection()) })
+        JoystickButton(joystickDev, 4).whileTrue(Shooter.Flywheels.defer { Shooter.Flywheels.doQuasistaticSysId(sysIdDirection()) })
+        JoystickButton(joystickDev, 5).whileTrue(Drivetrain.defer { Drivetrain.doDynamicDrivingId(sysIdDirection()) })
+        JoystickButton(joystickDev, 6).whileTrue(Drivetrain.defer { Drivetrain.doQuasistaticDrivingId(sysIdDirection()) })
     }
 
     override fun robotPeriodic() {
