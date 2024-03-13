@@ -6,8 +6,8 @@ import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units.Radians
-import edu.wpi.first.units.Units.RadiansPerSecond
+import edu.wpi.first.units.MutableMeasure
+import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
@@ -16,12 +16,12 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface FlywheelIO {
     class Inputs : LoggableInputs {
-        var leftSpeed = RadiansPerSecond.zero()
-        var rightSpeed = RadiansPerSecond.zero()
-        var leftVoltage: Double = 0.0
-        var rightVoltage: Double = 0.0
-        var leftPos = Radians.zero()
-        var rightPos = Radians.zero()
+        var leftSpeed = MutableMeasure.zero(RadiansPerSecond)
+        var rightSpeed = MutableMeasure.zero(RadiansPerSecond)
+        var leftVoltage = MutableMeasure.zero(Volts)
+        var rightVoltage = MutableMeasure.zero(Volts)
+        var leftPos = MutableMeasure.zero(Radians)
+        var rightPos = MutableMeasure.zero(Radians)
 
         override fun toLog(table: LogTable) {
             table.put("Left Speed", leftSpeed)
@@ -69,12 +69,12 @@ class FlywheelIOReal : FlywheelIO {
 
 
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
-        inputs.leftSpeed = RadiansPerSecond.of(leftSpark.encoder.velocity)
-        inputs.rightSpeed = RadiansPerSecond.of(rightSpark.encoder.velocity)
-        inputs.leftVoltage = leftSpark.busVoltage * leftSpark.appliedOutput
-        inputs.rightVoltage = rightSpark.busVoltage * rightSpark.appliedOutput
-        inputs.leftPos = Radians.of(leftSpark.encoder.position)
-        inputs.rightPos = Radians.of(rightSpark.encoder.position)
+        inputs.leftSpeed.mut_setMagnitude(leftSpark.encoder.velocity)
+        inputs.rightSpeed.mut_setMagnitude(rightSpark.encoder.velocity)
+        inputs.leftVoltage.mut_setMagnitude(leftSpark.busVoltage * leftSpark.appliedOutput)
+        inputs.rightVoltage.mut_setMagnitude( rightSpark.busVoltage * rightSpark.appliedOutput)
+        inputs.leftPos.mut_setMagnitude(leftSpark.encoder.position)
+        inputs.rightPos.mut_setMagnitude(rightSpark.encoder.position)
     }
 
     override fun setIndexerVoltage(voltage: Measure<Voltage>) {
@@ -99,8 +99,8 @@ class FlywheelIOSim : FlywheelIO {
     private val rightFlywheel = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, 0.01)
 
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
-        inputs.leftSpeed = RadiansPerSecond.of(leftFlywheel.angularVelocityRadPerSec)
-        inputs.rightSpeed = RadiansPerSecond.of(rightFlywheel.angularVelocityRadPerSec)
+        inputs.leftSpeed.mut_setMagnitude(leftFlywheel.angularVelocityRadPerSec)
+        inputs.rightSpeed.mut_setMagnitude(rightFlywheel.angularVelocityRadPerSec)
     }
 
     override fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
