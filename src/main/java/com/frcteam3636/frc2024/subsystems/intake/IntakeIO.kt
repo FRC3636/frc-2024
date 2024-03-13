@@ -1,7 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
 import com.frcteam3636.frc2024.CANSparkFlex
-import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkLowLevel
@@ -19,45 +18,31 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface IntakeIO {
     class IntakeInputs : LoggableInputs {
-        var otbRollerVelocity: MutableMeasure<Velocity<Angle>> = MutableMeasure.zero(RadiansPerSecond)
-        var utbRollerVelocity: MutableMeasure<Velocity<Angle>> = MutableMeasure.zero(RadiansPerSecond)
-        var otbCurrent: MutableMeasure<Current> = MutableMeasure.zero(Amps)
-        var utbCurrent: MutableMeasure<Current> = MutableMeasure.zero(Amps)
+        var rollerVelocity: MutableMeasure<Velocity<Angle>> = MutableMeasure.zero(RadiansPerSecond)
+        var rollerCurrent: MutableMeasure<Current> = MutableMeasure.zero(Amps)
         var beamBroken: Boolean = false
 
         override fun toLog(table: LogTable?) {
-            table?.put("OTB Roller Velocity", otbRollerVelocity)
-            table?.put("UTB Roller Velocity", utbRollerVelocity)
-            table?.put("OTB Current", otbCurrent)
-            table?.put("UTB Current", utbCurrent)
-            table?.put("Beam Break", beamBroken)
+            table?.put("Roller Velocity", rollerVelocity)
+            table?.put("Roller Current", rollerCurrent)
+            table?.put("Beam Broken", beamBroken)
 
         }
 
         override fun fromLog(table: LogTable) {
-            otbRollerVelocity = table.get("OTB Roller Velocity", otbRollerVelocity)!!
-            utbRollerVelocity = table.get("UTB Roller Velocity", utbRollerVelocity)!!
-            otbCurrent = table.get("OTB Current", otbCurrent)
-            utbCurrent = table.get("UTB Current", utbCurrent)
-            beamBroken = table.get("Beam Break", beamBroken)
+            rollerVelocity = table.get("Roller Velocity", rollerVelocity)!!
+            rollerCurrent = table.get("Roller Current", rollerCurrent)
+            beamBroken = table.get("Beam Broken", beamBroken)
         }
     }
 
     fun updateInputs(inputs: IntakeInputs)
 
-    fun setOverBumperRoller(speed: Double)
-    fun setUnderBumperRoller(speed: Double)
+    fun setRollerDutyCycle(dutyCycle: Double)
 }
 
 class IntakeIOReal : IntakeIO {
-    private var otbRollers =
-        CANSparkMax(
-            REVMotorControllerId.OverTheBumperIntakeFeed,
-            CANSparkLowLevel.MotorType.kBrushless
-        ).apply{
-            inverted = true
-        }
-    private var utbRollers =
+    private var rollers =
         CANSparkFlex(
             REVMotorControllerId.UnderTheBumperIntakeRoller,
             CANSparkLowLevel.MotorType.kBrushless
@@ -65,19 +50,13 @@ class IntakeIOReal : IntakeIO {
    private var beamBreakSensor: DigitalInput = DigitalInput(BEAM_BREAK_PORT)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
-        inputs.otbRollerVelocity.mut_setMagnitude(otbRollers.encoder.velocity)
-        inputs.utbRollerVelocity.mut_setMagnitude(utbRollers.encoder.velocity)
-        inputs.otbCurrent.mut_setMagnitude(otbRollers.outputCurrent)
-        inputs.utbCurrent.mut_setMagnitude(utbRollers.outputCurrent)
+        inputs.rollerVelocity.mut_setMagnitude(rollers.encoder.velocity)
+        inputs.rollerCurrent.mut_setMagnitude(rollers.outputCurrent)
         inputs.beamBroken = beamBreakSensor.get()
     }
 
-    override fun setOverBumperRoller(speed: Double) {
-        otbRollers.set(speed)
-    }
-
-    override fun setUnderBumperRoller(speed: Double) {
-        utbRollers.set(speed)
+    override fun setRollerDutyCycle(dutyCycle: Double) {
+        rollers.set(dutyCycle)
     }
 
     internal companion object Constants {
@@ -86,24 +65,16 @@ class IntakeIOReal : IntakeIO {
 }
 
 class IntakeIOSim : IntakeIO {
-    private var otbRollers = FlywheelSim(DCMotor.getNEO(1), 1.0, ROLLER_INERTIA)
-    private var utbRollers = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, ROLLER_INERTIA)
+    private var rollers = FlywheelSim(DCMotor.getNeoVortex(1), 1.0, ROLLER_INERTIA)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
-        otbRollers.update(Robot.period)
-        utbRollers.update(Robot.period)
-        inputs.otbRollerVelocity.mut_setMagnitude(otbRollers.angularVelocityRadPerSec)
-        inputs.utbRollerVelocity.mut_setMagnitude(utbRollers.angularVelocityRadPerSec)
+        rollers.update(Robot.period)
+        inputs.rollerVelocity.mut_setMagnitude(rollers.angularVelocityRadPerSec)
     }
 
-    override fun setOverBumperRoller(speed: Double) {
-        val volts = (speed * 12.0).coerceIn(-12.0, 12.0)
-        otbRollers.setInputVoltage(volts)
-    }
-
-    override fun setUnderBumperRoller(speed: Double) {
-        val volts = (speed * 12.0).coerceIn(-12.0, 12.0)
-        utbRollers.setInputVoltage(volts)
+    override fun setRollerDutyCycle(dutyCycle: Double) {
+        val volts = (dutyCycle * 12.0).coerceIn(-12.0, 12.0)
+        rollers.setInputVoltage(volts)
     }
 
     companion object Constants {
