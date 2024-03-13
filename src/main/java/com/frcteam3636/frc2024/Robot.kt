@@ -48,21 +48,6 @@ object Robot : LoggedRobot() {
 
     private val brakeModeToggle = DigitalInput(4)
 
-    private fun intakeCommand(): Command = Commands.sequence(
-        Intake.intake(),
-        Commands.race(
-            Commands.sequence(
-                WaitCommand(0.5),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)).withTimeout(0.4),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0)).withTimeout(0.5)
-            ),
-            WaitUntilCommand(Shooter.Pivot::isStowed),
-        ),
-        Commands.parallel(
-            Shooter.Flywheels.intake(),
-            Intake.index()
-        )
-    )
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -113,7 +98,7 @@ object Robot : LoggedRobot() {
         // Configure the autonomous command
 
         NamedCommands.registerCommand("knockintake", Climber.knockIntake())
-        NamedCommands.registerCommand("intake", intakeCommand())
+        NamedCommands.registerCommand("intake", performSafeIntake())
         NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
         NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
@@ -126,15 +111,15 @@ object Robot : LoggedRobot() {
 
 
     private fun configureBindings() {
-       Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-           joystickLeft, joystickRight
-       )
-
-//       controller.leftBumper().whileTrue(Intake.outtakeComand())
-
-        controller.leftTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
-            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+            joystickLeft, joystickRight
         )
+
+        controller
+            .leftTrigger()
+            .debounce(0.1)
+            .whileTrue(Shooter.Pivot.followMotionProfile(null))
+            .onFalse(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED))
 
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
@@ -146,9 +131,7 @@ object Robot : LoggedRobot() {
 
         controller.rightBumper()
             .debounce(0.150)
-            .whileTrue(
-                intakeCommand()
-            )
+            .whileTrue(performSafeIntake())
 
         controller.x().onTrue(
             Shooter.Amp.pivotTo(Rotation2d.fromDegrees(170.0))
@@ -167,11 +150,13 @@ object Robot : LoggedRobot() {
         //Drive if triggered joystickLeft input
 
         Trigger(
-            joystickLeft::getTrigger)
-            .whileTrue(Drivetrain.driveWithJoystickPointingTowards(
+            joystickLeft::getTrigger
+        )
+            .whileTrue(
+                Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft, OrientationTarget.Speaker.position
                 )
-        )
+            )
 
         JoystickButton(joystickLeft, 8).onTrue(
             InstantCommand({
@@ -211,6 +196,7 @@ object Robot : LoggedRobot() {
     enum class Model {
         SIMULATION, PRACTICE, COMPETITION,
     }
+
     // The model of this robot.
     val model: Model = if (RobotBase.isSimulation()) {
         Model.SIMULATION
@@ -223,8 +209,12 @@ object Robot : LoggedRobot() {
     }
 }
 
-//private fun makePivotBinding(trigger: Trigger, setpoint: Shooter.Pivot.Target) {
-//    trigger.debounce(0.15).whileTrue(Shooter.Pivot.followMotionProfile(setpoint)).onFalse(
-//        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
-//    )
-//}
+private fun performSafeIntake(): Command =
+    Commands.sequence(
+        Intake.intake(),
+        Commands.waitUntil(Shooter.Pivot.isStowed),
+        Commands.parallel(
+            Shooter.Flywheels.intake(),
+            Intake.index()
+        )
+    )
