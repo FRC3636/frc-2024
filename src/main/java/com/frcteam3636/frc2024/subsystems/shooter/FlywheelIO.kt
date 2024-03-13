@@ -6,8 +6,7 @@ import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units.Radians
-import edu.wpi.first.units.Units.RadiansPerSecond
+import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
@@ -20,23 +19,27 @@ interface FlywheelIO {
         var rightSpeed = RadiansPerSecond.zero()
         var leftVoltage: Double = 0.0
         var rightVoltage: Double = 0.0
+        var leftCurrent = Amps.zero()
+        var rightCurrent = Amps.zero()
         var leftPos = Radians.zero()
         var rightPos = Radians.zero()
 
         override fun toLog(table: LogTable) {
             table.put("Left Speed", leftSpeed)
             table.put("Right Speed", rightSpeed)
+            table.put("left Current", leftCurrent)
+            table.put("Right current", rightCurrent)
         }
 
         override fun fromLog(table: LogTable) {
             leftSpeed = table.get("Left Speed", leftSpeed)
             rightSpeed = table.get("Right Speed", rightSpeed)
+            leftCurrent = table.get("left Current", leftCurrent)
+            rightCurrent = table.get("Right current", rightCurrent)
         }
     }
 
     fun updateInputs(inputs: Inputs)
-
-    fun setIndexerVoltage(voltage: Measure<Voltage>)
 
     fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {}
 }
@@ -64,23 +67,19 @@ class FlywheelIOReal : FlywheelIO {
             }
         }
 
-    private val indexer =
-        CANSparkFlex(REVMotorControllerId.Indexer, CANSparkLowLevel.MotorType.kBrushless)
-
 
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
         inputs.leftSpeed = RadiansPerSecond.of(leftSpark.encoder.velocity)
         inputs.rightSpeed = RadiansPerSecond.of(rightSpark.encoder.velocity)
+
         inputs.leftVoltage = leftSpark.busVoltage * leftSpark.appliedOutput
         inputs.rightVoltage = rightSpark.busVoltage * rightSpark.appliedOutput
+
+        inputs.leftCurrent = Amps.of(leftSpark.outputCurrent )
+        inputs.rightCurrent = Amps.of(rightSpark.outputCurrent)
+
         inputs.leftPos = Radians.of(leftSpark.encoder.position)
         inputs.rightPos = Radians.of(rightSpark.encoder.position)
-    }
-
-    override fun setIndexerVoltage(voltage: Measure<Voltage>) {
-        indexer.setVoltage(voltage.baseUnitMagnitude())
-
-        Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
 
     override fun setFlywheelVoltage(left: Measure<Voltage>, right: Measure<Voltage>) {
@@ -109,11 +108,5 @@ class FlywheelIOSim : FlywheelIO {
 
         Logger.recordOutput("Shooter/Flywheels/Left Effort", left)
         Logger.recordOutput("Shooter/Flywheels/Right Effort", right)
-    }
-
-    override fun setIndexerVoltage(voltage: Measure<Voltage>) {
-        // no-op, we don't have an indexer in the sim
-
-        Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
 }

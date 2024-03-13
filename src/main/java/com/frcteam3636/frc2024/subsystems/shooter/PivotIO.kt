@@ -9,10 +9,12 @@ import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
 import com.frcteam3636.frc2024.utils.math.*
+import com.revrobotics.SparkAbsoluteEncoder
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.DigitalInput
+import edu.wpi.first.wpilibj.DutyCycleEncoder
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -83,7 +85,12 @@ interface PivotIO {
 
 class PivotIOKraken : PivotIO {
     private val leftMotor = TalonFX(CTREMotorControllerId.LeftPivotMotor)
+
     private val rightMotor = TalonFX(CTREMotorControllerId.RightPivotMotor)
+
+    private val absoluteEncoder = DutyCycleEncoder(DigitalInput(4)).apply{
+        distancePerRotation = SENSOR_TO_PIVOT_RATIO
+    }
 
     init {
         val config = TalonFXConfiguration().apply{
@@ -111,7 +118,9 @@ class PivotIOKraken : PivotIO {
         }
 
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
-        leftMotor.configurator.apply(config)
+        leftMotor.configurator.apply(config
+        )
+
         config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive
         rightMotor.configurator.apply(config)
         resetPivotToHardStop()
@@ -122,8 +131,11 @@ class PivotIOKraken : PivotIO {
     override fun updateInputs(inputs: PivotIO.Inputs) {
 
         if(!leftLimitSwitchUnpressed.get()){
-            resetPivotToHardStop()
+            absoluteEncoder.reset()
         }
+
+        leftMotor.setPosition(absoluteEncoder.get() - LIMIT_SWITCH_OFFSET.rotations)
+        rightMotor.setPosition(absoluteEncoder.get() - LIMIT_SWITCH_OFFSET.rotations)
 
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
         inputs.position = Rotation2d.fromRotations(rightMotor.position.value)
@@ -182,6 +194,7 @@ class PivotIOKraken : PivotIO {
 
     internal companion object Constants {
         val GEAR_RATIO = 40.0
+        val SENSOR_TO_PIVOT_RATIO = 1.0
 
         val PID_GAINS = PIDGains(120.0, 0.0, 100.0)
         val FF_GAINS = MotorFFGains(7.8, 0.0, 0.0)
