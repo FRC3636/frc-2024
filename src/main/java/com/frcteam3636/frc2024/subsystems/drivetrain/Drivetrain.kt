@@ -31,7 +31,9 @@ import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.Inches
 import edu.wpi.first.wpilibj.Joystick
 import edu.wpi.first.wpilibj.RobotBase
+import edu.wpi.first.wpilibj.Watchdog
 import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import org.littletonrobotics.junction.LogTable
@@ -64,6 +66,8 @@ object Drivetrain : Subsystem {
         })
     }
     private val inputs = DrivetrainIO.Inputs()
+
+    private val dawg = Watchdog(Robot.period) {}
 
     private val absolutePoseIOs = mapOf(
         "Fljorg" to PhotonVisionPoseIOReal(
@@ -101,6 +105,7 @@ object Drivetrain : Subsystem {
         )
 
     init {
+
         Pathfinding.setPathfinder(
             when (Robot.model) {
                 Robot.Model.SIMULATION -> LocalADStarAK()
@@ -120,8 +125,15 @@ object Drivetrain : Subsystem {
     }
 
     override fun periodic() {
+
+        dawg.reset()
+
+
         io.updateInputs(inputs)
+        dawg.addEpoch("Update inputs")
         Logger.processInputs("Drivetrain", inputs)
+        Logger.recordOutput("UpdataInputs", dawg.time)
+        dawg.addEpoch("Process Inputs")
 
         absolutePoseIOs.forEach { (name, ioPair) ->
             val (io, inputs) = ioPair
@@ -134,15 +146,21 @@ object Drivetrain : Subsystem {
                 poseEstimator.addAbsolutePoseMeasurement(it)
             }
         }
+        dawg.addEpoch("VisionInputs")
+
 
 
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
+        dawg.addEpoch("update pose estimator")
 
         Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
         Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
+        dawg.addEpoch("Record outputs")
+
+        dawg.printEpochs()
     }
 
     // The rotation of the robot as measured by the gyro.
@@ -221,6 +239,13 @@ object Drivetrain : Subsystem {
             }
         }
 
+    fun findWheelCircumfrence(): Command {
+        return runOnce{
+
+            zeroGyro()
+
+        }
+    }
 
     fun driveWithController(controller: CommandXboxController): Command =
         run {

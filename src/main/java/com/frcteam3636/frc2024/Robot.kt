@@ -12,6 +12,8 @@ import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.units.Units.RadiansPerSecond
+import edu.wpi.first.units.Units.Second
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
@@ -42,6 +44,7 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+    private val controllerDev = CommandXboxController(3)
     private var autoChooser = SendableChooser<String>()
 
     private var autoCommand: Command? = null
@@ -50,17 +53,16 @@ object Robot : LoggedRobot() {
 
     private fun intakeCommand(): Command = Commands.sequence(
         Intake.intakeCommand(),
+        Commands.waitUntil(Shooter.Pivot::isStowed),
         Commands.race(
-            Commands.sequence(
-                WaitCommand(0.5),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(20.0)).withTimeout(0.4),
-                Shooter.Pivot.pivotAndStop(Rotation2d.fromDegrees(-28.0)).withTimeout(0.5)
+            Commands.parallel(
+                Intake.indexCommand(),
+                Shooter.Flywheels.intake(),
             ),
-            WaitUntilCommand(Shooter.Pivot::isStowed),
-        ),
-        Commands.parallel(
-            Shooter.Flywheels.intake(),
-            Intake.indexCommand()
+            Commands.sequence(
+                Commands.waitUntil {Shooter.Flywheels.acceleration > FLYWHEEL_ACCELERATION_THRESHOLD} ,
+                Commands.waitUntil {Shooter.Flywheels.acceleration <  FLYWHEEL_ACCELERATION_THRESHOLD.negate() }
+            )
         )
     )
 
@@ -112,11 +114,14 @@ object Robot : LoggedRobot() {
 
         // Configure the autonomous command
 
-        NamedCommands.registerCommand("knockintake", Climber.knockIntake())
         NamedCommands.registerCommand("intake", intakeCommand())
+
         NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
-        NamedCommands.registerCommand("shoot", Shooter.Flywheels.shoot(40.0, 0.0).withTimeout(0.6))
+
+        NamedCommands.registerCommand("rev", Shooter.Flywheels.rev(40.0, 0.0))
+        NamedCommands.registerCommand("shoot", Shooter.Feeder.feedCommand().withTimeout(0.1))
+
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
         autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
@@ -158,10 +163,16 @@ object Robot : LoggedRobot() {
 
         Trigger(joystickRight::getTrigger)
             .whileTrue(
-                Commands.either(
-                    Shooter.Flywheels.shoot(40.0, 0.0),
-                    Shooter.Flywheels.shoot(2.5, 0.0)
-                ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP }
+                Commands.parallel(
+                    Commands.either(
+                        Shooter.Flywheels.rev(40.0, 0.0),
+                        Shooter.Flywheels.rev(2.5, 0.0)
+                    ){ Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
+                    Commands.sequence(
+                        Commands.waitUntil { Shooter.Flywheels.atDesiredVelocity },
+                        Shooter.Feeder.feedCommand().withTimeout(0.1),
+                    )
+                )
             )
 
         //Drive if triggered joystickLeft input
@@ -221,10 +232,6 @@ object Robot : LoggedRobot() {
             else -> throw Exception("invalid model found in preferences: $key")
         }
     }
-}
 
-//private fun makePivotBinding(trigger: Trigger, setpoint: Shooter.Pivot.Target) {
-//    trigger.debounce(0.15).whileTrue(Shooter.Pivot.followMotionProfile(setpoint)).onFalse(
-//        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
-//    )
-//}
+    private val FLYWHEEL_ACCELERATION_THRESHOLD = RadiansPerSecond.per(Second).of(0.0)
+}

@@ -9,8 +9,10 @@ import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Angle
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
+import edu.wpi.first.units.Velocity
 import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -20,6 +22,7 @@ import edu.wpi.first.wpilibj2.command.button.Trigger
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.math.atan
 
 object Shooter {
@@ -34,6 +37,11 @@ object Shooter {
         SysIdRoutine.Config(), SysIdRoutine.Mechanism(Pivot::setVoltage, Flywheels::getState, Flywheels)
     )
 
+    fun shootCommand(velocity: Double, spin: Double): Command = ParallelCommandGroup(
+        Flywheels.rev(velocity, spin),
+        Feeder.feedCommand().withTimeout(0.1)
+    )
+
     object Flywheels : Subsystem {
         private val io: FlywheelIO = when (Robot.model) {
             Robot.Model.SIMULATION -> FlywheelIOSim()
@@ -43,15 +51,35 @@ object Shooter {
 
         private var setpointLeft = RadiansPerSecond.zero()
         private var setpointRight = RadiansPerSecond.zero()
+
+        var lastVelocity = RadiansPerSecond.zero()
+
+
         private val pidControllerLeft = PIDController(FLYWHEEL_PID_GAINS)
         private val pidControllerRight = PIDController(FLYWHEEL_PID_GAINS)
         private val ffController = SimpleMotorFeedforward(FLYWHEEL_FF_GAINS)
+
+        val acceleration: Measure<Velocity<Velocity<Angle>>>
+            get(){
+                return inputs.leftSpeed.minus(lastVelocity).per(Second.of(Robot.period))
+            }
+
+        val atDesiredVelocity: Boolean
+            get() {
+                return (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue <
+                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()) &&
+                (inputs.rightSpeed.minus(setpointRight).baseUnitMagnitude().absoluteValue <
+                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
+            }
+
+
+
 
 
         override fun periodic() {
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Flywheels", inputs)
-
+            lastVelocity = inputs.leftSpeed
 
             flywheelLigament.color = if (inputs.leftSpeed > RotationsPerSecond.of(1.0)) {
                 BLUE
@@ -80,8 +108,9 @@ object Shooter {
             Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
 
+
         /** Shoot a ball at a given velocity and spin (in rad/s). */
-        fun shoot(velocity: Double, spin: Double): Command = ParallelCommandGroup(
+        fun rev(velocity: Double, spin: Double): Command =
             // start the flywheels
             runEnd({
                 val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
@@ -91,36 +120,15 @@ object Shooter {
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
-            }),
-            SequentialCommandGroup(
-                // wait for the flywheels to get up to speed
-                Commands.waitSeconds(0.4),
-                // run the indexer
-                Commands.runEnd({
-                    io.setIndexerVoltage(Volts.of(-10.0))
-                }, {
-                    io.setIndexerVoltage(Volts.zero())
-                })
-            )
-        )
-
-        fun index(): Command {
-            return runEnd({
-                io.setIndexerVoltage(Volts.of(-10.0))
-            }, {
-                io.setIndexerVoltage(Volts.of(0.0))
             })
-        }
 
         fun intake(): Command {
             return runEnd({
                 setpointLeft = RadiansPerSecond.of(-50.0)
                 setpointRight = RadiansPerSecond.of(-50.0)
-                io.setIndexerVoltage(Volts.of(6.78))
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
-                io.setIndexerVoltage(Volts.of(0.0))
             })
         }
 
@@ -142,6 +150,27 @@ object Shooter {
                     inputs.rightSpeed
                 )
         }
+    }
+
+    object Feeder: Subsystem {
+        private val io = when (Robot.model) {
+            Robot.Model.SIMULATION -> FeederIOSim()
+            else -> FeederIOReal()
+        }
+        private val inputs = FeederIO.Inputs()
+
+
+        fun intakeCommand(): Command = Commands.runEnd({
+            io.setIndexerVoltage(Volts.of(10.0))
+        }, {
+            io.setIndexerVoltage(Volts.zero())
+        })
+
+        fun feedCommand(): Command = Commands.runEnd({
+            io.setIndexerVoltage(Volts.of(10.0))
+        }, {
+            io.setIndexerVoltage(Volts.zero())
+        })
     }
 
     object Pivot : Subsystem {
@@ -184,7 +213,7 @@ object Shooter {
 
         fun isStowed(): Boolean {
 
-            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.8).radians)
+            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.3).radians)
         }
 
 
@@ -241,13 +270,9 @@ object Shooter {
         }
 
         fun followMotionProfile(targetOverride: Target?): Command {
-            var target = targetOverride ?: this.target
             return run {
                 target = targetOverride ?: this.target
                 io.pivotToAndMove(target.profile.position(), target.profile.velocity())
-            }.until {
-                abs(target.profile.position().degrees - inputs.position.degrees) <= 5
-                        && abs(target.profile.velocity().degrees - inputs.velocity.degrees) <= 1
             }
         }
 
@@ -366,6 +391,7 @@ internal val SPEAKER_POSE = Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val AMP_MECH_POSITION_TOLERANCE = Rotation2d.fromDegrees(3.0)
+internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(4.0)
 
 internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)

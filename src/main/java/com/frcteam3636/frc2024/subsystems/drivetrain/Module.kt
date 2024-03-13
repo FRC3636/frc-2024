@@ -136,8 +136,6 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
         set(value) {
             inner.setControl(VelocityTorqueCurrentFOC(value / DRIVING_GEAR_RATIO_TALON / WHEEL_CIRCUMFERENCE).withSlot(0))
         }
-
-
 }
 
 class DrivingSparkMAX(id: REVMotorControllerId) : DrivingMotor {
