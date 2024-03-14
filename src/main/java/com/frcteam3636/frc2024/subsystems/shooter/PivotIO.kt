@@ -87,13 +87,13 @@ class PivotIOKraken : PivotIO {
                 pidGains = PID_GAINS
                 motorFFGains = FF_GAINS
                 GravityType = GravityTypeValue.Arm_Cosine
-                kG = GRAVITY_GAIN
+                kG = GRAVITY_GAIN.`in`(MetersPerSecondPerSecond)
             }
 
             MotionMagic.apply {
-                MotionMagicCruiseVelocity = PROFILE_VELOCITY
-                MotionMagicAcceleration = PROFILE_ACCELERATION
-                MotionMagicJerk = PROFILE_JERK
+                MotionMagicCruiseVelocity = PROFILE_VELOCITY.`in`(RotationsPerSecond)
+                MotionMagicAcceleration = PROFILE_ACCELERATION.`in`(RotationsPerSecond.per(Second))
+                MotionMagicJerk = PROFILE_JERK.`in`(RotationsPerSecond.per(Second).per(Second))
             }
         }
 
@@ -151,12 +151,12 @@ class PivotIOKraken : PivotIO {
 
         val PID_GAINS = PIDGains(120.0, 0.0, 100.0)
         val FF_GAINS = MotorFFGains(7.8, 0.0, 0.0)
-        val GRAVITY_GAIN = 10.0
+        val GRAVITY_GAIN = MetersPerSecondPerSecond.of(10.0)
 
         // TODO: these need to be tuned
-        val PROFILE_VELOCITY = 4.0
-        val PROFILE_ACCELERATION = 8.0
-        val PROFILE_JERK = 20.0
+        val PROFILE_VELOCITY = RotationsPerSecond.of(4.0)
+        val PROFILE_ACCELERATION = RotationsPerSecond.of(8.0).per(Second)
+        val PROFILE_JERK = RotationsPerSecond.of(20.0).per(Second).per(Second)
 
         const val LEFT_ZERO_OFFSET = -0.496
         const val RIGHT_ZERO_OFFSET = 0.38
