@@ -6,6 +6,7 @@ import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.frcteam3636.frc2024.subsystems.shooter.Shooter.Pivot.doDynamicSysId
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -22,6 +23,7 @@ import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
+import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.LogFileUtil
 import org.littletonrobotics.junction.LoggedRobot
 import org.littletonrobotics.junction.Logger
@@ -44,12 +46,10 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
-    private val controllerDev = CommandXboxController(3)
+    private val joystickDev = Joystick(3)
     private var autoChooser = SendableChooser<String>()
 
     private var autoCommand: Command? = null
-
-    private val brakeModeToggle = DigitalInput(4)
 
     private fun intakeCommand(): Command = Commands.sequence(
         Intake.intakeCommand(),
@@ -134,6 +134,7 @@ object Robot : LoggedRobot() {
        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
            joystickLeft, joystickRight
        )
+//        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.CurrentPosition)
 
 //       controller.leftBumper().whileTrue(Intake.outtakeComand())
 
@@ -175,6 +176,19 @@ object Robot : LoggedRobot() {
                 )
             )
 
+
+        val sysIdDirection = {
+            if (joystickDev.y <= 0.0) {
+                SysIdRoutine.Direction.kForward
+            } else {
+                SysIdRoutine.Direction.kReverse
+            }
+        }
+
+
+        JoystickButton(joystickDev, 1).whileTrue(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.SPEAKER))
+        JoystickButton(joystickDev, 2).whileTrue(Shooter.Pivot.defer {Shooter.Pivot.doQuasistaticSysId(sysIdDirection())})
+
         //Drive if triggered joystickLeft input
 
         Trigger(
@@ -191,7 +205,7 @@ object Robot : LoggedRobot() {
             })
         )
 
-        JoystickButton(joystickRight, 8).debounce(0.25).whileTrue(Shooter.Pivot.neutralMode())
+        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
 
 //        Trigger { brakeModeToggle.get() }
 //            .debounce(0.25)

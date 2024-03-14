@@ -27,16 +27,6 @@ import kotlin.math.atan
 
 object Shooter {
 
-    val pivotIdRoutine = SysIdRoutine(
-        SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), null, null, null), SysIdRoutine.Mechanism(
-            Pivot::setVoltage, Pivot::getState, Pivot
-        )
-    )
-
-    val flywheelIORoutine = SysIdRoutine(
-        SysIdRoutine.Config(), SysIdRoutine.Mechanism(Pivot::setVoltage, Flywheels::getState, Flywheels)
-    )
-
     fun shootCommand(velocity: Double, spin: Double): Command = ParallelCommandGroup(
         Flywheels.rev(velocity, spin),
         Feeder.feedCommand().withTimeout(0.1)
@@ -183,12 +173,18 @@ object Shooter {
 
         var target: Target = Target.PODIUM
 
+//
+//        init {
+//            io.updateInputs(inputs)
+//            zeroPivot()
+//        }
+
 
         override fun periodic() {
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
-            armLigament.angle = inputs.position.degrees
+            armLigament.angle = inputs.leftPosition.degrees
 
 
             Logger.recordOutput("Shooter/IsStowed", isStowed())
@@ -199,21 +195,21 @@ object Shooter {
             Logger.recordOutput("Shooter/DesiredPosition", goal)
             io.pivotToAndStop(goal)
         }, Commands.waitUntil {
-            (abs((goal - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians)
-                    && (abs(inputs.velocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
+            (abs((goal - inputs.leftPosition).radians) < PIVOT_POSITION_TOLERANCE.radians)
+                    && (abs(inputs.leftVelocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
 
         fun isPointingTowards(target: Rotation2d) = Trigger {
-            abs((target - inputs.position).radians) < PIVOT_POSITION_TOLERANCE.radians
+            abs((target - inputs.leftPosition).radians) < PIVOT_POSITION_TOLERANCE.radians
         }
 
         val readyToShoot = Trigger {
-            inputs.position.degrees >= 90
+            inputs.leftPosition.degrees >= 90
         }
 
         fun isStowed(): Boolean {
 
-            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.position).radians) < Rotation2d.fromDegrees(1.3).radians)
+            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(1.3).radians)
         }
 
 
@@ -224,55 +220,49 @@ object Shooter {
         }
 
         fun zeroPivot() {
-            io.resetPivotToHardStop()
+            io.resetPivotToAbsoluteEncoder()
         }
-
-        fun getState(log: SysIdRoutineLog) {
-            log.motor("pivot-left").voltage(
-                Volts.of(inputs.voltageLeft)
-            ).angularPosition(
-                Radians.of(inputs.rotorDistanceLeft)
-            ).angularVelocity(
-                RadiansPerSecond.of(inputs.rotorVelocityLeft)
-            )
-            log.motor("pivot-right").voltage(
-                Volts.of(inputs.voltageRight)
-            ).angularPosition(
-                Radians.of(inputs.rotorDistanceRight)
-            ).angularVelocity(
-                RadiansPerSecond.of(inputs.rotorVelocityRight)
-            )
-        }
-
 
         fun setVoltage(volts: Measure<Voltage>) {
             io.driveVoltage(volts.magnitude())
         }
 
-        fun dynamicIdCommand(direction: SysIdRoutine.Direction): Command {
-            return pivotIdRoutine.dynamic(direction).until {
-                if (direction == SysIdRoutine.Direction.kForward) {
-                    inputs.position.rotations > 0.4
-                } else {
-                    inputs.position.rotations < -0.3
-                }
-            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
-        }
+        val sysIdRoutine = SysIdRoutine(
+            SysIdRoutine.Config(Volts.of(1.0).per(Seconds.of(2.0)), Volts.of(1.0), null, null),
+            SysIdRoutine.Mechanism(
+                {
+                    io.driveVoltage(it.baseUnitMagnitude())
+                },
+                {
+                    it.motor("pivot-left")
+                        .voltage(Volts.of(inputs.voltageLeft))
+                        .angularPosition(Radians.of(inputs.leftPosition.radians))
+                        .angularVelocity(RadiansPerSecond.of(inputs.leftVelocity.radians))
+                    it.motor("pivot-right")
+                        .voltage(Volts.of(inputs.voltageRight))
+                        .angularPosition(Radians.of(inputs.rightPosition.radians))
+                        .angularVelocity(RadiansPerSecond.of(inputs.rightVelocity.radians))
+                },
+                this
+            )
+        )
 
-        fun quasistaticIdCommand(direction: SysIdRoutine.Direction): Command {
-            return pivotIdRoutine.quasistatic(direction).until {
-                if (direction == SysIdRoutine.Direction.kForward) {
-                    inputs.position.rotations > 0.4
-                } else {
-                    inputs.position.rotations < -0.3
-                }
-            }.andThen(InstantCommand({ io.driveVoltage(0.0) }))
-        }
+        fun doDynamicSysId(direction: SysIdRoutine.Direction): Command =
+            sysIdRoutine.dynamic(direction)
+                .andThen(runOnce { io.driveVoltage(0.0) })
+
+        fun doQuasistaticSysId(direction: SysIdRoutine.Direction): Command =
+            sysIdRoutine.quasistatic(direction)
+                .andThen(runOnce { io.driveVoltage(0.0) })
 
         fun followMotionProfile(targetOverride: Target?): Command {
             return run {
-                target = targetOverride ?: this.target
-                io.pivotToAndMove(target.profile.position(), target.profile.velocity())
+                val target = targetOverride ?: this.target
+                val position = target.profile.position()
+                val velocity = target.profile.velocity()
+                Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
+                Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", velocity)
+                io.pivotToAndMove(position, velocity)
             }
         }
 
@@ -296,21 +286,29 @@ object Shooter {
                     { Rotation2d() }
                 )
             ),
+            CurrentPosition(
+                PivotProfile({ inputs.leftPosition }, { Rotation2d() })
+            ),
             SPEAKER(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(100.0) },
-                    { Rotation2d() }
+                    {
+                        Rotation2d.fromDegrees(90.0) + Rotation2d.fromDegrees(kotlin.math.sin(edu.wpi.first.wpilibj.Timer.getFPGATimestamp()) * 45.0)
+
+                    },
+                    {
+                        Rotation2d.fromDegrees(kotlin.math.cos(edu.wpi.first.wpilibj.Timer.getFPGATimestamp()) * 45.0)
+                    }
                 )
             ),
             AMP(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(90.0) },
+                    { Rotation2d.fromDegrees(110.0) },
                     { Rotation2d() }
                 )
             ),
             PODIUM(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(115.0) },
+                    { Rotation2d.fromDegrees(10.0) },
                     { Rotation2d() }
                 )
             ),
