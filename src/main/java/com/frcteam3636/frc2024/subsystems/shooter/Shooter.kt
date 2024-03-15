@@ -24,6 +24,7 @@ import org.littletonrobotics.junction.Logger
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan
+import kotlin.math.pow
 
 object Shooter {
 
@@ -54,6 +55,15 @@ object Shooter {
                 return inputs.leftSpeed.minus(lastVelocity).per(Second.of(Robot.period))
             }
 
+
+
+
+        val aboveIntakeThreshold: Boolean
+             get() {
+                return Amps.of(inputs.leftCurrent.baseUnitMagnitude().pow(3)) > FLYWHEEL_INTAKE_CURRENT_THRESHOLD
+            }
+
+
         val atDesiredVelocity: Boolean
             get() {
                 return (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue <
@@ -62,22 +72,21 @@ object Shooter {
                         FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
             }
 
-
-
-
-
         override fun periodic() {
             io.updateInputs(inputs)
+
             Logger.processInputs("Shooter/Flywheels", inputs)
-            lastVelocity = inputs.leftSpeed
 
             flywheelLigament.color = if (inputs.leftSpeed > RotationsPerSecond.of(1.0)) {
                 BLUE
             } else {
                 WHITE
-
             }
+
+            Logger.recordOutput("Shooter/Flywheels/at desired velocity", atDesiredVelocity)
             Logger.recordOutput("Shooter", mechanism)
+            Logger.recordOutput("Shooter/Flywheels/above current threshold", aboveIntakeThreshold)
+            Logger.recordOutput("Shooter/Flywheels/average current squared", inputs.leftCurrent.baseUnitMagnitude().pow(3))
 
             io.setFlywheelVoltage(
                 Volts.of(
@@ -94,8 +103,6 @@ object Shooter {
                 )
             )
 
-            Logger.recordOutput("Shooter/Flywheels/Left Setpoint", setpointLeft)
-            Logger.recordOutput("Shooter/Flywheels/Right Setpoint", setpointRight)
         }
 
 
@@ -111,6 +118,15 @@ object Shooter {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
             })
+
+        fun outtake(): Command =
+        runEnd({
+            setpointLeft = RadiansPerSecond.of(30.0)
+            setpointRight = RadiansPerSecond.of(30.0)
+        }, {
+            setpointLeft = RadiansPerSecond.zero()
+            setpointRight = RadiansPerSecond.zero()
+        })
 
         fun intake(): Command {
             return runEnd({
@@ -153,6 +169,12 @@ object Shooter {
         fun intakeCommand(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(10.0))
         }, {
+            io.setIndexerVoltage(Volts.zero())
+        })
+
+        fun outtakeCommand(): Command = Commands.runEnd({
+            io.setIndexerVoltage(Volts.of(-4.0))
+        },{
             io.setIndexerVoltage(Volts.zero())
         })
 
@@ -266,6 +288,11 @@ object Shooter {
             }
         }
 
+        fun setBrakeMode(brake: Boolean): Command =
+            InstantCommand({
+                io.setBrakeMode(brake)
+            })
+
 
         fun neutralMode(): Command = startEnd({
             io.driveVoltage(0.0)
@@ -292,17 +319,17 @@ object Shooter {
             SPEAKER(
                 PivotProfile(
                     {
-                        Rotation2d.fromDegrees(90.0) + Rotation2d.fromDegrees(kotlin.math.sin(edu.wpi.first.wpilibj.Timer.getFPGATimestamp()) * 45.0)
+                        Rotation2d.fromDegrees(150.0)
 
                     },
                     {
-                        Rotation2d.fromDegrees(kotlin.math.cos(edu.wpi.first.wpilibj.Timer.getFPGATimestamp()) * 45.0)
+                        Rotation2d()
                     }
                 )
             ),
             AMP(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(110.0) },
+                    { Rotation2d.fromDegrees(150.0) },
                     { Rotation2d() }
                 )
             ),
@@ -326,15 +353,12 @@ object Shooter {
         val io = AmpMechIOReal()
         val inputs = AmpMechIO.Inputs()
 
-        fun pivotTo(pos: Rotation2d): Command {
-            return Commands.sequence(
-                runOnce {
-                    io.pivotTo(pos)
-                },
-                WaitCommand(0.3)
-            )
+        var posReference: Rotation2d = Rotation2d(0.0)
 
-        }
+        fun pivotTo(pos: Rotation2d): Command = runOnce {
+                    Logger.recordOutput("Shooter/Amp/setpoint", pos)
+                    posReference = pos
+                }
 
         fun stow(): Command {
             return Commands.sequence(
@@ -354,6 +378,7 @@ object Shooter {
 
         override fun periodic() {
             io.updateInputs(inputs)
+            io.pivotTo(posReference)
             Logger.processInputs("Shooter/AmpMech", inputs)
         }
     }
@@ -385,11 +410,13 @@ data class PivotProfile(
 )
 
 
+//amps
+internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
 internal val SPEAKER_POSE = Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val AMP_MECH_POSITION_TOLERANCE = Rotation2d.fromDegrees(3.0)
-internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(4.0)
+internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(15.0)
 
 internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)
