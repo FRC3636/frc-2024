@@ -20,6 +20,7 @@ import edu.wpi.first.wpilibj.Preferences
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import kotlin.math.abs
 
 interface PivotIO {
     class Inputs : LoggableInputs {
@@ -103,7 +104,13 @@ class PivotIOKraken : PivotIO {
     }
     private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
 
-    private val absoluteEncoderOffset =  Rotation2d.fromRadians(2.532) + LIMIT_SWITCH_OFFSET
+    private val absoluteEncoderPosition get() = if(rawAbsoluteEncoderPosition.rotations + absoluteEncoderOffset.rotations > 0 ){
+        Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
+    } else {
+        Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
+    }
+
+    private val absoluteEncoderOffset =  Rotation2d.fromDegrees(145.632) + LIMIT_SWITCH_OFFSET
 
     init {
         val config = TalonFXConfiguration().apply{
@@ -144,14 +151,11 @@ class PivotIOKraken : PivotIO {
     private val leftLimitSwitchUnpressed = DigitalInput(1)
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
-
-        leftMotor.setPosition((rawAbsoluteEncoderPosition + absoluteEncoderOffset).rotations)
-        rightMotor.setPosition((rawAbsoluteEncoderPosition + absoluteEncoderOffset).rotations)
-
+        resetPivotToAbsoluteEncoder()
 
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
-        inputs.absoluteEncoderPosition = rawAbsoluteEncoderPosition + absoluteEncoderOffset
+        inputs.absoluteEncoderPosition = absoluteEncoderPosition
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
 
@@ -180,8 +184,9 @@ class PivotIOKraken : PivotIO {
     }
 
     override fun resetPivotToAbsoluteEncoder() {
-        leftMotor.setPosition((rawAbsoluteEncoderPosition + absoluteEncoderOffset).rotations)
-        rightMotor.setPosition((rawAbsoluteEncoderPosition + absoluteEncoderOffset).rotations)
+
+        leftMotor.setPosition(absoluteEncoderPosition.rotations)
+        rightMotor.setPosition(absoluteEncoderPosition.rotations)
     }
 
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
