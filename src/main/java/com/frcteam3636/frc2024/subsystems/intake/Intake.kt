@@ -1,7 +1,5 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
-import com.frcteam3636.frc2024.NoteHandler
-import com.frcteam3636.frc2024.NoteState
 import com.frcteam3636.frc2024.Robot
 import edu.wpi.first.wpilibj2.command.*
 import org.littletonrobotics.junction.Logger
@@ -20,7 +18,7 @@ object Intake : Subsystem {
         Logger.processInputs("Intake", inputs)
     }
 
-    fun outtakeComand() : Command {
+    fun outtakeComand(): Command {
         return startEnd(
             {
                 io.setUnderBumperRoller(-0.5)
@@ -50,7 +48,7 @@ object Intake : Subsystem {
 
     fun indexCommand(): Command {
         return Commands.sequence(
-            InstantCommand ( {io.setUnderBumperRoller(0.5)}),
+            InstantCommand({ io.setUnderBumperRoller(0.5) }),
             WaitCommand(3.0),
         ).finallyDo(Runnable {
             io.setUnderBumperRoller(0.0)

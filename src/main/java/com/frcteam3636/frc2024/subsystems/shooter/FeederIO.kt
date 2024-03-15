@@ -4,30 +4,29 @@ import com.frcteam3636.frc2024.CANSparkFlex
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.units.Measure
-import edu.wpi.first.units.Units
 import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface FeederIO {
-        class Inputs : LoggableInputs{
-            override fun toLog(table: LogTable?) {
-
-            }
-
-            override fun fromLog(table: LogTable?) {
-
-            }
+    class Inputs : LoggableInputs {
+        override fun toLog(table: LogTable?) {
 
         }
 
-        fun updateInputs(inputs: Inputs)
+        override fun fromLog(table: LogTable?) {
 
-        fun setIndexerVoltage(voltage: Measure<Voltage>)
+        }
+
+    }
+
+    fun updateInputs(inputs: Inputs)
+
+    fun setIndexerVoltage(voltage: Measure<Voltage>)
 }
 
-class FeederIOReal: FeederIO {
+class FeederIOReal : FeederIO {
 
     private val indexer =
         CANSparkFlex(REVMotorControllerId.Indexer, CANSparkLowLevel.MotorType.kBrushless)
@@ -44,7 +43,7 @@ class FeederIOReal: FeederIO {
 
 }
 
-class FeederIOSim: FeederIO {
+class FeederIOSim : FeederIO {
     override fun updateInputs(inputs: FeederIO.Inputs) {
 
     }

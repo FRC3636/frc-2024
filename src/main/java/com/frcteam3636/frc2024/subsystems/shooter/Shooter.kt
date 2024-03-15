@@ -51,15 +51,13 @@ object Shooter {
         private val ffController = SimpleMotorFeedforward(FLYWHEEL_FF_GAINS)
 
         val acceleration: Measure<Velocity<Velocity<Angle>>>
-            get(){
+            get() {
                 return inputs.leftSpeed.minus(lastVelocity).per(Second.of(Robot.period))
             }
 
 
-
-
         val aboveIntakeThreshold: Boolean
-             get() {
+            get() {
                 return Amps.of(inputs.leftCurrent.baseUnitMagnitude().pow(3)) > FLYWHEEL_INTAKE_CURRENT_THRESHOLD
             }
 
@@ -68,8 +66,8 @@ object Shooter {
             get() {
                 return (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue <
                         FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()) &&
-                (inputs.rightSpeed.minus(setpointRight).baseUnitMagnitude().absoluteValue <
-                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
+                        (inputs.rightSpeed.minus(setpointRight).baseUnitMagnitude().absoluteValue <
+                                FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
             }
 
         override fun periodic() {
@@ -86,7 +84,10 @@ object Shooter {
             Logger.recordOutput("Shooter/Flywheels/at desired velocity", atDesiredVelocity)
             Logger.recordOutput("Shooter", mechanism)
             Logger.recordOutput("Shooter/Flywheels/above current threshold", aboveIntakeThreshold)
-            Logger.recordOutput("Shooter/Flywheels/average current squared", inputs.leftCurrent.baseUnitMagnitude().pow(3))
+            Logger.recordOutput(
+                "Shooter/Flywheels/average current squared",
+                inputs.leftCurrent.baseUnitMagnitude().pow(3)
+            )
 
             io.setFlywheelVoltage(
                 Volts.of(
@@ -120,13 +121,13 @@ object Shooter {
             })
 
         fun outtake(): Command =
-        runEnd({
-            setpointLeft = RadiansPerSecond.of(30.0)
-            setpointRight = RadiansPerSecond.of(30.0)
-        }, {
-            setpointLeft = RadiansPerSecond.zero()
-            setpointRight = RadiansPerSecond.zero()
-        })
+            runEnd({
+                setpointLeft = RadiansPerSecond.of(30.0)
+                setpointRight = RadiansPerSecond.of(30.0)
+            }, {
+                setpointLeft = RadiansPerSecond.zero()
+                setpointRight = RadiansPerSecond.zero()
+            })
 
         fun intake(): Command {
             return runEnd({
@@ -158,7 +159,7 @@ object Shooter {
         }
     }
 
-    object Feeder: Subsystem {
+    object Feeder : Subsystem {
         private val io = when (Robot.model) {
             Robot.Model.SIMULATION -> FeederIOSim()
             else -> FeederIOReal()
@@ -174,7 +175,7 @@ object Shooter {
 
         fun outtakeCommand(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
-        },{
+        }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
@@ -356,9 +357,9 @@ object Shooter {
         var posReference: Rotation2d = Rotation2d(0.0)
 
         fun pivotTo(pos: Rotation2d): Command = runOnce {
-                    Logger.recordOutput("Shooter/Amp/setpoint", pos)
-                    posReference = pos
-                }
+            Logger.recordOutput("Shooter/Amp/setpoint", pos)
+            posReference = pos
+        }
 
         fun stow(): Command {
             return Commands.sequence(

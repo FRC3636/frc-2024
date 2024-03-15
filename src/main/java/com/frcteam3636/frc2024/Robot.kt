@@ -6,7 +6,6 @@ import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
-import com.frcteam3636.frc2024.subsystems.shooter.Shooter.Pivot.doDynamicSysId
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -20,7 +19,10 @@ import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
+import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -56,7 +58,7 @@ object Robot : LoggedRobot() {
 
     private fun intakeCommand(): Command = Commands.sequence(
         Intake.intakeCommand(),
-        InstantCommand({NoteHandler.setState(NoteState.HANDOFF)}),
+        InstantCommand({ NoteHandler.setState(NoteState.HANDOFF) }),
         Commands.waitUntil(Shooter.Pivot::isStowed),
         Commands.race(
             Commands.parallel(
@@ -65,14 +67,14 @@ object Robot : LoggedRobot() {
             ),
             Commands.sequence(
                 //spinning up
-                Commands.waitUntil {Shooter.Flywheels.aboveIntakeThreshold } ,
+                Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //reached velocity setpoint
-                Commands.waitUntil {!Shooter.Flywheels.aboveIntakeThreshold},
+                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
                 //contacted note
-                Commands.waitUntil {Shooter.Flywheels.aboveIntakeThreshold } ,
+                Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //note stowed
-                Commands.waitUntil {!Shooter.Flywheels.aboveIntakeThreshold},
-                InstantCommand({NoteHandler.setState(NoteState.SHOOTER)})
+                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
+                InstantCommand({ NoteHandler.setState(NoteState.SHOOTER) })
             )
         )
     )
@@ -143,23 +145,23 @@ object Robot : LoggedRobot() {
 
     private fun configureBindings() {
 
-       Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-           joystickLeft, joystickRight
-       )
+        Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+            joystickLeft, joystickRight
+        )
 
 //        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.CurrentPosition)
 
         Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
 
-          controller.leftBumper().whileTrue(
-              Commands.parallel(
-                  Intake.outtakeComand(),
-                  Shooter.Flywheels.outtake(),
-                  Shooter.Feeder.outtakeCommand()
-              ).finallyDo(Runnable{
-                  NoteHandler.setState(NoteState.NONE)
-              })
-          )
+        controller.leftBumper().whileTrue(
+            Commands.parallel(
+                Intake.outtakeComand(),
+                Shooter.Flywheels.outtake(),
+                Shooter.Feeder.outtakeCommand()
+            ).finallyDo(Runnable {
+                NoteHandler.setState(NoteState.NONE)
+            })
+        )
 
         controller.leftTrigger().debounce(0.1).whileTrue(Shooter.Pivot.followMotionProfile(null)).onFalse(
             Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
@@ -196,12 +198,12 @@ object Robot : LoggedRobot() {
                     Commands.either(
                         Shooter.Flywheels.rev(40.0, 0.0),
                         Shooter.Flywheels.rev(2.5, 0.0)
-                    ){ Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
+                    ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil { Shooter.Flywheels.atDesiredVelocity },
                         Shooter.Feeder.feedCommand().withTimeout(0.1).beforeStarting(
-                            Runnable{
-                                if(NoteHandler.state == NoteState.SHOOTER){
+                            Runnable {
+                                if (NoteHandler.state == NoteState.SHOOTER) {
                                     NoteHandler.setState(NoteState.NONE)
                                 }
                             }
@@ -226,11 +228,13 @@ object Robot : LoggedRobot() {
         //Drive if triggered joystickLeft input
 
         Trigger(
-            joystickLeft::getTrigger)
-            .whileTrue(Drivetrain.driveWithJoystickPointingTowards(
+            joystickLeft::getTrigger
+        )
+            .whileTrue(
+                Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft, OrientationTarget.Speaker.position
                 )
-        )
+            )
 
         JoystickButton(joystickLeft, 8).onTrue(
             InstantCommand({
@@ -270,6 +274,7 @@ object Robot : LoggedRobot() {
     enum class Model {
         SIMULATION, PRACTICE, COMPETITION,
     }
+
     // The model of this robot.
     val model: Model = if (RobotBase.isSimulation()) {
         Model.SIMULATION
@@ -290,7 +295,7 @@ object NoteHandler {
 
     private val publisher = NetworkTableInstance.getDefault().getTopic("RGB/NoteState").genericPublish("int")
 
-    fun setState(state: NoteState){
+    fun setState(state: NoteState) {
         this.state = state
         publisher.setInteger(state.index)
         Logger.recordOutput("Robot/NoteState", state.name)
@@ -298,7 +303,7 @@ object NoteHandler {
 
 }
 
-enum class NoteState(val index: Long ) {
+enum class NoteState(val index: Long) {
     NONE(0),
     HANDOFF(1),
     SHOOTER(2)

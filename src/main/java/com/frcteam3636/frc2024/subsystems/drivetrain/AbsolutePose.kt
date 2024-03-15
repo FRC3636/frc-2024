@@ -6,9 +6,13 @@ import edu.wpi.first.math.Matrix
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
 import edu.wpi.first.math.geometry.Pose3d
+import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Transform3d
+import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.numbers.N1
 import edu.wpi.first.math.numbers.N3
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.util.struct.Struct
 import edu.wpi.first.util.struct.StructSerializable
 import org.littletonrobotics.junction.LogTable
@@ -37,7 +41,36 @@ interface AbsolutePoseIO {
     fun updateInputs(inputs: Inputs)
 }
 
-class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
+class LimelightPoseIOReal(name: String, chassisToCamera: Transform3d) : AbsolutePoseIO {
+    val table = NetworkTableInstance
+        .getDefault()
+        .getTable("limelight")
+    val stddev = VecBuilder.fill(.7, .7, 9999999.0)
+    override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+        val estimatedPoseData = table.getEntry("botpose_wpiblue")
+            .getDoubleArray(DoubleArray(6))
+        val timestamp = table.getEntry("ts").getDouble(0.0)
+        val estimatedPose = Pose3d(
+            Translation3d(
+                estimatedPoseData[0],
+                estimatedPoseData[1],
+                estimatedPoseData[2]
+            ),
+            Rotation3d(
+                Units.radiansToDegrees(estimatedPoseData[3]),
+                Units.radiansToDegrees(estimatedPoseData[4]),
+                Units.radiansToDegrees(estimatedPoseData[5])
+            )
+        )
+        inputs.measurement = AbsolutePoseMeasurement(
+            estimatedPose,
+            timestamp,
+            stddev
+        )
+    }
+}
+
+class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) : AbsolutePoseIO {
     private val estimator =
         PhotonPoseEstimator(
             APRIL_TAG_FIELD_LAYOUT,
@@ -46,7 +79,7 @@ class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) {
             chassisToCamera
         )
 
-    fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+    override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
         inputs.measurement = null
         estimator.update().ifPresent {
             inputs.measurement = AbsolutePoseMeasurement(

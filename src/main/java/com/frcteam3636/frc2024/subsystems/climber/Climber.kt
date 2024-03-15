@@ -6,7 +6,10 @@ import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Commands
+import edu.wpi.first.wpilibj2.command.FunctionalCommand
+import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
 
 object Climber : Subsystem {
@@ -32,10 +35,10 @@ object Climber : Subsystem {
     }
 
     fun setClimberCommand(speed: Double): Command {
-        return runEnd( {
+        return runEnd({
             io.setNeutral(NeutralModeValue.Coast)
             io.moveClimber(speed)
-        },{
+        }, {
             io.moveClimber(0.0)
             io.setNeutral(NeutralModeValue.Brake)
         }

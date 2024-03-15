@@ -6,7 +6,6 @@ import com.kauailabs.navx.frc.AHRS
 import edu.wpi.first.math.geometry.Rotation3d
 import edu.wpi.first.math.geometry.Translation2d
 import org.littletonrobotics.junction.Logger
-import kotlin.math.PI
 import kotlin.math.sign
 
 interface Gyro {
