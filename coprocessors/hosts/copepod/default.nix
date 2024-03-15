@@ -11,6 +11,17 @@
     };
     kernelModules = [ "spidev" ];
   };
+  systemd.user.services.rgb-2024 = {
+    description = "RGB LED strip driver";
+    wantedBy = [ "multi-user.target" ];
+    after = [ "network.target" ];
+
+    serviceConfig = {
+      type = "simple";
+      ExecStart = "${pkgs.rgb-2024}/bin/rgb-2024";
+      Restart = "on-failure";
+    };
+  };
 
   hardware = {
     raspberry-pi."4".apply-overlays-dtmerge.enable = true;
