@@ -9,18 +9,18 @@ import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
-import com.frcteam3636.frc2024.utils.math.*
-import com.revrobotics.SparkAbsoluteEncoder
+import com.frcteam3636.frc2024.utils.math.MotorFFGains
+import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.motorFFGains
+import com.frcteam3636.frc2024.utils.math.pidGains
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.DutyCycleEncoder
-import edu.wpi.first.wpilibj.Preferences
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import kotlin.math.abs
 
 interface PivotIO {
     class Inputs : LoggableInputs {
@@ -99,26 +99,27 @@ class PivotIOKraken : PivotIO {
 
     private val rightMotor = TalonFX(CTREMotorControllerId.RightPivotMotor)
 
-    private val absoluteEncoder = DutyCycleEncoder(DigitalInput(2)).apply{
+    private val absoluteEncoder = DutyCycleEncoder(DigitalInput(2)).apply {
         distancePerRotation = SENSOR_TO_PIVOT_RATIO
     }
     private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
 
-    private val absoluteEncoderPosition get() = if(rawAbsoluteEncoderPosition.rotations + absoluteEncoderOffset.rotations > 0 ){
-        Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
-    } else {
-        Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
-    }
+    private val absoluteEncoderPosition
+        get() = if (rawAbsoluteEncoderPosition.rotations + absoluteEncoderOffset.rotations > 0) {
+            Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
+        } else {
+            Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
+        }
 
-    private val absoluteEncoderOffset =  Rotation2d.fromDegrees(145.632) + LIMIT_SWITCH_OFFSET
+    private val absoluteEncoderOffset = Rotation2d.fromDegrees(145.632) + LIMIT_SWITCH_OFFSET
 
     init {
-        val config = TalonFXConfiguration().apply{
+        val config = TalonFXConfiguration().apply {
             MotorOutput.apply {
                 NeutralMode = NeutralModeValue.Brake
             }
 
-            Feedback.apply{
+            Feedback.apply {
                 SensorToMechanismRatio = GEAR_RATIO
                 FeedbackRotorOffset = 0.0
             }
@@ -138,7 +139,8 @@ class PivotIOKraken : PivotIO {
         }
 
         config.MotorOutput.Inverted = InvertedValue.CounterClockwise_Positive
-        leftMotor.configurator.apply(config
+        leftMotor.configurator.apply(
+            config
         )
 
         config.MotorOutput.Inverted = InvertedValue.Clockwise_Positive
@@ -206,8 +208,20 @@ class PivotIOKraken : PivotIO {
     }
 
     override fun setBrakeMode(enabled: Boolean) {
-        leftMotor.setNeutralMode(if (enabled) { NeutralModeValue.Brake } else { NeutralModeValue.Coast })
-        rightMotor.setNeutralMode(if (enabled) { NeutralModeValue.Brake } else { NeutralModeValue.Coast })
+        leftMotor.setNeutralMode(
+            if (enabled) {
+                NeutralModeValue.Brake
+            } else {
+                NeutralModeValue.Coast
+            }
+        )
+        rightMotor.setNeutralMode(
+            if (enabled) {
+                NeutralModeValue.Brake
+            } else {
+                NeutralModeValue.Coast
+            }
+        )
     }
 
     override fun driveVoltage(volts: Double) {

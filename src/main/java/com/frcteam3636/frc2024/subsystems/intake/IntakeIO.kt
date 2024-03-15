@@ -1,7 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
 import com.frcteam3636.frc2024.CANSparkFlex
-import com.frcteam3636.frc2024.CANSparkMax
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.Robot
 import com.revrobotics.CANSparkLowLevel
@@ -48,7 +47,7 @@ interface IntakeIO {
 }
 
 class IntakeIOReal : IntakeIO {
-//    private var otbRollers =
+    //    private var otbRollers =
 //        CANSparkMax(
 //            REVMotorControllerId.OverTheBumperIntakeFeed,
 //            CANSparkLowLevel.MotorType.kBrushless
@@ -60,7 +59,7 @@ class IntakeIOReal : IntakeIO {
             REVMotorControllerId.UnderTheBumperIntakeRoller,
             CANSparkLowLevel.MotorType.kBrushless
         )
-   private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
+    private var beamBreakSensor: DigitalInput = DigitalInput(Constants.BEAM_BREAK_PORT)
 
     override fun updateInputs(inputs: IntakeIO.IntakeInputs) {
 //        inputs.otbRollerVelocity = Rotation2d(otbRollers.encoder.velocity)

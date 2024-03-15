@@ -31,7 +31,7 @@ interface ClimberIO {
 
     fun moveClimber(speed: Double)
 
-   fun setNeutral(mode: NeutralModeValue) {}
+    fun setNeutral(mode: NeutralModeValue) {}
 }
 
 class ClimberIOSim : ClimberIO {

@@ -75,7 +75,7 @@ class FlywheelIOReal : FlywheelIO {
         inputs.leftVoltage = leftSpark.busVoltage * leftSpark.appliedOutput
         inputs.rightVoltage = rightSpark.busVoltage * rightSpark.appliedOutput
 
-        inputs.leftCurrent = Amps.of(leftSpark.outputCurrent )
+        inputs.leftCurrent = Amps.of(leftSpark.outputCurrent)
         inputs.rightCurrent = Amps.of(rightSpark.outputCurrent)
 
         inputs.leftPos = Radians.of(leftSpark.encoder.position)
