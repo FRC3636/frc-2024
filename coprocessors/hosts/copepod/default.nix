@@ -17,7 +17,7 @@
     after = [ "network.target" ];
 
     serviceConfig = {
-      type = "simple";
+      Type = "simple";
       ExecStart = "${pkgs.rgb-2024}/bin/rgb-2024";
       Restart = "on-failure";
     };
