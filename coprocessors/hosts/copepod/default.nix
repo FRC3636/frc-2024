@@ -15,11 +15,16 @@
     description = "RGB LED strip driver";
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
-
+    unitConfig = {
+      # Allow infinite restarts
+      StartLimitIntervalSec = "0";
+    };
     serviceConfig = {
       Type = "simple";
       ExecStart = "${pkgs.rgb-2024}/bin/rgb-2024";
       Restart = "on-failure";
+
+      RestartSec = 3;
     };
   };
 

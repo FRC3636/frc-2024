@@ -222,11 +222,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1710479061,
-        "narHash": "sha256-Zuyx72EBNz8rfVY21EPxmwGfKoKQNVA6nwWhxQGOcKQ=",
+        "lastModified": 1710535110,
+        "narHash": "sha256-J5aDYRPLgWXIgiEsoq4yC1OIMjOeMoYprBW0+nkhhMs=",
         "owner": "FRC3636",
         "repo": "rgb-2024",
-        "rev": "264a2097f88177bd69cff304c09ee990772c46bf",
+        "rev": "a0fe190ce1073020354cd9c91f18046dc3e200e9",
         "type": "github"
       },
       "original": {
