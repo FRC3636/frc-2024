@@ -24,14 +24,8 @@ enum class REVMotorControllerId(val num: Int) {
     Indexer(13),
     AmpMech(14),
 
-
     OverTheBumperIntakeFeed(20),
     UnderTheBumperIntakeRoller(21),
-
-    ClimberMotor(34),
-
-    RightPivotMotor(32),
-    LeftPivotMotor(31),
 }
 
 fun CANSparkMax(id: REVMotorControllerId, type: CANSparkLowLevel.MotorType) =
