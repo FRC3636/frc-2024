@@ -33,60 +33,124 @@
     deviceTree = {
       enable = true;
       filter = "*rpi-4-*.dtb";
-      overlays = [{
-        name = "spi";
-        dtsText = ''
-                  /dts-v1/;
-          /plugin/;
+      overlays = [
+        {
+          name = "spi0";
+          dtsText = ''
+            /dts-v1/;
+            /plugin/;
 
-          / {
-          	compatible = "raspberrypi";
-          	fragment@0 {
-          		target = <&spi>;
-          		__overlay__ {
-          			cs-gpios = <&gpio 8 1>, <&gpio 7 1>;
-          			status = "okay";
-          			pinctrl-names = "default";
-          			pinctrl-0 = <&spi0_pins &spi0_cs_pins>;
-          			#address-cells = <1>;
-          			#size-cells = <0>;
-          			spidev@0 {
-          				reg = <0>;	// CE0
-          				spi-max-frequency = <500000>;
-          				compatible = "spidev";
-          			};
+            / {
+            	compatible = "raspberrypi";
+            	fragment@0 {
+            		target = <&spi>;
+            		__overlay__ {
+            			cs-gpios = <&gpio 8 1>, <&gpio 7 1>;
+            			status = "okay";
+            			pinctrl-names = "default";
+            			pinctrl-0 = <&spi0_pins &spi0_cs_pins>;
+            			#address-cells = <1>;
+            			#size-cells = <0>;
+            			spidev@0 {
+            				reg = <0>;	// CE0
+            				spi-max-frequency = <500000>;
+            				compatible = "spidev";
+            			};
 
-          			spidev@1 {
-          				reg = <1>;	// CE1
-          				spi-max-frequency = <500000>;
-          				compatible = "spidev";
-          			};
-          		};
-          	};
-                  fragment@1 {
-          		target = <&alt0>;
-          		__overlay__ {
-          			// Drop GPIO 7, SPI 8-11
-          			brcm,pins = <4 5>;
-          		};
-          	};
+            			spidev@1 {
+            				reg = <1>;	// CE1
+            				spi-max-frequency = <500000>;
+            				compatible = "spidev";
+            			};
+            		};
+            	};
+              fragment@1 {
+            		target = <&alt0>;
+            		__overlay__ {
+            			// Drop GPIO 7, SPI 8-11
+            			brcm,pins = <4 5>;
+            		};
+            	};
 
-          	fragment@2 {
-          		target = <&gpio>;
-          		__overlay__ {
-          			spi0_pins: spi0_pins {
-          				brcm,pins = <9 10 11>;
-          				brcm,function = <4>; // alt0
-          			};
-          			spi0_cs_pins: spi0_cs_pins {
-          				brcm,pins = <8 7>;
-          				brcm,function = <1>; // out
-          			};
-          		};
-          	};
-          };
-        '';
-      }];
+            	fragment@2 {
+            		target = <&gpio>;
+            		__overlay__ {
+            			spi0_pins: spi0_pins {
+            				brcm,pins = <9 10 11>;
+            				brcm,function = <4>; // alt0
+            			};
+            			spi0_cs_pins: spi0_cs_pins {
+            				brcm,pins = <8 7>;
+            				brcm,function = <1>; // out
+            			};
+            		};
+            	};
+            };
+          '';
+        }
+				{
+          name = "spi1";
+          dtsText = ''
+            /dts-v1/;
+            /plugin/;
+
+
+            / {
+            	compatible = "raspberrypi";
+
+            	fragment@0 {
+            		target = <&gpio>;
+            		__overlay__ {
+            			spi1_pins: spi1_pins {
+            				brcm,pins = <19 20 21>;
+            				brcm,function = <3>; /* alt4 */
+            			};
+
+            			spi1_cs_pins: spi1_cs_pins {
+            				brcm,pins = <18>;
+            				brcm,function = <1>; /* output */
+            			};
+            		};
+            	};
+
+            	fragment@1 {
+            		target = <&spi1>;
+            		frag1: __overlay__ {
+            			/* needed to avoid dtc warning */
+            			#address-cells = <1>;
+            			#size-cells = <0>;
+            			pinctrl-names = "default";
+            			pinctrl-0 = <&spi1_pins &spi1_cs_pins>;
+            			cs-gpios = <&gpio 18 1>;
+            			status = "okay";
+
+            			spidev1_0: spidev@0 {
+            				compatible = "spidev";
+            				reg = <0>;      /* CE0 */
+            				#address-cells = <1>;
+            				#size-cells = <0>;
+            				spi-max-frequency = <500000>;
+            				status = "okay";
+            			};
+            		};
+            	};
+
+            	fragment@2 {
+            		target = <&aux>;
+            		__overlay__ {
+            			status = "okay";
+            		};
+            	};
+
+            	__overrides__ {
+            		cs0_pin  = <&spi1_cs_pins>,"brcm,pins:0",
+            			   <&frag1>,"cs-gpios:4";
+            		cs0_spidev = <&spidev1_0>,"status";
+            	};
+            };
+          '';
+        }
+      ];
     };
   };
 
@@ -94,10 +158,11 @@
   users.groups.gpio = { };
 
   services.udev.extraRules = ''
-    SUBSYSTEM=="spidev", KERNEL=="spidev0.0", GROUP="spi", MODE="0660"
-    SUBSYSTEM=="bcm2835-gpiomem", KERNEL=="gpiomem", GROUP="gpio",MODE="0660"
-    SUBSYSTEM=="gpio", KERNEL=="gpiochip*", ACTION=="add", RUN+="${pkgs.bash}/bin/bash -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'"
-    SUBSYSTEM=="gpio", KERNEL=="gpio*", ACTION=="add",RUN+="${pkgs.bash}/bin/bash -c 'chown root:gpio /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value ; chmod 660 /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value'"
+		SUBSYSTEM=="spidev", KERNEL=="spidev0.0", GROUP="spi", MODE="0660"
+		SUBSYSTEM=="spidev", KERNEL=="spidev1.0", GROUP="spi", MODE="0660"
+		SUBSYSTEM=="bcm2835-gpiomem", KERNEL=="gpiomem", GROUP="gpio",MODE="0660"
+		SUBSYSTEM=="gpio", KERNEL=="gpiochip*", ACTION=="add", RUN+="${pkgs.bash}/bin/bash -c 'chown root:gpio /sys/class/gpio/export /sys/class/gpio/unexport ; chmod 220 /sys/class/gpio/export /sys/class/gpio/unexport'"
+		SUBSYSTEM=="gpio", KERNEL=="gpio*", ACTION=="add",RUN+="${pkgs.bash}/bin/bash -c 'chown root:gpio /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value ; chmod 660 /sys%p/active_low /sys%p/direction /sys%p/edge /sys%p/value'"
   '';
 
   networking = {
