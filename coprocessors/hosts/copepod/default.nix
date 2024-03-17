@@ -11,7 +11,7 @@
     };
     kernelModules = [ "spidev" ];
   };
-  systemd.user.services.rgb-2024 = {
+  systemd.services.rgb-2024 = {
     description = "RGB LED strip driver";
     wantedBy = [ "multi-user.target" ];
     after = [ "network.target" ];
