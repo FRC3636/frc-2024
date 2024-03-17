@@ -65,37 +65,36 @@ object Drivetrain : Subsystem {
     private val dawg = Watchdog(Robot.period) {}
 
     private val absolutePoseIOs = mapOf(
-        "Fljorg" to PhotonVisionPoseIOReal(
-            "fljorg",
-            Transform3d(
-                Translation3d(0.1175, 0.3175, 0.0),
-                Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0)
-            )
-        ),
-        "Bloop" to PhotonVisionPoseIOReal(
-            "bloop",
-            Transform3d(
-                Translation3d(-0.1175, 0.3175, 0.0),
-                Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0)
-            )
-        ),
-        "Freedom" to PhotonVisionPoseIOReal(
-            "freedom",
-            Transform3d(
-                Translation3d(0.1175, -0.3175, 0.0),
-                Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0)
-            )
-        ),
-        "Brack" to PhotonVisionPoseIOReal(
-            "brack",
-            Transform3d(
-                Translation3d(-0.1175, -0.3175, 0.0),
-                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
-            )
-        ),
+//        "Fljorg" to PhotonVisionPoseIOReal(
+//            "fljorg",
+//            Transform3d(
+//                Translation3d(0.1175, 0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Bloop" to PhotonVisionPoseIOReal(
+//            "bloop",
+//            Transform3d(
+//                Translation3d(-0.1175, 0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Freedom" to PhotonVisionPoseIOReal(
+//            "freedom",
+//            Transform3d(
+//                Translation3d(0.1175, -0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Brack" to PhotonVisionPoseIOReal(
+//            "brack",
+//            Transform3d(
+//                Translation3d(-0.1175, -0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
         "Limelight" to LimelightPoseIOReal(
             "limelight",
-            Transform3d()
         )
     ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
 
@@ -112,7 +111,7 @@ object Drivetrain : Subsystem {
             inputs.measuredPositions.toTypedArray(), // initial module positions
             Pose2d(), // initial pose
             WHEEL_ODOMETRY_STD_DEV,
-            VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
+            VecBuilder.fill(0.7, 0.7, 999999.0) //will be overwritten be each added vision measurement
         )
 
     init {
@@ -133,6 +132,7 @@ object Drivetrain : Subsystem {
             { DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red) },
             this
         )
+
     }
 
     override fun periodic() {
@@ -141,31 +141,27 @@ object Drivetrain : Subsystem {
 
 
         io.updateInputs(inputs)
-        dawg.addEpoch("Update inputs")
         Logger.processInputs("Drivetrain", inputs)
-        Logger.recordOutput("UpdataInputs", dawg.time)
-        dawg.addEpoch("Process Inputs")
 
         absolutePoseIOs.forEach { (name, ioPair) ->
             val (io, inputs) = ioPair
 
             io.updateInputs(inputs)
             Logger.processInputs("Absolute Pose/$name", inputs)
-
+            Logger.recordOutput("Absolute Pose/$name/Is Null", inputs.measurement == null)
 
             inputs.measurement?.let {
                 poseEstimator.addAbsolutePoseMeasurement(it)
+                Logger.recordOutput("Drivetrain/Last added vision pose", it.pose)
             }
+
         }
-        dawg.addEpoch("VisionInputs")
-
-
 
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
-        dawg.addEpoch("update pose estimator")
+
 
         Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
         Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
@@ -275,8 +271,10 @@ object Drivetrain : Subsystem {
         return run {
             val magnitude = rotationPIDController.calculate(
                 estimatedPose.rotation.radians,
-                target.minus(estimatedPose.translation).angle.radians
+                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
             )
+            Logger.recordOutput("Rotational Target Setpoint", target.minus(estimatedPose.translation).angle.radians - (TAU / 2))
+            Logger.recordOutput("Rotational Target Error", target.minus(estimatedPose.translation).angle.radians - (TAU / 2) - estimatedPose.rotation.radians)
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
                 -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
@@ -423,7 +421,7 @@ internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
 internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
-internal val ROTATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
+internal val ROTATION_PID_GAINS = PIDGains(0.8, 0.0, 0.0)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =

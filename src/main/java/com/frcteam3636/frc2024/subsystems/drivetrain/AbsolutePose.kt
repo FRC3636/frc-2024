@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.drivetrain
 
+import com.frcteam3636.frc2024.LimelightHelpers
 import edu.wpi.first.apriltag.AprilTagFieldLayout
 import edu.wpi.first.apriltag.AprilTagFields
 import edu.wpi.first.math.Matrix
@@ -15,7 +16,9 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.util.struct.Struct
 import edu.wpi.first.util.struct.StructSerializable
+import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.LogTable
+import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import org.photonvision.PhotonCamera
 import org.photonvision.PhotonPoseEstimator
@@ -41,33 +44,44 @@ interface AbsolutePoseIO {
     fun updateInputs(inputs: Inputs)
 }
 
-class LimelightPoseIOReal(name: String, chassisToCamera: Transform3d) : AbsolutePoseIO {
-    val table = NetworkTableInstance
+class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
+    private val table = NetworkTableInstance
         .getDefault()
         .getTable("limelight")
-    val stddev = VecBuilder.fill(.7, .7, 9999999.0)
+    private val stddev = VecBuilder.fill(.7, .7, 9999999.0)
+
+    private val botPose = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(null)
+    private val cl = table.getDoubleTopic("cl").subscribe(0.0)
+    private val tl = table.getDoubleTopic("tl").subscribe(0.0)
+
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
-        val estimatedPoseData = table.getEntry("botpose_wpiblue")
-            .getDoubleArray(DoubleArray(6))
-        val timestamp = table.getEntry("ts").getDouble(0.0)
-        val estimatedPose = Pose3d(
-            Translation3d(
-                estimatedPoseData[0],
-                estimatedPoseData[1],
-                estimatedPoseData[2]
-            ),
-            Rotation3d(
-                Units.radiansToDegrees(estimatedPoseData[3]),
-                Units.radiansToDegrees(estimatedPoseData[4]),
-                Units.radiansToDegrees(estimatedPoseData[5])
-            )
-        )
-        inputs.measurement = AbsolutePoseMeasurement(
-            estimatedPose,
-            timestamp,
-            stddev
-        )
+        inputs.measurement = botPose.readQueue().lastOrNull()?.let {update ->
+            val x = update.value[0]
+            val y = update.value[1]
+            val z = update.value[2]
+            val roll = Units.degreesToRadians(update.value[3])
+            val pitch = Units.degreesToRadians(update.value[4])
+            val yaw = Units.degreesToRadians(update.value[5])
+            val tagCount = update.value[7]
+
+            if (tagCount == 0.0) {
+                return
+            }
+
+            val latency = cl.get() + tl.get()
+
+            AbsolutePoseMeasurement(
+                pose = Pose3d(Translation3d(x, y, z), Rotation3d(roll, pitch, yaw)),
+                timestamp = Timer.getFPGATimestamp(),
+//                (update.timestamp * 1e-6) * (latency * 1e-3),
+                stdDeviation = stddev
+            ).also {
+                Logger.recordOutput("Drivetrain/Limelight pose", it.pose)
+                Logger.recordOutput("Drivetrain/Limelight tag count", tagCount)
+            }
+        }
     }
+
 }
 
 class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) : AbsolutePoseIO {
