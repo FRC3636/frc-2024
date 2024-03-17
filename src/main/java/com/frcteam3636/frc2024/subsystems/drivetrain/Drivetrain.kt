@@ -17,7 +17,10 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig
 import com.pathplanner.lib.util.ReplanningConfig
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
-import edu.wpi.first.math.geometry.*
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Rotation3d
+import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
@@ -35,7 +38,6 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
-import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -267,21 +269,17 @@ object Drivetrain : Subsystem {
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
         val rotationPIDController = PIDController(ROTATION_PID_GAINS)
         return run {
-            val setpoint = target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
-            val correctedSetpoint = if (setpoint > 0) {
-                setpoint
-            } else {
-                setpoint + TAU
-            }
-
-            val correctCurrent = if (estimatedPose.rotation.radians > 0) {
-                estimatedPose.rotation.radians
-            } else {
-                estimatedPose.rotation.radians + TAU
-            }
             val magnitude = rotationPIDController.calculate(
-                correctCurrent,
-                correctedSetpoint
+                estimatedPose.rotation.radians,
+                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
+            )
+            Logger.recordOutput(
+                "Rotational Target Setpoint",
+                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
+            )
+            Logger.recordOutput(
+                "Rotational Target Error",
+                target.minus(estimatedPose.translation).angle.radians - (TAU / 2) - estimatedPose.rotation.radians
             )
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -299,9 +297,7 @@ object Drivetrain : Subsystem {
     }
 
     fun pathfindToPose(target: Pose2d): Command =
-        AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0).apply{
-            addRequirements(Drivetrain)
-        }
+        AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
 }
 
 abstract class DrivetrainIO {

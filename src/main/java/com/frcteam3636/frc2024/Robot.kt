@@ -145,7 +145,7 @@ object Robot : LoggedRobot() {
     private fun configureBindings() {
 
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-            joystickLeft,joystickRight
+            joystickLeft, joystickRight
         )
 
         Shooter.Feeder.defaultCommand = Shooter.Feeder.pulseCommand()

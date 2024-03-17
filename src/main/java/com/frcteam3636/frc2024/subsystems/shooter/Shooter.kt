@@ -6,7 +6,9 @@ import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.WHITE
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.utils.math.*
+import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Angle
@@ -22,12 +24,11 @@ import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine
 import org.littletonrobotics.junction.Logger
+import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan
 import kotlin.math.pow
-import edu.wpi.first.math.geometry.Translation2d
-import edu.wpi.first.math.geometry.Pose2d
 
 object Shooter {
 
@@ -69,8 +70,10 @@ object Shooter {
             get() {
                 val velocityDifference = (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue)
                 Logger.recordOutput("Shooter/Flywheels/velocity difference", velocityDifference)
-                Logger.recordOutput("shooter/Flywheels/at deired velocirty", velocityDifference <
-                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
+                Logger.recordOutput(
+                    "shooter/Flywheels/at deired velocirty", velocityDifference <
+                            FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()
+                )
                 return velocityDifference <
                         FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude() && inputs.leftSpeed > RadiansPerSecond.of(30.0)
             }
@@ -183,6 +186,7 @@ object Shooter {
         }, {
             io.setIndexerVoltage(Volts.zero())
         }, this)
+
         fun outtakeCommand(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
         }, {
@@ -322,12 +326,13 @@ object Shooter {
                             Rotation2d()
                         )
                         Logger.recordOutput("Drivetrain/Speaker Vector", speakerPose)
-                        val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation).minus(Translation2d(0.3, 0.0)).norm
+                        val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
+                            .minus(Translation2d(0.3, 0.0)).norm
 
                         Logger.recordOutput("Drivetrain/distance to speaker", distance)
                         val targetHeight = SPEAKER_POSE.z
                         Logger.recordOutput("Drivetrain/Speaker height", targetHeight)
-                        Rotation2d((TAU / 2)  - atan(targetHeight / distance))
+                        Rotation2d((TAU / 2) - atan(targetHeight / distance))
                     },
                     { Rotation2d() }
                 )
@@ -431,10 +436,9 @@ data class PivotProfile(
 
 //amps
 internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
-val SPEAKER_POSE = when(DriverStation.getAlliance().get()) {
-    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(89.0))
-    DriverStation.Alliance.Blue -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(89.0))
-    else -> Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
+val SPEAKER_POSE = when (DriverStation.getAlliance().getOrNull()) {
+    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(84.5))
+    else -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(84.5))
 }
 
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
