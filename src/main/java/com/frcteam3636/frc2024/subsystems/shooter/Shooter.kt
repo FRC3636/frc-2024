@@ -14,6 +14,7 @@ import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Velocity
 import edu.wpi.first.units.Voltage
+import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj.sysid.SysIdRoutineLog
@@ -25,6 +26,8 @@ import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan
 import kotlin.math.pow
+import edu.wpi.first.math.geometry.Translation2d
+import edu.wpi.first.math.geometry.Pose2d
 
 object Shooter {
 
@@ -64,10 +67,12 @@ object Shooter {
 
         val atDesiredVelocity: Boolean
             get() {
-                return (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue <
-                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()) &&
-                        (inputs.rightSpeed.minus(setpointRight).baseUnitMagnitude().absoluteValue <
-                                FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
+                val velocityDifference = (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue)
+                Logger.recordOutput("Shooter/Flywheels/velocity difference", velocityDifference)
+                Logger.recordOutput("shooter/Flywheels/at deired velocirty", velocityDifference <
+                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude())
+                return velocityDifference <
+                        FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude() && inputs.leftSpeed > RadiansPerSecond.of(30.0)
             }
 
         override fun periodic() {
@@ -113,8 +118,8 @@ object Shooter {
             runEnd({
                 val tangentialVelocity = spin * FLYWHEEL_SIDE_SEPERATION / 2.0
 
-                setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity) / FLYWHEEL_RADIUS)
-                setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity) / FLYWHEEL_RADIUS)
+                setpointLeft = RadiansPerSecond.of((velocity - tangentialVelocity))
+                setpointRight = RadiansPerSecond.of((velocity + tangentialVelocity))
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
@@ -180,7 +185,7 @@ object Shooter {
         })
 
         fun feedCommand(): Command = Commands.runEnd({
-            io.setIndexerVoltage(Volts.of(10.0))
+            io.setIndexerVoltage(Volts.of(-10.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
@@ -209,7 +214,6 @@ object Shooter {
 
             armLigament.angle = inputs.leftPosition.degrees
 
-
             Logger.recordOutput("Shooter/IsStowed", isStowed())
             Logger.recordOutput("Shooter", mechanism)
         }
@@ -232,7 +236,7 @@ object Shooter {
 
         fun isStowed(): Boolean {
 
-            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(1.3).radians)
+            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(2.5).radians)
         }
 
 
@@ -307,9 +311,18 @@ object Shooter {
             AIM(
                 PivotProfile(
                     {
-                        val distance = SPEAKER_POSE.toTranslation2d().minus(Drivetrain.estimatedPose.translation).norm
+
+                        val speakerPose = Pose2d(
+                            Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
+                            Rotation2d()
+                        )
+                        Logger.recordOutput("Drivetrain/Speaker Vector", speakerPose)
+                        val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation).minus(Translation2d(0.3, 0.0)).norm
+
+                        Logger.recordOutput("Drivetrain/distance to speaker", distance)
                         val targetHeight = SPEAKER_POSE.z
-                        Rotation2d(atan(targetHeight / distance))
+                        Logger.recordOutput("Drivetrain/Speaker height", targetHeight)
+                        Rotation2d((TAU / 2)  - atan(targetHeight / distance))
                     },
                     { Rotation2d() }
                 )
@@ -330,7 +343,7 @@ object Shooter {
             ),
             AMP(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(150.0) },
+                    { Rotation2d.fromDegrees(101.0) },
                     { Rotation2d() }
                 )
             ),
@@ -413,11 +426,16 @@ data class PivotProfile(
 
 //amps
 internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
-internal val SPEAKER_POSE = Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
+val SPEAKER_POSE = when(DriverStation.getAlliance().get()) {
+    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(84.5))
+    DriverStation.Alliance.Blue -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(84.5))
+    else -> Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
+}
+
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val AMP_MECH_POSITION_TOLERANCE = Rotation2d.fromDegrees(3.0)
-internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(15.0)
+internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(13.0)
 
 internal val FLYWHEEL_RADIUS = Units.inchesToMeters(1.5)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)

@@ -5,6 +5,7 @@ import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.OrientationTarget
 import com.frcteam3636.frc2024.subsystems.intake.Intake
+import com.frcteam3636.frc2024.subsystems.shooter.SPEAKER_POSE
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
@@ -19,10 +20,7 @@ import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
-import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.InstantCommand
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -63,6 +61,7 @@ object Robot : LoggedRobot() {
         Commands.race(
             Commands.parallel(
                 Intake.indexCommand(),
+                Shooter.Feeder.intakeCommand(),
                 Shooter.Flywheels.intake(),
             ),
             Commands.sequence(
@@ -146,7 +145,17 @@ object Robot : LoggedRobot() {
     private fun configureBindings() {
 
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
-            joystickLeft, joystickRight
+            joystickLeft,joystickRight
+        )
+
+        JoystickButton(joystickLeft, 2).whileTrue(
+            Drivetrain.driveWithJoystickPointingTowards(joystickLeft, SPEAKER_POSE.toTranslation2d())
+        ).onFalse(
+            InstantCommand({
+                Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(
+                    joystickLeft, joystickRight
+                )
+            })
         )
 
 //        Shooter.Pivot.defaultCommand = Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.CurrentPosition)
@@ -168,7 +177,7 @@ object Robot : LoggedRobot() {
         )
 
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 
         controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
@@ -181,10 +190,14 @@ object Robot : LoggedRobot() {
                 intakeCommand()
             )
 
-        controller.x().onTrue(
-            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(200.0))
-        ).onFalse(
-            Shooter.Amp.stow()
+//        controller.x().onTrue(
+//            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(200.0))
+//        ).onFalse(
+//            Shooter.Amp.stow()
+//        )
+
+        controller.x().whileTrue(
+            Shooter.Feeder.feedCommand()
         )
 
 
@@ -196,12 +209,13 @@ object Robot : LoggedRobot() {
             .whileTrue(
                 Commands.parallel(
                     Commands.either(
-                        Shooter.Flywheels.rev(40.0, 0.0),
+                        Shooter.Flywheels.rev(590.0, 0.0),
                         Shooter.Flywheels.rev(2.5, 0.0)
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil { Shooter.Flywheels.atDesiredVelocity },
-                        Shooter.Feeder.feedCommand().withTimeout(0.1).beforeStarting(
+                        PrintCommand("arrived at target velocity"),
+                        Shooter.Feeder.feedCommand().withTimeout(0.4).beforeStarting(
                             Runnable {
                                 if (NoteHandler.state == NoteState.SHOOTER) {
                                     NoteHandler.setState(NoteState.NONE)
