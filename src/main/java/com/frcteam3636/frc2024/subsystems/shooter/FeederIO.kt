@@ -18,7 +18,6 @@ interface FeederIO {
         override fun fromLog(table: LogTable?) {
 
         }
-
     }
 
     fun updateInputs(inputs: Inputs)
@@ -30,7 +29,6 @@ class FeederIOReal : FeederIO {
 
     private val indexer = CANSparkFlex(REVMotorControllerId.Indexer, CANSparkLowLevel.MotorType.kBrushless)
 
-
     override fun updateInputs(inputs: FeederIO.Inputs) {
 
     }
@@ -39,7 +37,6 @@ class FeederIOReal : FeederIO {
         indexer.setVoltage(voltage.baseUnitMagnitude())
         Logger.recordOutput("Shooter/Flywheels/Indexer Voltage", voltage)
     }
-
 }
 
 class FeederIOSim : FeederIO {

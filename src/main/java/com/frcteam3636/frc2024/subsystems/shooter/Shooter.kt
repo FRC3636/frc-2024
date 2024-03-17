@@ -114,15 +114,15 @@ object Shooter {
                 setpointRight = RadiansPerSecond.zero()
             })
 
-        fun intake(): Command {
-            return runEnd({
+        fun intake(): Command =
+            runEnd({
                 setpointLeft = RadiansPerSecond.of(-50.0)
                 setpointRight = RadiansPerSecond.of(-50.0)
             }, {
                 setpointLeft = RadiansPerSecond.zero()
                 setpointRight = RadiansPerSecond.zero()
             })
-        }
+
     }
 
     object Feeder : Subsystem {
@@ -132,25 +132,25 @@ object Shooter {
         }
         private val inputs = FeederIO.Inputs()
 
-        fun intakeCommand(): Command = Commands.runEnd({
+        fun intake(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(10.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun pulseCommand(): Command = Commands.runEnd({
+        fun pulse(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(0.3))
         }, {
             io.setIndexerVoltage(Volts.zero())
         }, this)
 
-        fun outtakeCommand(): Command = Commands.runEnd({
+        fun outtake(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun feedCommand(): Command = Commands.runEnd({
+        fun feed(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(-10.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
@@ -190,14 +190,14 @@ object Shooter {
             return (abs((Rotation2d.fromDegrees(-27.0) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(2.5).radians)
         }
 
-        fun setTarget(target: Target): Command {
-            return runOnce {
+        fun setTarget(target: Target): Command =
+            runOnce {
                 this.target = target
             }
-        }
 
-        fun followMotionProfile(targetOverride: Target?): Command {
-            return run {
+
+        fun followMotionProfile(targetOverride: Target?): Command =
+            run {
                 val target = targetOverride ?: this.target
                 val position = target.profile.position()
                 val velocity = target.profile.velocity()
@@ -205,10 +205,10 @@ object Shooter {
                 Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", velocity)
                 io.pivotToAndMove(position, velocity)
             }
-        }
+
 
         fun setBrakeMode(brake: Boolean): Command =
-            InstantCommand({
+            Commands.runOnce({
                 io.setBrakeMode(brake)
             })
 

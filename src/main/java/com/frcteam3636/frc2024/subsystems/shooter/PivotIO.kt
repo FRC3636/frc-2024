@@ -44,7 +44,6 @@ interface PivotIO {
         var rotorVelocityRight: Double = 0.0
         var leftLimitSwitchUnpressed: Boolean = false
 
-
         override fun toLog(table: org.littletonrobotics.junction.LogTable) {
             table.put("Absolute Encoder Position", absoluteEncoderPosition)
             table.put("Left Position", leftPosition)
@@ -62,7 +61,6 @@ interface PivotIO {
         }
 
         override fun fromLog(table: org.littletonrobotics.junction.LogTable) {
-
             absoluteEncoderPosition = table.get("Absolute Encoder Position", absoluteEncoderPosition)[0]
             leftLimitSwitchUnpressed = table.get("Left Limit Switch Unpressed", leftLimitSwitchUnpressed)
             absoluteEncoderPosition = table.get("Absolute Encoder Position", absoluteEncoderPosition)[0]
@@ -249,7 +247,6 @@ class PivotIOKraken : PivotIO {
         val LIMIT_SWITCH_OFFSET = Rotation2d.fromDegrees(-27.0)
     }
 }
-
 
 class PivotIOSim : PivotIO {
     private val profile = TrapezoidProfile(

@@ -102,7 +102,7 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
 
         NamedCommands.registerCommand("rev", Shooter.Flywheels.rev(40.0, 0.0))
-        NamedCommands.registerCommand("shoot", Shooter.Feeder.feedCommand().withTimeout(0.1))
+        NamedCommands.registerCommand("shoot", Shooter.Feeder.feed().withTimeout(0.1))
 
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
@@ -126,8 +126,8 @@ object Robot : LoggedRobot() {
             )
 
         // Control the climber
-        controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
-        controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
+        controller.povUp().debounce(0.15).whileTrue(Climber.setClimber(0.5))
+        controller.povDown().debounce(0.15).whileTrue(Climber.setClimber(-0.5))
         controller.povRight().onTrue(Climber.knockIntake())
 
 
@@ -153,9 +153,9 @@ object Robot : LoggedRobot() {
         controller.leftBumper()
             .whileTrue(
                 Commands.parallel(
-                    Intake.outtakeComand(),
+                    Intake.outtake(),
                     Shooter.Flywheels.outtake(),
-                    Shooter.Feeder.outtakeCommand()
+                    Shooter.Feeder.outtake()
                 ).finallyDo(Runnable {
                     Note.state = Note.State.NONE
                 })
@@ -164,7 +164,7 @@ object Robot : LoggedRobot() {
 
         // Manually feed through the shooter.
         controller.x().whileTrue(
-            Shooter.Feeder.feedCommand()
+            Shooter.Feeder.feed()
         )
 
         Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
@@ -179,7 +179,7 @@ object Robot : LoggedRobot() {
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil { Shooter.Flywheels.atDesiredVelocity },
-                        Shooter.Feeder.feedCommand().withTimeout(0.4).beforeStarting({
+                        Shooter.Feeder.feed().withTimeout(0.4).beforeStarting({
                             if (Note.state == Note.State.SHOOTER) {
                                 Note.state = Note.State.NONE
                             }
@@ -235,13 +235,13 @@ object Robot : LoggedRobot() {
 
 private fun doIntakeSequence(): Command =
     Commands.sequence(
-        Intake.intakeCommand(),
-        InstantCommand({ Note.state = Note.State.HANDOFF }),
+        Intake.intake(),
+        Commands.runOnce({ Note.state = Note.State.HANDOFF }),
         Commands.waitUntil(Shooter.Pivot::isStowed),
         Commands.race(
             Commands.parallel(
-                Intake.indexCommand(),
-                Shooter.Feeder.intakeCommand(),
+                Intake.index(),
+                Shooter.Feeder.intake(),
                 Shooter.Flywheels.intake(),
             ),
             Commands.sequence(
@@ -253,7 +253,7 @@ private fun doIntakeSequence(): Command =
                 Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //note stowed
                 Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
-                InstantCommand({ Note.state = Note.State.SHOOTER })
+                Commands.runOnce({ Note.state = Note.State.SHOOTER })
             )
         )
     )

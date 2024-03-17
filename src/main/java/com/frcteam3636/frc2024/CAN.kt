@@ -18,7 +18,6 @@ enum class REVMotorControllerId(val num: Int) {
     BackRightDrivingMotor(3),
     FrontRightDrivingMotor(4),
 
-
     LeftShooterFlywheel(11),
     RightShooterFlywheel(12),
     Indexer(13),

@@ -34,8 +34,8 @@ object Climber : Subsystem {
         Logger.recordOutput("Climber", mech)
     }
 
-    fun setClimberCommand(speed: Double): Command {
-        return runEnd({
+    fun setClimber(speed: Double): Command =
+        runEnd({
             io.setNeutral(NeutralModeValue.Coast)
             io.moveClimber(speed)
         }, {
@@ -43,18 +43,16 @@ object Climber : Subsystem {
             io.setNeutral(NeutralModeValue.Brake)
         }
         )
-    }
 
-    fun knockIntake(): Command {
-        return Commands.sequence(
-            setClimberCommand(0.9).withTimeout(0.3),
-            setClimberCommand(-0.8).withTimeout(0.5),
-            setClimberCommand(0.0).withTimeout(0.1)
+    fun knockIntake(): Command =
+        Commands.sequence(
+            setClimber(0.9).withTimeout(0.3),
+            setClimber(-0.8).withTimeout(0.5),
+            setClimber(0.0).withTimeout(0.1)
         )
-    }
 
-    fun extendClimberCommand(): Command {
-        return FunctionalCommand(
+    fun extendClimber(): Command =
+         FunctionalCommand(
             {},
             { io.moveClimber(1.0) },
             { io.moveClimber(0.0) },
@@ -62,10 +60,10 @@ object Climber : Subsystem {
             { inputs.climberPosition <= extendedPosition },
             this
         )
-    }
 
-    fun retractClimberCommand(): Command {
-        return FunctionalCommand(
+
+    fun retractClimber(): Command =
+        FunctionalCommand(
             {},
             { io.moveClimber(-1.0) },
             { io.moveClimber(0.0) },
@@ -73,5 +71,5 @@ object Climber : Subsystem {
             { inputs.climberPosition <= retractedPosition },
             this
         )
-    }
+
 }
