@@ -67,7 +67,6 @@ class FlywheelIOReal : FlywheelIO {
             }
         }
 
-
     override fun updateInputs(inputs: FlywheelIO.Inputs) {
         inputs.leftSpeed = RadiansPerSecond.of(leftSpark.encoder.velocity)
         inputs.rightSpeed = RadiansPerSecond.of(rightSpark.encoder.velocity)

@@ -247,13 +247,10 @@ object Drivetrain : Subsystem {
             }
         }
 
-    fun findWheelCircumfrence(): Command {
-        return runOnce {
-
+    fun findWheelCircumfrence(): Command =
+        runOnce {
             zeroGyro()
-
         }
-    }
 
     fun driveWithController(controller: CommandXboxController): Command =
         run {
@@ -290,7 +287,6 @@ object Drivetrain : Subsystem {
             )
         }
     }
-
 
     fun zeroGyro() {
         gyroRotation = Rotation3d()

@@ -38,7 +38,6 @@ interface AmpMechIO {
     fun setVoltage(volts: Measure<Voltage>) {}
 
     fun zero() {}
-
 }
 
 class AmpMechIOReal : AmpMechIO {
@@ -81,11 +80,9 @@ class AmpMechIOReal : AmpMechIO {
         pivotMotor.setVoltage(volts.baseUnitMagnitude())
     }
 
-
     internal companion object Constants {
         const val GEAR_RATIO: Double = 2.0 / 3
         const val CURRENT_LIMIT: Double = 120.0
 
     }
-
 }
