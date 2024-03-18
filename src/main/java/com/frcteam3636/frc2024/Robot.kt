@@ -19,7 +19,6 @@ import edu.wpi.first.wpilibj.util.WPILibVersion
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.CommandScheduler
 import edu.wpi.first.wpilibj2.command.Commands
-import edu.wpi.first.wpilibj2.command.InstantCommand
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -96,13 +95,32 @@ object Robot : LoggedRobot() {
         configureBindings()
 
         // Configure the autonomous command
-        NamedCommands.registerCommand("intake", doIntakeSequence())
+        NamedCommands.registerCommand(
+            "revAim",
+            Commands.parallel(
+                Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
+                Shooter.Flywheels.rev(590.0, 0.0)
+            )
+        )
+        NamedCommands.registerCommand("stowIntakeRevAim",
+            Commands.sequence(
+                Commands.parallel(
+                    Shooter.Pivot.pivotAndStop(Shooter.Pivot.Target.STOWED.profile.position()),
+                    doIntakeSequence()
+                ),
+                Commands.parallel(
+                    Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
+                    Shooter.Flywheels.rev(590.0, 0.0)
+                )
+            ))
 
-        NamedCommands.registerCommand("pivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.SPEAKER)))
-        NamedCommands.registerCommand("zeropivot", Shooter.Pivot.followMotionProfile((Shooter.Pivot.Target.STOWED)))
+        NamedCommands.registerCommand(
+            "shootWhenReady",
+            Commands.sequence(
+                Commands.waitUntil(Shooter.Pivot.isReadyToShoot.and(Shooter.Flywheels.atDesiredVelocity)),
+                Shooter.Feeder.feed().withTimeout(0.1)
+            ))
 
-        NamedCommands.registerCommand("rev", Shooter.Flywheels.rev(40.0, 0.0))
-        NamedCommands.registerCommand("shoot", Shooter.Feeder.feed().withTimeout(0.1))
 
         autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
         autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
@@ -117,7 +135,7 @@ object Robot : LoggedRobot() {
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
 
         // Polar driving
-        JoystickButton(joystickLeft, 2)
+        Trigger(joystickLeft::getTrigger)
             .whileTrue(
                 Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft,
@@ -178,7 +196,7 @@ object Robot : LoggedRobot() {
                         Shooter.Flywheels.rev(2.5, 0.0)
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
-                        Commands.waitUntil { Shooter.Flywheels.atDesiredVelocity },
+                        Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
                         Shooter.Feeder.feed().withTimeout(0.4).beforeStarting({
                             if (Note.state == Note.State.SHOOTER) {
                                 Note.state = Note.State.NONE

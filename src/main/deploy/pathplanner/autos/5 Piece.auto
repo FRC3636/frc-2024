@@ -1,0 +1,166 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.3711200952529907,
+      "y": 5.567086696624756
+    },
+    "rotation": -6.15114548764963e-22
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "shootWhenReady"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "revAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 5 Piece Source.1"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 5 Piece Source.2"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 5 Piece Source.3"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 5 Piece Source.4"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "folder": "Middle",
+  "choreoAuto": true
+}
