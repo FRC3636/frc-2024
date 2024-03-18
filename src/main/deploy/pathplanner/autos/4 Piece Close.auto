@@ -1,0 +1,134 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.3711200952529907,
+      "y": 5.567086696624756
+    },
+    "rotation": -2.9143708774483495e-18
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "named",
+                "data": {
+                  "name": "shootWhenReady"
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "revAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 4 Piece.1"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 4 Piece.2"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Middle 4 Piece.3"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "shootWhenReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "folder": "Middle",
+  "choreoAuto": true
+}

@@ -16,6 +16,7 @@ import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.Logger
 import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
@@ -43,15 +44,15 @@ object Shooter {
                 return Amps.of(inputs.leftCurrent.baseUnitMagnitude().pow(3)) > FLYWHEEL_INTAKE_CURRENT_THRESHOLD
             }
 
-        val atDesiredVelocity: Boolean
-            get() {
+        val atDesiredVelocity =
+            Trigger {
                 val velocityDifference = (inputs.leftSpeed.minus(setpointLeft).baseUnitMagnitude().absoluteValue)
                 Logger.recordOutput("Shooter/Flywheels/Velocity Difference", velocityDifference)
                 Logger.recordOutput(
                     "Shooter/Flywheels/At Desired Velocity",
                     velocityDifference < FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude()
                 )
-                return velocityDifference <
+                 velocityDifference <
                         FLYWHEEL_VELOCITY_TOLERANCE.baseUnitMagnitude() && inputs.leftSpeed > RadiansPerSecond.of(30.0)
             }
 
@@ -67,7 +68,7 @@ object Shooter {
             }
 
             Logger.recordOutput("Shooter", mechanism)
-            Logger.recordOutput("Shooter/Flywheels/At Desired Velocity", atDesiredVelocity)
+            Logger.recordOutput("Shooter/Flywheels/At Desired Velocity", atDesiredVelocity.asBoolean)
             Logger.recordOutput("Shooter/Flywheels/Above Intake Current Threshold", aboveIntakeThreshold)
             Logger.recordOutput(
                 "Shooter/Flywheels/Average Current Cubed",
@@ -184,6 +185,22 @@ object Shooter {
             (abs((goal - inputs.leftPosition).radians) < PIVOT_POSITION_TOLERANCE.radians)
                     && (abs(inputs.leftVelocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
+
+        val isReadyToShoot = Trigger {
+                val speakerPose = Pose2d(
+                    Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
+                    Rotation2d()
+                )
+                val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
+                    .minus(Translation2d(0.3, 0.0)).norm
+                val targetHeight = SPEAKER_POSE.z
+                Rotation2d((TAU / 2) - atan(targetHeight / distance))
+                abs((Rotation2d((TAU / 2) - atan(targetHeight / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
+                    2.2
+                ).radians
+            }
+
+
 
         fun isStowed(): Boolean {
 

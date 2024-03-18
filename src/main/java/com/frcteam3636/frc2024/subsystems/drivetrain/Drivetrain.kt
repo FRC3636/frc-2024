@@ -64,7 +64,6 @@ object Drivetrain : Subsystem {
     }
     private val inputs = DrivetrainIO.Inputs()
 
-    private val dawg = Watchdog(Robot.period) {}
 
     private val absolutePoseIOs = mapOf(
 //        "Fljorg" to PhotonVisionPoseIOReal(
@@ -138,7 +137,6 @@ object Drivetrain : Subsystem {
     }
 
     override fun periodic() {
-        dawg.reset()
 
 
         io.updateInputs(inputs)
@@ -165,9 +163,6 @@ object Drivetrain : Subsystem {
 
         Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
         Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
-        dawg.addEpoch("Record outputs")
-
-        dawg.printEpochs()
     }
 
     // The rotation of the robot as measured by the gyro.
