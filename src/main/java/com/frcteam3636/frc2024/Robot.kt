@@ -148,7 +148,9 @@ object Robot : LoggedRobot() {
             joystickLeft,joystickRight
         )
 
-        JoystickButton(joystickLeft, 2).whileTrue(
+        Shooter.Feeder.defaultCommand = Shooter.Feeder.pulseCommand()
+//
+        Trigger(joystickLeft::getTrigger).whileTrue(
             Drivetrain.driveWithJoystickPointingTowards(joystickLeft, SPEAKER_POSE.toTranslation2d())
         ).onFalse(
             InstantCommand({
@@ -177,8 +179,9 @@ object Robot : LoggedRobot() {
         )
 
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
+        controller.x().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
 
         controller.povUp().debounce(0.15).whileTrue(Climber.setClimberCommand(0.5))
         controller.povDown().debounce(0.15).whileTrue(Climber.setClimberCommand(-0.5))
@@ -196,21 +199,17 @@ object Robot : LoggedRobot() {
 //            Shooter.Amp.stow()
 //        )
 
-        controller.x().whileTrue(
-            Shooter.Feeder.feedCommand()
-        )
-
 
         Trigger(brakeModeToggle::get).toggleOnTrue(
-            Shooter.Pivot.setBrakeMode(true).ignoringDisable(true)
+            Shooter.Pivot.setBrakeMode(false).ignoringDisable(true)
         ).toggleOnFalse(Shooter.Pivot.setBrakeMode(false).ignoringDisable(true))
 
         Trigger(joystickRight::getTrigger)
             .whileTrue(
                 Commands.parallel(
                     Commands.either(
-                        Shooter.Flywheels.rev(590.0, 0.0),
-                        Shooter.Flywheels.rev(2.5, 0.0)
+                        Shooter.Flywheels.rev(570.0, 25.0),
+                        Shooter.Flywheels.rev(70.0, 0.0)
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil { Shooter.Flywheels.atDesiredVelocity },
@@ -235,20 +234,8 @@ object Robot : LoggedRobot() {
             }
         }
 
-//
-//        JoystickButton(joystickDev, 1).whileTrue(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.SPEAKER))
-//        JoystickButton(joystickDev, 2).whileTrue(Shooter.Pivot.defer {Shooter.Pivot.doQuasistaticSysId(sysIdDirection())})
-
         //Drive if triggered joystickLeft input
 
-        Trigger(
-            joystickLeft::getTrigger
-        )
-            .whileTrue(
-                Drivetrain.driveWithJoystickPointingTowards(
-                    joystickLeft, OrientationTarget.Speaker.position
-                )
-            )
 
         JoystickButton(joystickLeft, 8).onTrue(
             InstantCommand({

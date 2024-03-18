@@ -9,10 +9,7 @@ import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
-import com.frcteam3636.frc2024.utils.math.MotorFFGains
-import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.motorFFGains
-import com.frcteam3636.frc2024.utils.math.pidGains
+import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
@@ -105,13 +102,13 @@ class PivotIOKraken : PivotIO {
     private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
 
     private val absoluteEncoderPosition
-        get() = if (rawAbsoluteEncoderPosition.rotations + absoluteEncoderOffset.rotations > 0) {
+        get() = if (rawAbsoluteEncoderPosition.rotations + absoluteEncoderOffset.rotations > -40) {
             Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
         } else {
-            Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
+            Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians + TAU)
         }
 
-    private val absoluteEncoderOffset = Rotation2d.fromDegrees(12.6) + LIMIT_SWITCH_OFFSET
+    private val absoluteEncoderOffset = Rotation2d.fromDegrees(12.61) + LIMIT_SWITCH_OFFSET
 
     init {
         val config = TalonFXConfiguration().apply {

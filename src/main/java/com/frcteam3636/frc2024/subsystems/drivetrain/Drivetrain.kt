@@ -148,11 +148,9 @@ object Drivetrain : Subsystem {
 
             io.updateInputs(inputs)
             Logger.processInputs("Absolute Pose/$name", inputs)
-            Logger.recordOutput("Absolute Pose/$name/Is Null", inputs.measurement == null)
 
             inputs.measurement?.let {
                 poseEstimator.addAbsolutePoseMeasurement(it)
-                Logger.recordOutput("Drivetrain/Last added vision pose", it.pose)
             }
 
         }
@@ -269,16 +267,26 @@ object Drivetrain : Subsystem {
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
         val rotationPIDController = PIDController(ROTATION_PID_GAINS)
         return run {
+            val setpoint = target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
+            val correctedSetpoint = if (setpoint > 0) {
+                setpoint
+            } else {
+                setpoint + TAU
+            }
+
+            val correctCurrent = if (estimatedPose.rotation.radians > 0) {
+                estimatedPose.rotation.radians
+            } else {
+                estimatedPose.rotation.radians + TAU
+            }
             val magnitude = rotationPIDController.calculate(
-                estimatedPose.rotation.radians,
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
+                correctCurrent,
+                correctedSetpoint
             )
-            Logger.recordOutput("Rotational Target Setpoint", target.minus(estimatedPose.translation).angle.radians - (TAU / 2))
-            Logger.recordOutput("Rotational Target Error", target.minus(estimatedPose.translation).angle.radians - (TAU / 2) - estimatedPose.rotation.radians)
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
-                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
+                translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
                 magnitude,
                 gyroRotation.toRotation2d(),
             )
@@ -291,7 +299,9 @@ object Drivetrain : Subsystem {
     }
 
     fun pathfindToPose(target: Pose2d): Command =
-        AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
+        AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0).apply{
+            addRequirements(Drivetrain)
+        }
 }
 
 abstract class DrivetrainIO {
@@ -420,8 +430,8 @@ internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
-internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
-internal val ROTATION_PID_GAINS = PIDGains(0.8, 0.0, 0.0)
+internal val TRANSLATION_PID_GAINS = PIDGains(0.1, 0.0, 3.0)
+internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.3)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
