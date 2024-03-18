@@ -178,6 +178,11 @@ object Shooter {
             io.setIndexerVoltage(Volts.zero())
         })
 
+        fun pulseCommand(): Command = Commands.runEnd({
+            io.setIndexerVoltage(Volts.of(0.3))
+        }, {
+            io.setIndexerVoltage(Volts.zero())
+        }, this)
         fun outtakeCommand(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
         }, {
@@ -427,8 +432,8 @@ data class PivotProfile(
 //amps
 internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
 val SPEAKER_POSE = when(DriverStation.getAlliance().get()) {
-    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(84.5))
-    DriverStation.Alliance.Blue -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(84.5))
+    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(89.0))
+    DriverStation.Alliance.Blue -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(89.0))
     else -> Translation3d(0.0, 2.6, Units.inchesToMeters(78.5))
 }
 
