@@ -128,6 +128,14 @@ object Shooter {
                 setpointRight = RadiansPerSecond.zero()
             })
 
+        fun pulse(): Command = runEnd({
+            setpointLeft = RadiansPerSecond.of(-1.0)
+            setpointRight = RadiansPerSecond.of(-1.0)
+        }, {
+            setpointLeft = RadiansPerSecond.zero()
+            setpointRight = RadiansPerSecond.zero()
+        })
+
     }
 
     object Feeder : Subsystem {
@@ -143,25 +151,25 @@ object Shooter {
             Logger.processInputs("Shooter/Feeder", inputs)
         }
 
-        fun intake(): Command = Commands.runEnd({
+        fun intake(): Command = runEnd({
             io.setIndexerVoltage(Volts.of(10.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
         fun pulse(): Command = runEnd({
-            io.setIndexerVoltage(Volts.of(0.3))
+            io.setIndexerVoltage(Volts.of(0.6))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun outtake(): Command = Commands.runEnd({
+        fun outtake(): Command = runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun feed(): Command = Commands.runEnd({
+        fun feed(): Command = runEnd({
             Logger.recordOutput("Shooter/Feeder/IsFeeding", true)
             io.setIndexerVoltage(Volts.of(-10.0))
         }, {

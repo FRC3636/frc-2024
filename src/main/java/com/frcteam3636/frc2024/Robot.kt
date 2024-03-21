@@ -122,6 +122,19 @@ object Robot : LoggedRobot() {
                 Shooter.Feeder.feed().withTimeout(0.7)
             ))
 
+        NamedCommands.registerCommand(
+            "waitUntilShootReady",
+            Commands.waitUntil(Shooter.Pivot.isReadyToShoot.and(Shooter.Flywheels.atDesiredVelocity)),
+        )
+
+        NamedCommands.registerCommand(
+            "revAndShoot",
+            Commands.sequence(
+                Shooter.Flywheels.rev(590.0, 0.0),
+                Shooter.Feeder.feed().withTimeout(0.7)
+            )
+        )
+
 
         autoChooser.addOption("Middle/4 Piece Close", "4 Piece Close")
         autoChooser.addOption("Middle/2 Piece", "2 Piece")
@@ -132,10 +145,9 @@ object Robot : LoggedRobot() {
 
 
     private fun configureBindings() {
-        // Cartesian driving
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
-
-//        Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
+        Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
+        Shooter.Flywheels.defaultCommand = Shooter.Flywheels.pulse()
 
 
         // Polar driving

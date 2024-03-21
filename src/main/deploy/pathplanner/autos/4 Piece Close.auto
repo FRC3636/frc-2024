@@ -5,7 +5,7 @@
       "x": 1.3711200952529907,
       "y": 5.567086696624756
     },
-    "rotation": -1.3039121834494861e-21
+    "rotation": 2.765374265560399e-21
   },
   "command": {
     "type": "sequential",
@@ -63,6 +63,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
+          }
+        },
+        {
           "type": "race",
           "data": {
             "commands": [
@@ -95,6 +101,12 @@
           }
         },
         {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
+          }
+        },
+        {
           "type": "race",
           "data": {
             "commands": [
@@ -111,7 +123,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "shootWhenReady"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -124,6 +136,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
           }
         }
       ]

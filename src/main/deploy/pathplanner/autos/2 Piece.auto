@@ -5,7 +5,7 @@
       "x": 1.3711200952529907,
       "y": 5.567086696624756
     },
-    "rotation": 1.6198862613310524e-20
+    "rotation": 2.765374265560399e-21
   },
   "command": {
     "type": "sequential",
@@ -47,7 +47,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "shootWhenReady"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -60,6 +60,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
           }
         }
       ]

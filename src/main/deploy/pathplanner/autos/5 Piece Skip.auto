@@ -5,7 +5,7 @@
       "x": 1.3622068166732788,
       "y": 5.582512378692627
     },
-    "rotation": 2.8420448017996763e-25
+    "rotation": -9.414087372404652e-20
   },
   "command": {
     "type": "sequential",
@@ -47,7 +47,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "shootWhenReady"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -60,6 +60,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
           }
         },
         {
@@ -79,7 +85,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "shootWhenReady"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -92,6 +98,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
           }
         },
         {
@@ -111,7 +123,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "shootWhenReady"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -124,6 +136,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
           }
         },
         {
@@ -143,7 +161,7 @@
                     {
                       "type": "named",
                       "data": {
-                        "name": "shootWhenReady"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -156,6 +174,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "revAndShoot"
           }
         }
       ]
