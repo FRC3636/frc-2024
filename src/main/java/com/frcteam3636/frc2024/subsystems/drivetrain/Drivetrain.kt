@@ -266,19 +266,13 @@ object Drivetrain : Subsystem {
         }
 
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
-        val rotationPIDController = PIDController(ROTATION_PID_GAINS)
+        val rotationPIDController = PIDController(ROTATION_PID_GAINS).apply {
+            enableContinuousInput(0.0, TAU)
+        }
         return run {
             val magnitude = rotationPIDController.calculate(
-                estimatedPose.rotation.radians,
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
-            )
-            Logger.recordOutput(
-                "Rotational Target Setpoint",
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
-            )
-            Logger.recordOutput(
-                "Rotational Target Error",
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2) - estimatedPose.rotation.radians
+                target.minus(estimatedPose.translation).angle.radians - (TAU/2),
+                estimatedPose.rotation.radians
             )
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -425,7 +419,7 @@ internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
 internal val TRANSLATION_PID_GAINS = PIDGains(0.5, 0.0, 1.0)
-internal val ROTATION_PID_GAINS = PIDGains(1.0, 0.0, 0.5)
+internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.4)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =

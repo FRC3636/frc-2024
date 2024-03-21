@@ -12,13 +12,12 @@ import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.networktables.NetworkTableInstance
+import edu.wpi.first.units.Units.Volts
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.Command
-import edu.wpi.first.wpilibj2.command.CommandScheduler
-import edu.wpi.first.wpilibj2.command.Commands
+import edu.wpi.first.wpilibj2.command.*
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -148,6 +147,8 @@ object Robot : LoggedRobot() {
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
         Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
         Shooter.Flywheels.defaultCommand = Shooter.Flywheels.pulse()
+        Shooter.Amp.defaultCommand = Shooter.Amp.setVoltage(Volts.of(-3.0))
+
 
 
         // Polar driving
@@ -172,13 +173,32 @@ object Robot : LoggedRobot() {
         // Follow a motion profile to the selected pivot target
         controller.leftTrigger()
             .debounce(0.1)
-            .whileTrue(Shooter.Pivot.followMotionProfile(null))
-            .onFalse(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED))
+            .whileTrue(
+                Commands.either(
+                    //amp
+                    Commands.parallel(
+                        Shooter.Pivot.followMotionProfile(null),
+                        Commands.sequence(
+                            Commands.waitUntil(Shooter.Pivot.atSetpoint),
+                            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(195.0))
+                        ),
+                    ),
+                    //not amp
+                    Shooter.Pivot.followMotionProfile(null),
+                ) {Shooter.Pivot.target == Shooter.Pivot.Target.AMP}
+            )
+            .onFalse(
+                    Commands.sequence(
+                        Commands.waitUntil(Shooter.Amp.isStowed),
+                        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+                    )
+            )
 
         // Select a target for the pivot
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
         controller.x().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
 
         // Intake
         controller.rightBumper()
@@ -208,7 +228,7 @@ object Robot : LoggedRobot() {
                 Commands.parallel(
                     Commands.either(
                         Shooter.Flywheels.rev(590.0, 0.0),
-                        Shooter.Flywheels.rev(2.5, 0.0)
+                        Shooter.Flywheels.rev(67.0, 0.0),
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),

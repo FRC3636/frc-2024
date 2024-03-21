@@ -15,6 +15,7 @@ import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Velocity
+import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -206,6 +207,10 @@ object Shooter {
                     && (abs(inputs.leftVelocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
 
+        val atSetpoint = Trigger {
+            abs((inputs.leftPosition - target.profile.position()).degrees) < 2.0
+        }
+
         val isReadyToShoot = Trigger {
             val speakerTranslation = DriverStation.getAlliance()
                 .orElse(DriverStation.Alliance.Blue)
@@ -284,7 +289,7 @@ object Shooter {
             ),
             AMP(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(101.0) },
+                    { Rotation2d.fromDegrees(105.0) },
                     { Rotation2d() }
                 )
             ),
@@ -312,6 +317,14 @@ object Shooter {
 
         fun pivotTo(pos: Rotation2d): Command = runOnce {
             posReference = pos
+        }
+
+        fun setVoltage(volts: Measure<Voltage>) = runOnce {
+            io.setVoltage(volts)
+        }
+
+        val isStowed: Trigger = Trigger {
+            abs(inputs.position.degrees) < 5.0
         }
 
         override fun periodic() {

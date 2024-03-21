@@ -51,8 +51,8 @@ class AmpMechIOReal : AmpMechIO {
 
     private val pid = pivotMotor.pidController.apply {
         p = 0.1
-        i = 0.0
-        d = 0.0
+        i = 0.00025
+        d = 0.0075
     }
 
     override fun updateInputs(inputs: AmpMechIO.Inputs) {
@@ -70,6 +70,10 @@ class AmpMechIOReal : AmpMechIO {
         pid.setReference(
             position.radians, CANSparkBase.ControlType.kPosition
         )
+    }
+
+    init {
+        zero()
     }
 
     override fun zero() {
