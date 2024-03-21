@@ -139,7 +139,7 @@ object Robot : LoggedRobot() {
             .whileTrue(
                 Drivetrain.driveWithJoystickPointingTowards(
                     joystickLeft,
-                    SPEAKER_POSE.toTranslation2d()
+                    SPEAKER_POSE().toTranslation2d()
                 )
             )
 
@@ -179,11 +179,6 @@ object Robot : LoggedRobot() {
                 })
             )
 
-
-        // Manually feed through the shooter.
-        controller.x().whileTrue(
-            Shooter.Feeder.feed()
-        )
 
         Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
 

@@ -1,5 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.ctre.phoenix6.mechanisms.DifferentialMechanism.DisabledReason
 import com.frcteam3636.frc2024.BLACK
 import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
@@ -11,7 +12,10 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Distance
+import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
+import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -188,12 +192,12 @@ object Shooter {
 
         val isReadyToShoot = Trigger {
                 val speakerPose = Pose2d(
-                    Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
+                    SPEAKER_POSE().toTranslation2d(),
                     Rotation2d()
                 )
                 val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                     .minus(Translation2d(0.3, 0.0)).norm
-                val targetHeight = SPEAKER_POSE.z
+                val targetHeight = SPEAKER_POSE().z
                 Rotation2d((TAU / 2) - atan(targetHeight / distance))
                 abs((Rotation2d((TAU / 2) - atan(targetHeight / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
                     2.2
@@ -235,13 +239,13 @@ object Shooter {
                     {
 
                         val speakerPose = Pose2d(
-                            Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
+                            SPEAKER_POSE().toTranslation2d(),
                             Rotation2d()
                         )
                         val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                             .minus(Translation2d(0.3, 0.0)).norm
                         Logger.recordOutput("Shooter/Distance To Speaker", distance)
-                        val targetHeight = SPEAKER_POSE.z
+                        val targetHeight = SPEAKER_POSE().z
                         Logger.recordOutput("Shooter/Speaker Height", targetHeight)
                         Rotation2d((TAU / 2) - atan(targetHeight / distance))
                     },
@@ -267,7 +271,7 @@ object Shooter {
             ),
             PODIUM(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(10.0) },
+                    { Rotation2d.fromDegrees(180.0) },
                     { Rotation2d() }
                 )
             ),
@@ -327,11 +331,13 @@ data class PivotProfile(
 
 //amps
 internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
-val SPEAKER_POSE = when (DriverStation.getAlliance().getOrNull()) {
-    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(84.5))
-    else -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(84.5))
-}
+val SPEAKER_POSE = {when (DriverStation.getAlliance().getOrNull()) {
+    DriverStation.Alliance.Red -> Translation3d(16.511 - Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(91.0))
+    else -> Translation3d(Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(91.0))
+}}
 
+internal val NOTE_EXIT_VELOCITY : Measure<Velocity<Distance>> = MetersPerSecond.of(4.577)
+internal val GRAVITY_ACCELERATION : Measure<Velocity<Velocity<Distance>>> = MetersPerSecondPerSecond.of(9.8)
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(13.0)
