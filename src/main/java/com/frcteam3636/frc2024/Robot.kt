@@ -45,11 +45,11 @@ object Robot : LoggedRobot() {
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
     private val joystickDev = Joystick(3)
-    private var autoChooser = SendableChooser<String>()
+    private var autoChooser: SendableChooser<String> = SendableChooser<String>()
 
     private val brakeModeToggle = DigitalInput(5)
 
-    private var autoCommand: Command? = null
+    private var autoCommand: Command = Commands.none()
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -91,6 +91,7 @@ object Robot : LoggedRobot() {
         Intake.register()
         Climber.register()
 
+
         // Configure our button and joystick bindings
         configureBindings()
 
@@ -99,7 +100,7 @@ object Robot : LoggedRobot() {
             "revAim",
             Commands.parallel(
                 Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
-                Shooter.Flywheels.rev(590.0, 0.0)
+                Shooter.Flywheels.rev(580.0, 0.0)
             )
         )
         NamedCommands.registerCommand("stowIntakeRevAim",
@@ -118,14 +119,14 @@ object Robot : LoggedRobot() {
             "shootWhenReady",
             Commands.sequence(
                 Commands.waitUntil(Shooter.Pivot.isReadyToShoot.and(Shooter.Flywheels.atDesiredVelocity)),
-                Shooter.Feeder.feed().withTimeout(0.1)
+                Shooter.Feeder.feed().withTimeout(0.7)
             ))
 
 
-        autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
-        autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
-        autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
-        autoChooser.addOption("Open Speaker Side 2 Piece", "Right 2 Piece")
+        autoChooser.addOption("Middle/4 Piece Close", "4 Piece Close")
+        autoChooser.addOption("Middle/2 Piece", "2 Piece")
+        autoChooser.addOption("Middle/5 Piece", "5 Piece")
+        autoChooser.addOption("Source/3 Piece", "3 Piece")
         SmartDashboard.putData("Auto selector", autoChooser)
     }
 
@@ -133,6 +134,9 @@ object Robot : LoggedRobot() {
     private fun configureBindings() {
         // Cartesian driving
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
+
+//        Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
+
 
         // Polar driving
         Trigger(joystickLeft::getTrigger)
@@ -157,7 +161,7 @@ object Robot : LoggedRobot() {
 
         // Select a target for the pivot
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
+        controller.x().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
 
         // Intake
@@ -216,12 +220,12 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
-        autoCommand!!.schedule()
+        autoCommand = AutoBuilder.buildAuto(autoChooser.selected) ?: Commands.none()
+        autoCommand.schedule()
     }
 
     override fun teleopInit() {
-        autoCommand?.cancel()
+        autoCommand.cancel()
     }
 
     override fun testInit() {
@@ -265,7 +269,7 @@ private fun doIntakeSequence(): Command =
                 //contacted note
                 Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //note stowed
-                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
+                Commands.waitUntil (Trigger{ !Shooter.Flywheels.aboveIntakeThreshold }.debounce(0.5)),
                 Commands.runOnce({ Note.state = Note.State.SHOOTER })
             )
         )

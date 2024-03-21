@@ -100,13 +100,13 @@ class PivotIOKraken : PivotIO {
     private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
 
     private val absoluteEncoderPosition
-        get() = if (rawAbsoluteEncoderPosition.rotations + absoluteEncoderOffset.rotations > -40) {
+        get() = if (rawAbsoluteEncoderPosition.degrees + absoluteEncoderOffset.degrees > -40) {
             Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
         } else {
             Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians + TAU)
         }
 
-    private val absoluteEncoderOffset = Rotation2d.fromDegrees(30.9) + LIMIT_SWITCH_OFFSET
+    private val absoluteEncoderOffset = Rotation2d.fromDegrees(29.85) + LIMIT_SWITCH_OFFSET
 
     init {
         val config = TalonFXConfiguration().apply {

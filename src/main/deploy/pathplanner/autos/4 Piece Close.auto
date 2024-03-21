@@ -5,14 +5,14 @@
       "x": 1.3711200952529907,
       "y": 5.567086696624756
     },
-    "rotation": -2.9143708774483495e-18
+    "rotation": -1.3039121834494861e-21
   },
   "command": {
     "type": "sequential",
     "data": {
       "commands": [
         {
-          "type": "race",
+          "type": "deadline",
           "data": {
             "commands": [
               {

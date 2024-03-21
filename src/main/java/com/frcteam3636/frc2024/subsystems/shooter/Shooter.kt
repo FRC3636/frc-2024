@@ -1,6 +1,5 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
-import com.ctre.phoenix6.mechanisms.DifferentialMechanism.DisabledReason
 import com.frcteam3636.frc2024.BLACK
 import com.frcteam3636.frc2024.BLUE
 import com.frcteam3636.frc2024.Robot
@@ -19,7 +18,9 @@ import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Commands
+import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.Logger
 import kotlin.jvm.optionals.getOrNull
@@ -137,17 +138,23 @@ object Shooter {
         }
         private val inputs = FeederIO.Inputs()
 
+        override fun periodic() {
+            io.updateInputs(inputs)
+
+            Logger.processInputs("Shooter/Feeder", inputs)
+        }
+
         fun intake(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(10.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun pulse(): Command = Commands.runEnd({
+        fun pulse(): Command = runEnd({
             io.setIndexerVoltage(Volts.of(0.3))
         }, {
             io.setIndexerVoltage(Volts.zero())
-        }, this)
+        })
 
         fun outtake(): Command = Commands.runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
@@ -156,8 +163,10 @@ object Shooter {
         })
 
         fun feed(): Command = Commands.runEnd({
+            Logger.recordOutput("Shooter/Feeder/IsFeeding", true)
             io.setIndexerVoltage(Volts.of(-10.0))
         }, {
+            Logger.recordOutput("Shooter/Feeder/IsFeeding", false)
             io.setIndexerVoltage(Volts.zero())
         })
     }
@@ -170,7 +179,7 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
 
-        var target: Target = Target.PODIUM
+        var target: Target = Target.AIM
 
         override fun periodic() {
             io.updateInputs(inputs)
@@ -237,7 +246,6 @@ object Shooter {
             AIM(
                 PivotProfile(
                     {
-
                         val speakerPose = Pose2d(
                             SPEAKER_POSE().toTranslation2d(),
                             Rotation2d()
@@ -271,7 +279,7 @@ object Shooter {
             ),
             PODIUM(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(180.0) },
+                    { Rotation2d.fromDegrees(110.0) },
                     { Rotation2d() }
                 )
             ),
@@ -307,6 +315,7 @@ object Shooter {
         Flywheels.register()
         Pivot.register()
         Amp.register()
+        Feeder.register()
     }
 
     private val mechanism = Mechanism2d(3.0, 3.0, BLACK)
@@ -330,10 +339,10 @@ data class PivotProfile(
 
 
 //amps
-internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
+internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(28000.0)
 val SPEAKER_POSE = {when (DriverStation.getAlliance().getOrNull()) {
-    DriverStation.Alliance.Red -> Translation3d(16.511 - Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(91.0))
-    else -> Translation3d(Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(91.0))
+    DriverStation.Alliance.Red -> Translation3d(16.51 - Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(92.0))
+    else -> Translation3d(Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(92.0))
 }}
 
 internal val NOTE_EXIT_VELOCITY : Measure<Velocity<Distance>> = MetersPerSecond.of(4.577)

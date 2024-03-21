@@ -17,7 +17,10 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig
 import com.pathplanner.lib.util.ReplanningConfig
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
-import edu.wpi.first.math.geometry.*
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Rotation3d
+import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
@@ -27,7 +30,6 @@ import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.Watchdog
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -35,7 +37,6 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
-import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -71,13 +72,13 @@ object Drivetrain : Subsystem {
 //                Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0)
 //            )
 //        ),
-        "Bloop" to PhotonVisionPoseIOReal(
-            "bloop",
-            Transform3d(
-                Translation3d(-0.1175, 0.3175, 0.45),
-                Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0)
-            )
-        ),
+//        "Bloop" to PhotonVisionPoseIOReal(
+//            "bloop",
+//            Transform3d(
+//                Translation3d(-0.1175, 0.3175, 0.45),
+//                Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
 //        "Freedom" to PhotonVisionPoseIOReal(
 //            "freedom",
 //            Transform3d(
@@ -93,13 +94,13 @@ object Drivetrain : Subsystem {
 //            )
 //        ),
         //incorrect pose
-        "Blowfish" to PhotonVisionPoseIOReal(
-            "blowfish",
-            Transform3d(
-                Translation3d(-0.3656, -0.2794, 0.22),
-                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
-            )
-        ),
+//        "Blowfish" to PhotonVisionPoseIOReal(
+//            "blowfish",
+//            Transform3d(
+//                Translation3d(-0.3656, -0.2794, 0.22),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
         "Limelight" to LimelightPoseIOReal(
             "limelight",
         )
@@ -423,8 +424,8 @@ internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
-internal val TRANSLATION_PID_GAINS = PIDGains(0.1, 0.0, 3.0)
-internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.3)
+internal val TRANSLATION_PID_GAINS = PIDGains(0.5, 0.0, 1.0)
+internal val ROTATION_PID_GAINS = PIDGains(1.0, 0.0, 0.5)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
