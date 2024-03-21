@@ -23,7 +23,6 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.Logger
-import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan
@@ -200,15 +199,17 @@ object Shooter {
         })
 
         val isReadyToShoot = Trigger {
+            val speakerTranslation = DriverStation.getAlliance()
+                .orElse(DriverStation.Alliance.Blue)
+                .speakerTranslation
                 val speakerPose = Pose2d(
-                    SPEAKER_POSE().toTranslation2d(),
+                    speakerTranslation.toTranslation2d(),
                     Rotation2d()
                 )
                 val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                     .minus(Translation2d(0.3, 0.0)).norm
-                val targetHeight = SPEAKER_POSE().z
-                Rotation2d((TAU / 2) - atan(targetHeight / distance))
-                abs((Rotation2d((TAU / 2) - atan(targetHeight / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
+            Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance))
+            abs((Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
                     2.2
                 ).radians
             }
@@ -246,16 +247,18 @@ object Shooter {
             AIM(
                 PivotProfile(
                     {
+                        val speakerTranslation = DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Blue)
+                            .speakerTranslation
                         val speakerPose = Pose2d(
-                            SPEAKER_POSE().toTranslation2d(),
+                            speakerTranslation.toTranslation2d(),
                             Rotation2d()
                         )
                         val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                             .minus(Translation2d(0.3, 0.0)).norm
                         Logger.recordOutput("Shooter/Distance To Speaker", distance)
-                        val targetHeight = SPEAKER_POSE().z
-                        Logger.recordOutput("Shooter/Speaker Height", targetHeight)
-                        Rotation2d((TAU / 2) - atan(targetHeight / distance))
+                        Logger.recordOutput("Shooter/Speaker Height", speakerTranslation.z)
+                        Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance))
                     },
                     { Rotation2d() }
                 )
@@ -338,12 +341,19 @@ data class PivotProfile(
 )
 
 
+val DriverStation.Alliance.speakerTranslation: Translation3d
+    get() = when (this) {
+        DriverStation.Alliance.Red -> Translation3d(
+            16.51 - Units.inchesToMeters(5.0),
+            8.21055 - 2.6,
+            Units.inchesToMeters(92.0)
+        )
+
+        else -> Translation3d(Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(92.0))
+    }
+
 //amps
 internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(28000.0)
-val SPEAKER_POSE = {when (DriverStation.getAlliance().getOrNull()) {
-    DriverStation.Alliance.Red -> Translation3d(16.51 - Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(92.0))
-    else -> Translation3d(Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(92.0))
-}}
 
 internal val NOTE_EXIT_VELOCITY : Measure<Velocity<Distance>> = MetersPerSecond.of(4.577)
 internal val GRAVITY_ACCELERATION : Measure<Velocity<Velocity<Distance>>> = MetersPerSecondPerSecond.of(9.8)

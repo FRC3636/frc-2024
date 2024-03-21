@@ -3,8 +3,8 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.intake.Intake
-import com.frcteam3636.frc2024.subsystems.shooter.SPEAKER_POSE
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -141,10 +141,14 @@ object Robot : LoggedRobot() {
         // Polar driving
         Trigger(joystickLeft::getTrigger)
             .whileTrue(
-                Drivetrain.driveWithJoystickPointingTowards(
-                    joystickLeft,
-                    SPEAKER_POSE().toTranslation2d()
-                )
+                Commands.defer({
+                    Drivetrain.driveWithJoystickPointingTowards(
+                        joystickLeft,
+                        DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Blue)
+                            .speakerTranslation.toTranslation2d()
+                    )
+                }, setOf(Drivetrain))
             )
 
         // Control the climber
