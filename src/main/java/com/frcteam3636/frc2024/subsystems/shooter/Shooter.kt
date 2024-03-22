@@ -15,6 +15,7 @@ import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Velocity
+import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
@@ -308,36 +309,36 @@ object Shooter {
 
     }
 
-//    object Amp : Subsystem {
-//        val io = AmpMechIOReal()
-//        val inputs = AmpMechIO.Inputs()
-//
-//        var posReference: Rotation2d = Rotation2d(0.0)
-//
-//        fun pivotTo(pos: Rotation2d): Command = runOnce {
-//            posReference = pos
-//        }
-//
-//        fun setVoltage(volts: Measure<Voltage>) = runOnce {
-//            io.setVoltage(volts)
-//        }
-//
-//        val isStowed: Trigger = Trigger {
-//            abs(inputs.position.degrees) < 5.0
-//        }
-//
-//        override fun periodic() {
-//            io.updateInputs(inputs)
-//            io.pivotTo(posReference)
-//            Logger.processInputs("Shooter/Amp", inputs)
-//        }
-//    }
+    object Amp : Subsystem {
+        val io = AmpMechIOReal()
+        val inputs = AmpMechIO.Inputs()
+
+        var posReference: Rotation2d = Rotation2d(0.0)
+
+        fun pivotTo(pos: Rotation2d): Command = runOnce {
+            posReference = pos
+        }
+
+        fun setVoltage(volts: Measure<Voltage>) = runOnce {
+            io.setVoltage(volts)
+        }
+
+        val isStowed: Trigger = Trigger {
+            abs(inputs.position.degrees) < 5.0
+        }
+
+        override fun periodic() {
+            io.updateInputs(inputs)
+            io.pivotTo(posReference)
+            Logger.processInputs("Shooter/Amp", inputs)
+        }
+    }
 
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
         Pivot.register()
-//        Amp.register()
+        Amp.register()
         Feeder.register()
     }
 
