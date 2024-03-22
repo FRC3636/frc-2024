@@ -144,7 +144,6 @@ object Robot : LoggedRobot() {
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
         Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
         Shooter.Flywheels.defaultCommand = Shooter.Flywheels.pulse()
-//        Shooter.Amp.defaultCommand = Shooter.Amp.setVoltage(Volts.of(-3.0))
 
 
 
@@ -161,29 +160,14 @@ object Robot : LoggedRobot() {
                 }, setOf(Drivetrain))
             )
 
-        // Follow a motion profile to the selected pivot target
-        // TODO: cleanup after comp
+        // Follow a motion profile to the selected pivot targetz
         controller.leftTrigger()
             .debounce(0.1)
             .whileTrue(
-                Commands.either(
-                    //amp
-                    Commands.parallel(
-                        Shooter.Pivot.followMotionProfile(null),
-//                        Commands.sequence(
-//                            Commands.waitUntil(Shooter.Pivot.atSetpoint),
-//                            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(195.0))
-//                        ),
-                    ),
-                    //not amp
-                    Shooter.Pivot.followMotionProfile(null),
-                ) {Shooter.Pivot.target == Shooter.Pivot.Target.AMP}
+                Shooter.Pivot.followMotionProfile(null)
             )
             .onFalse(
-                    Commands.sequence(
-//                        Commands.waitUntil(Shooter.Amp.isStowed),
-                        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
-                    )
+                Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
             )
 
         // Select a target for the pivot
@@ -211,8 +195,6 @@ object Robot : LoggedRobot() {
                 })
             )
 
-
-//        Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
 
         // Shoot a note.
         Trigger(joystickRight::getTrigger)

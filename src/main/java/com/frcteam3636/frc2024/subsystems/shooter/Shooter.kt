@@ -308,31 +308,6 @@ object Shooter {
 
     }
 
-//    object Amp : Subsystem {
-//        val io = AmpMechIOReal()
-//        val inputs = AmpMechIO.Inputs()
-//
-//        var posReference: Rotation2d = Rotation2d(0.0)
-//
-//        fun pivotTo(pos: Rotation2d): Command = runOnce {
-//            posReference = pos
-//        }
-//
-//        fun setVoltage(volts: Measure<Voltage>) = runOnce {
-//            io.setVoltage(volts)
-//        }
-//
-//        val isStowed: Trigger = Trigger {
-//            abs(inputs.position.degrees) < 5.0
-//        }
-//
-//        override fun periodic() {
-//            io.updateInputs(inputs)
-//            io.pivotTo(posReference)
-//            Logger.processInputs("Shooter/Amp", inputs)
-//        }
-//    }
-
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
