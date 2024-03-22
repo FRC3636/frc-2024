@@ -221,16 +221,13 @@ object Robot : LoggedRobot() {
                 })
             )
 
-
-        Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
-
         // Shoot a note.
         Trigger(joystickRight::getTrigger)
             .whileTrue(
                 Commands.parallel(
                     Commands.either(
                         Shooter.Flywheels.rev(590.0, 0.0),
-                        Shooter.Flywheels.rev(67.0, 0.0),
+                        Shooter.Flywheels.rev(65.6, 0.0),
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
