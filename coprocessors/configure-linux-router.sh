@@ -9,6 +9,7 @@ ip link set $IFACE down
 # Set the IP address and routable subnet of the interface
 echo "Setting IP address and subnet..."
 ip addr add 10.36.36.1/24 dev $IFACE
+ip addr add 10.36.36.2/24 dev $IFACE
 
 # Enable IP forwarding
 echo "Enabling IP forwarding..."

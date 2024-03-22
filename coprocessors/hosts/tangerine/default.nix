@@ -20,7 +20,14 @@
       };
     };
 
-    services.photonvision.enable = true;
+    services.photonvision = {
+      enable = true;
+    };
+
+    services.pplib-coprocessor = {
+      enable = true;
+      server = "10.36.36.2";
+    };
 
     boot = {
       binfmt.emulatedSystems = [ "aarch64-linux" ];
