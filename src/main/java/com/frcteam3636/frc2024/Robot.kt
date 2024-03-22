@@ -17,7 +17,9 @@ import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
 import edu.wpi.first.wpilibj.util.WPILibVersion
-import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.CommandScheduler
+import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
 import edu.wpi.first.wpilibj2.command.button.JoystickButton
 import edu.wpi.first.wpilibj2.command.button.Trigger
@@ -256,8 +258,11 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto(autoChooser.selected) ?: Commands.none()
-        autoCommand.schedule()
+        val selectedAuto = autoChooser.selected
+        if (selectedAuto != null) {
+            autoCommand = AutoBuilder.buildAuto(selectedAuto)
+            autoCommand.schedule()
+        }
     }
 
     override fun teleopInit() {
@@ -327,5 +332,3 @@ object Note {
 
     private val rgbPublisher = NetworkTableInstance.getDefault().getTopic("RGB/Note State").genericPublish("int")
 }
-
-
