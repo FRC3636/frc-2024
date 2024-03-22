@@ -45,11 +45,11 @@ object Robot : LoggedRobot() {
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
     private val joystickDev = Joystick(3)
-    private var autoChooser: SendableChooser<String> = SendableChooser<String>()
+    private lateinit var autoChooser: SendableChooser<Command>
 
     private val brakeModeToggle = DigitalInput(5)
 
-    private var autoCommand: Command = Commands.none()
+    private var autoCommand: Command? = null
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -135,12 +135,10 @@ object Robot : LoggedRobot() {
             )
         )
 
+        autoChooser = AutoBuilder.buildAutoChooser().apply {
+            SmartDashboard.putData("Auto Selector", this)
+        }
 
-        autoChooser.addOption("Middle/4 Piece Close", "4 Piece Close")
-        autoChooser.addOption("Middle/2 Piece", "2 Piece")
-        autoChooser.addOption("Middle/5 Piece", "5 Piece")
-        autoChooser.addOption("Source/3 Piece", "3 Piece")
-        SmartDashboard.putData("Auto selector", autoChooser)
     }
 
 
@@ -172,6 +170,7 @@ object Robot : LoggedRobot() {
 
 
         // Follow a motion profile to the selected pivot target
+        // TODO: cleanup after comp
         controller.leftTrigger()
             .debounce(0.1)
             .whileTrue(
@@ -238,6 +237,7 @@ object Robot : LoggedRobot() {
                                 Note.state = Note.State.NONE
                             }
                         }),
+                        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED),
                     )
                 )
             )
@@ -257,15 +257,12 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        val selectedAuto = autoChooser.selected
-        if (selectedAuto != null) {
-            autoCommand = AutoBuilder.buildAuto(selectedAuto)
-            autoCommand.schedule()
-        }
+        autoCommand = autoChooser.selected
+        autoCommand?.schedule()
     }
 
     override fun teleopInit() {
-        autoCommand.cancel()
+        autoCommand?.cancel()
     }
 
     override fun testInit() {
