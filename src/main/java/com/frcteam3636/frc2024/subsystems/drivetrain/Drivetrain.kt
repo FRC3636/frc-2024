@@ -195,10 +195,8 @@ object Drivetrain : Subsystem {
         //
         // Note that the speeds are relative to the chassis, not the field.
         set(value) {
-            val states = kinematics.toCornerSwerveModuleStates(value)
-
-            // TODO: desaturate states
-
+            val discretized = ChassisSpeeds.discretize(value, Robot.period)
+            val states = kinematics.toCornerSwerveModuleStates(discretized)
             moduleStates = states
         }
 
