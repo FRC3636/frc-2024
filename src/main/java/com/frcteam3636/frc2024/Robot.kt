@@ -12,7 +12,6 @@ import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.networktables.NetworkTableInstance
-import edu.wpi.first.units.Units.Volts
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
@@ -149,7 +148,7 @@ object Robot : LoggedRobot() {
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
         Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
         Shooter.Flywheels.defaultCommand = Shooter.Flywheels.pulse()
-        Shooter.Amp.defaultCommand = Shooter.Amp.setVoltage(Volts.of(-3.0))
+//        Shooter.Amp.defaultCommand = Shooter.Amp.setVoltage(Volts.of(-3.0))
 
 
 
@@ -180,10 +179,10 @@ object Robot : LoggedRobot() {
                     //amp
                     Commands.parallel(
                         Shooter.Pivot.followMotionProfile(null),
-                        Commands.sequence(
-                            Commands.waitUntil(Shooter.Pivot.atSetpoint),
-                            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(195.0))
-                        ),
+//                        Commands.sequence(
+//                            Commands.waitUntil(Shooter.Pivot.atSetpoint),
+//                            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(195.0))
+//                        ),
                     ),
                     //not amp
                     Shooter.Pivot.followMotionProfile(null),
@@ -191,7 +190,7 @@ object Robot : LoggedRobot() {
             )
             .onFalse(
                     Commands.sequence(
-                        Commands.waitUntil(Shooter.Amp.isStowed),
+//                        Commands.waitUntil(Shooter.Amp.isStowed),
                         Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
                     )
             )
@@ -222,7 +221,7 @@ object Robot : LoggedRobot() {
             )
 
 
-        Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
+//        Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
 
         // Shoot a note.
         Trigger(joystickRight::getTrigger)

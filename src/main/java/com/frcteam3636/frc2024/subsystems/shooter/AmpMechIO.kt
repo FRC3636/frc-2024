@@ -3,13 +3,11 @@ package com.frcteam3636.frc2024.subsystems.shooter
 import com.frcteam3636.frc2024.CANSparkFlex
 import com.frcteam3636.frc2024.REVMotorControllerId
 import com.frcteam3636.frc2024.utils.math.TAU
-import com.revrobotics.CANSparkBase
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Voltage
 import org.littletonrobotics.junction.LogTable
-import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface AmpMechIO {
@@ -66,10 +64,11 @@ class AmpMechIOReal : AmpMechIO {
     }
 
     override fun pivotTo(position: Rotation2d) {
-        Logger.recordOutput("Shooter/Amp/Setpoint", position)
-        pid.setReference(
-            position.radians, CANSparkBase.ControlType.kPosition
-        )
+
+        //        Logger.recordOutput("Shooter/Amp/Setpoint", position)
+//        pid.setReference(
+//            position.radians, CANSparkBase.ControlType.kPosition
+//        )
     }
 
     init {
@@ -81,7 +80,7 @@ class AmpMechIOReal : AmpMechIO {
     }
 
     override fun setVoltage(volts: Measure<Voltage>) {
-        pivotMotor.setVoltage(volts.baseUnitMagnitude())
+//        pivotMotor.setVoltage(volts.baseUnitMagnitude())
     }
 
     internal companion object Constants {
