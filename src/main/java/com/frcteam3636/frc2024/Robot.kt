@@ -3,8 +3,8 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.intake.Intake
-import com.frcteam3636.frc2024.subsystems.shooter.SPEAKER_POSE
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -45,11 +45,11 @@ object Robot : LoggedRobot() {
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
     private val joystickDev = Joystick(3)
-    private var autoChooser = SendableChooser<String>()
+    private var autoChooser: SendableChooser<String> = SendableChooser<String>()
 
     private val brakeModeToggle = DigitalInput(5)
 
-    private var autoCommand: Command? = null
+    private var autoCommand: Command = Commands.none()
 
     override fun robotInit() {
         // Report the use of the Kotlin Language for "FRC Usage Report" statistics
@@ -91,6 +91,7 @@ object Robot : LoggedRobot() {
         Intake.register()
         Climber.register()
 
+
         // Configure our button and joystick bindings
         configureBindings()
 
@@ -99,7 +100,7 @@ object Robot : LoggedRobot() {
             "revAim",
             Commands.parallel(
                 Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
-                Shooter.Flywheels.rev(590.0, 0.0)
+                Shooter.Flywheels.rev(580.0, 0.0)
             )
         )
         NamedCommands.registerCommand("stowIntakeRevAim",
@@ -118,29 +119,50 @@ object Robot : LoggedRobot() {
             "shootWhenReady",
             Commands.sequence(
                 Commands.waitUntil(Shooter.Pivot.isReadyToShoot.and(Shooter.Flywheels.atDesiredVelocity)),
-                Shooter.Feeder.feed().withTimeout(0.1)
+                Shooter.Feeder.feed().withTimeout(0.7)
             ))
 
+        NamedCommands.registerCommand(
+            "waitUntilShootReady",
+            Commands.waitUntil(Shooter.Pivot.isReadyToShoot.and(Shooter.Flywheels.atDesiredVelocity)),
+        )
 
-        autoChooser.addOption("Middle 2 Piece", "Middle 2 Piece")
-        autoChooser.addOption("Amp 2 Piece", "Left 2 Piece")
-        autoChooser.addOption("Amp 3 Piece", "Left 3 Piece")
-        autoChooser.addOption("Open Speaker Side 2 Piece", "Right 2 Piece")
+        NamedCommands.registerCommand(
+            "revAndShoot",
+            Commands.sequence(
+                Shooter.Flywheels.rev(590.0, 0.0),
+                Shooter.Feeder.feed().withTimeout(0.7)
+            )
+        )
+
+
+        autoChooser.addOption("Middle/4 Piece Close", "4 Piece Close")
+        autoChooser.addOption("Middle/2 Piece", "2 Piece")
+        autoChooser.addOption("Middle/5 Piece", "5 Piece")
+        autoChooser.addOption("Source/3 Piece", "3 Piece")
         SmartDashboard.putData("Auto selector", autoChooser)
     }
 
 
     private fun configureBindings() {
-        // Cartesian driving
         Drivetrain.defaultCommand = Drivetrain.driveWithJoysticks(joystickLeft, joystickRight)
+        Shooter.Feeder.defaultCommand = Shooter.Feeder.pulse()
+        Shooter.Flywheels.defaultCommand = Shooter.Flywheels.pulse()
+//        Shooter.Amp.defaultCommand = Shooter.Amp.setVoltage(Volts.of(-3.0))
+
+
 
         // Polar driving
         Trigger(joystickLeft::getTrigger)
             .whileTrue(
-                Drivetrain.driveWithJoystickPointingTowards(
-                    joystickLeft,
-                    SPEAKER_POSE.toTranslation2d()
-                )
+                Commands.defer({
+                    Drivetrain.driveWithJoystickPointingTowards(
+                        joystickLeft,
+                        DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Blue)
+                            .speakerTranslation.toTranslation2d()
+                    )
+                }, setOf(Drivetrain))
             )
 
         // Control the climber
@@ -152,13 +174,32 @@ object Robot : LoggedRobot() {
         // Follow a motion profile to the selected pivot target
         controller.leftTrigger()
             .debounce(0.1)
-            .whileTrue(Shooter.Pivot.followMotionProfile(null))
-            .onFalse(Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED))
+            .whileTrue(
+                Commands.either(
+                    //amp
+                    Commands.parallel(
+                        Shooter.Pivot.followMotionProfile(null),
+//                        Commands.sequence(
+//                            Commands.waitUntil(Shooter.Pivot.atSetpoint),
+//                            Shooter.Amp.pivotTo(Rotation2d.fromDegrees(195.0))
+//                        ),
+                    ),
+                    //not amp
+                    Shooter.Pivot.followMotionProfile(null),
+                ) {Shooter.Pivot.target == Shooter.Pivot.Target.AMP}
+            )
+            .onFalse(
+                    Commands.sequence(
+//                        Commands.waitUntil(Shooter.Amp.isStowed),
+                        Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+                    )
+            )
 
         // Select a target for the pivot
         controller.a().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AMP))
-        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
+        controller.x().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
+        controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
 
         // Intake
         controller.rightBumper()
@@ -180,12 +221,7 @@ object Robot : LoggedRobot() {
             )
 
 
-        // Manually feed through the shooter.
-        controller.x().whileTrue(
-            Shooter.Feeder.feed()
-        )
-
-        Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
+//        Shooter.Amp.defaultCommand = Shooter.Amp.pivotTo(Rotation2d(0.0))
 
         // Shoot a note.
         Trigger(joystickRight::getTrigger)
@@ -193,7 +229,7 @@ object Robot : LoggedRobot() {
                 Commands.parallel(
                     Commands.either(
                         Shooter.Flywheels.rev(590.0, 0.0),
-                        Shooter.Flywheels.rev(2.5, 0.0)
+                        Shooter.Flywheels.rev(67.0, 0.0),
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
@@ -221,12 +257,15 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
-        autoCommand = AutoBuilder.buildAuto(autoChooser.selected)
-        autoCommand!!.schedule()
+        val selectedAuto = autoChooser.selected
+        if (selectedAuto != null) {
+            autoCommand = AutoBuilder.buildAuto(selectedAuto)
+            autoCommand.schedule()
+        }
     }
 
     override fun teleopInit() {
-        autoCommand?.cancel()
+        autoCommand.cancel()
     }
 
     override fun testInit() {
@@ -270,7 +309,7 @@ private fun doIntakeSequence(): Command =
                 //contacted note
                 Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //note stowed
-                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
+                Commands.waitUntil (Trigger{ !Shooter.Flywheels.aboveIntakeThreshold }.debounce(0.5)),
                 Commands.runOnce({ Note.state = Note.State.SHOOTER })
             )
         )
@@ -292,5 +331,3 @@ object Note {
 
     private val rgbPublisher = NetworkTableInstance.getDefault().getTopic("RGB/Note State").genericPublish("int")
 }
-
-

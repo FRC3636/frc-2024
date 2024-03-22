@@ -71,11 +71,10 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
 
             AbsolutePoseMeasurement(
                 pose = Pose3d(Translation3d(x, y, z), Rotation3d(roll, pitch, yaw)),
-                timestamp = Timer.getFPGATimestamp(),
-//                (update.timestamp * 1e-6) * (latency * 1e-3),
+                timestamp = (update.timestamp * 1e-6) - (latency * 1e-3),
                 stdDeviation = stddev
             ).also {
-                Logger.recordOutput("Absolute Pose/Limelight/Pose", it.pose)
+//                Logger.recordOutput("Absolute Pose/Limelight/Pose", it.pose)
                 Logger.recordOutput("Absolute Pose/Limelight/Tag Count", tagCount)
             }
         }
@@ -144,7 +143,7 @@ class AbsolutePoseMeasurementStruct : Struct<AbsolutePoseMeasurement> {
 internal val APRIL_TAG_FIELD_LAYOUT = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile)
 internal const val APRIL_TAG_AMBIGUITY_FILTER = 0.3
 internal val APRIL_TAG_STD_DEV = { distance: Double, count: Int ->
-    val distanceMultiplier = (distance - (count - 1) * 2).pow(2.0)
+    val distanceMultiplier = (distance - (count - 1) * 3).pow(2.0)
     val translationalStdDev = (0.05 / count) * distanceMultiplier + 0.0
     val rotationalStdDev = 0.2 * distanceMultiplier + 0.1
     VecBuilder.fill(

@@ -30,7 +30,6 @@ import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.Watchdog
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -76,7 +75,7 @@ object Drivetrain : Subsystem {
 //        "Bloop" to PhotonVisionPoseIOReal(
 //            "bloop",
 //            Transform3d(
-//                Translation3d(-0.1175, 0.3175, 0.0),
+//                Translation3d(-0.1175, 0.3175, 0.45),
 //                Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0)
 //            )
 //        ),
@@ -91,6 +90,14 @@ object Drivetrain : Subsystem {
 //            "brack",
 //            Transform3d(
 //                Translation3d(-0.1175, -0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+        //incorrect pose
+//        "Blowfish" to PhotonVisionPoseIOReal(
+//            "blowfish",
+//            Transform3d(
+//                Translation3d(-0.3656, -0.2794, 0.22),
 //                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
 //            )
 //        ),
@@ -257,19 +264,13 @@ object Drivetrain : Subsystem {
         }
 
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
-        val rotationPIDController = PIDController(ROTATION_PID_GAINS)
+        val rotationPIDController = PIDController(ROTATION_PID_GAINS).apply {
+            enableContinuousInput(0.0, TAU)
+        }
         return run {
             val magnitude = rotationPIDController.calculate(
-                estimatedPose.rotation.radians,
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
-            )
-            Logger.recordOutput(
-                "Rotational Target Setpoint",
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2)
-            )
-            Logger.recordOutput(
-                "Rotational Target Error",
-                target.minus(estimatedPose.translation).angle.radians - (TAU / 2) - estimatedPose.rotation.radians
+                target.minus(estimatedPose.translation).angle.radians - (TAU/2),
+                estimatedPose.rotation.radians
             )
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -415,8 +416,8 @@ internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
-internal val TRANSLATION_PID_GAINS = PIDGains(0.1, 0.0, 3.0)
-internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.3)
+internal val TRANSLATION_PID_GAINS = PIDGains(0.5, 0.0, 1.0)
+internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.4)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =

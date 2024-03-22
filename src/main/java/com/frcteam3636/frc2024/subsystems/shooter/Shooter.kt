@@ -11,14 +11,18 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Distance
+import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
+import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
-import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Commands
+import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.Logger
-import kotlin.jvm.optionals.getOrNull
 import kotlin.math.abs
 import kotlin.math.absoluteValue
 import kotlin.math.atan
@@ -124,6 +128,14 @@ object Shooter {
                 setpointRight = RadiansPerSecond.zero()
             })
 
+        fun pulse(): Command = runEnd({
+            setpointLeft = RadiansPerSecond.of(-1.0)
+            setpointRight = RadiansPerSecond.of(-1.0)
+        }, {
+            setpointLeft = RadiansPerSecond.zero()
+            setpointRight = RadiansPerSecond.zero()
+        })
+
     }
 
     object Feeder : Subsystem {
@@ -133,27 +145,35 @@ object Shooter {
         }
         private val inputs = FeederIO.Inputs()
 
-        fun intake(): Command = Commands.runEnd({
+        override fun periodic() {
+            io.updateInputs(inputs)
+
+            Logger.processInputs("Shooter/Feeder", inputs)
+        }
+
+        fun intake(): Command = runEnd({
             io.setIndexerVoltage(Volts.of(10.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun pulse(): Command = Commands.runEnd({
-            io.setIndexerVoltage(Volts.of(0.3))
+        fun pulse(): Command = runEnd({
+            io.setIndexerVoltage(Volts.of(0.6))
         }, {
             io.setIndexerVoltage(Volts.zero())
-        }, this)
+        })
 
-        fun outtake(): Command = Commands.runEnd({
+        fun outtake(): Command = runEnd({
             io.setIndexerVoltage(Volts.of(-4.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
 
-        fun feed(): Command = Commands.runEnd({
+        fun feed(): Command = runEnd({
+            Logger.recordOutput("Shooter/Feeder/IsFeeding", true)
             io.setIndexerVoltage(Volts.of(-10.0))
         }, {
+            Logger.recordOutput("Shooter/Feeder/IsFeeding", false)
             io.setIndexerVoltage(Volts.zero())
         })
     }
@@ -166,7 +186,7 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
 
-        var target: Target = Target.PODIUM
+        var target: Target = Target.AIM
 
         override fun periodic() {
             io.updateInputs(inputs)
@@ -186,16 +206,22 @@ object Shooter {
                     && (abs(inputs.leftVelocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
 
+        val atSetpoint = Trigger {
+            abs((inputs.leftPosition - target.profile.position()).degrees) < 2.0
+        }
+
         val isReadyToShoot = Trigger {
+            val speakerTranslation = DriverStation.getAlliance()
+                .orElse(DriverStation.Alliance.Blue)
+                .speakerTranslation
                 val speakerPose = Pose2d(
-                    Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
+                    speakerTranslation.toTranslation2d(),
                     Rotation2d()
                 )
                 val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                     .minus(Translation2d(0.3, 0.0)).norm
-                val targetHeight = SPEAKER_POSE.z
-                Rotation2d((TAU / 2) - atan(targetHeight / distance))
-                abs((Rotation2d((TAU / 2) - atan(targetHeight / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
+            Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance))
+            abs((Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
                     2.2
                 ).radians
             }
@@ -233,17 +259,18 @@ object Shooter {
             AIM(
                 PivotProfile(
                     {
-
+                        val speakerTranslation = DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Blue)
+                            .speakerTranslation
                         val speakerPose = Pose2d(
-                            Translation2d(SPEAKER_POSE.x, SPEAKER_POSE.y),
+                            speakerTranslation.toTranslation2d(),
                             Rotation2d()
                         )
                         val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                             .minus(Translation2d(0.3, 0.0)).norm
                         Logger.recordOutput("Shooter/Distance To Speaker", distance)
-                        val targetHeight = SPEAKER_POSE.z
-                        Logger.recordOutput("Shooter/Speaker Height", targetHeight)
-                        Rotation2d((TAU / 2) - atan(targetHeight / distance))
+                        Logger.recordOutput("Shooter/Speaker Height", speakerTranslation.z)
+                        Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance))
                     },
                     { Rotation2d() }
                 )
@@ -261,13 +288,13 @@ object Shooter {
             ),
             AMP(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(101.0) },
+                    { Rotation2d.fromDegrees(105.0) },
                     { Rotation2d() }
                 )
             ),
             PODIUM(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(10.0) },
+                    { Rotation2d.fromDegrees(110.0) },
                     { Rotation2d() }
                 )
             ),
@@ -281,28 +308,37 @@ object Shooter {
 
     }
 
-    object Amp : Subsystem {
-        val io = AmpMechIOReal()
-        val inputs = AmpMechIO.Inputs()
-
-        var posReference: Rotation2d = Rotation2d(0.0)
-
-        fun pivotTo(pos: Rotation2d): Command = runOnce {
-            posReference = pos
-        }
-
-        override fun periodic() {
-            io.updateInputs(inputs)
-            io.pivotTo(posReference)
-            Logger.processInputs("Shooter/Amp", inputs)
-        }
-    }
+//    object Amp : Subsystem {
+//        val io = AmpMechIOReal()
+//        val inputs = AmpMechIO.Inputs()
+//
+//        var posReference: Rotation2d = Rotation2d(0.0)
+//
+//        fun pivotTo(pos: Rotation2d): Command = runOnce {
+//            posReference = pos
+//        }
+//
+//        fun setVoltage(volts: Measure<Voltage>) = runOnce {
+//            io.setVoltage(volts)
+//        }
+//
+//        val isStowed: Trigger = Trigger {
+//            abs(inputs.position.degrees) < 5.0
+//        }
+//
+//        override fun periodic() {
+//            io.updateInputs(inputs)
+//            io.pivotTo(posReference)
+//            Logger.processInputs("Shooter/Amp", inputs)
+//        }
+//    }
 
     // Register the two subsystems which together form the shooter.
     fun register() {
         Flywheels.register()
         Pivot.register()
-        Amp.register()
+//        Amp.register()
+        Feeder.register()
     }
 
     private val mechanism = Mechanism2d(3.0, 3.0, BLACK)
@@ -325,13 +361,22 @@ data class PivotProfile(
 )
 
 
-//amps
-internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(30000.0)
-val SPEAKER_POSE = when (DriverStation.getAlliance().getOrNull()) {
-    DriverStation.Alliance.Red -> Translation3d(16.511, 8.21055 - 2.6, Units.inchesToMeters(84.5))
-    else -> Translation3d(0.0, 8.21055 - 2.6, Units.inchesToMeters(84.5))
-}
+val DriverStation.Alliance.speakerTranslation: Translation3d
+    get() = when (this) {
+        DriverStation.Alliance.Red -> Translation3d(
+            16.51 - Units.inchesToMeters(5.0),
+            8.21055 - 2.6,
+            Units.inchesToMeters(92.0)
+        )
 
+        else -> Translation3d(Units.inchesToMeters(5.0), 8.21055 - 2.6, Units.inchesToMeters(92.0))
+    }
+
+//amps
+internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(28000.0)
+
+internal val NOTE_EXIT_VELOCITY : Measure<Velocity<Distance>> = MetersPerSecond.of(4.577)
+internal val GRAVITY_ACCELERATION : Measure<Velocity<Velocity<Distance>>> = MetersPerSecondPerSecond.of(9.8)
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(13.0)
