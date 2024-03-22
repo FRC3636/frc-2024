@@ -1,6 +1,5 @@
 package com.frcteam3636.frc2024
 
-import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
@@ -89,7 +88,6 @@ object Robot : LoggedRobot() {
         Shooter.register()
         Drivetrain.register()
         Intake.register()
-        Climber.register()
 
 
         // Configure our button and joystick bindings
@@ -162,12 +160,6 @@ object Robot : LoggedRobot() {
                     )
                 }, setOf(Drivetrain))
             )
-
-        // Control the climber
-        controller.povUp().debounce(0.15).whileTrue(Climber.setClimber(0.5))
-        controller.povDown().debounce(0.15).whileTrue(Climber.setClimber(-0.5))
-        controller.povRight().onTrue(Climber.knockIntake())
-
 
         // Follow a motion profile to the selected pivot target
         // TODO: cleanup after comp
