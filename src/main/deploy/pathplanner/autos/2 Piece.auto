@@ -2,10 +2,10 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 0.8355161547660828,
-      "y": 4.452983856201172
+      "x": 1.3711200952529907,
+      "y": 5.567086696624756
     },
-    "rotation": -59.743540698169184
+    "rotation": 2.765374265560399e-21
   },
   "command": {
     "type": "sequential",
@@ -41,45 +41,7 @@
                     {
                       "type": "path",
                       "data": {
-                        "pathName": "Amp 3 Piece.1"
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "waitUntilShootReady"
-                      }
-                    }
-                  ]
-                }
-              },
-              {
-                "type": "named",
-                "data": {
-                  "name": "stowIntakeRevAim"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "revAndShoot"
-          }
-        },
-        {
-          "type": "race",
-          "data": {
-            "commands": [
-              {
-                "type": "sequential",
-                "data": {
-                  "commands": [
-                    {
-                      "type": "path",
-                      "data": {
-                        "pathName": "Amp 3 Piece.2"
+                        "pathName": "Middle 4 Piece.1"
                       }
                     },
                     {
@@ -109,6 +71,6 @@
       ]
     }
   },
-  "folder": "New Folder",
+  "folder": "Middle",
   "choreoAuto": true
 }
