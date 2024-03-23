@@ -175,6 +175,7 @@ object Robot : LoggedRobot() {
         controller.x().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+        controller.button(7).onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SHUTTLE))
 
         // Pivot velocity control
         controller.button(8)

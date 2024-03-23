@@ -302,6 +302,17 @@ object Shooter {
                     }
                 )
             ),
+            SHUTTLE(
+                PivotProfile(
+                    {
+                        Rotation2d.fromDegrees(180.0)
+
+                    },
+                    {
+                        Rotation2d()
+                    }
+                )
+            ),
             AMP(
                 PivotProfile(
                     { Rotation2d.fromDegrees(101.0) },
