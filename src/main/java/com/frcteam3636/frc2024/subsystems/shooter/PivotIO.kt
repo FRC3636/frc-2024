@@ -106,14 +106,9 @@ class PivotIOKraken : PivotIO {
     private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
 
     private val absoluteEncoderPosition
-        get() = if (rawAbsoluteEncoderPosition.degrees + absoluteEncoderOffset.degrees > -40) {
-            Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
-        } else {
-            Rotation2d(
-                rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians +
-                        TAU
-            )
-        }
+        get() =
+            Rotation2d((rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians) % TAU)
+
 
     private val absoluteEncoderOffset = Rotation2d.fromDegrees(546.0) + LIMIT_SWITCH_OFFSET
 

@@ -159,7 +159,7 @@ object Shooter {
         })
 
         fun pulse(): Command = runEnd({
-            io.setIndexerVoltage(Volts.of(0.6))
+            io.setIndexerVoltage(Volts.of(1.0))
         }, {
             io.setIndexerVoltage(Volts.zero())
         })
