@@ -187,11 +187,19 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
 
+        private val processedAbsoluteEncoderPosition
+            get() =
+                Rotation2d((inputs.absoluteEncoderPosition.radians + inputs.absoluteEncoderPosition.radians) % TAU)
+
         var target: Target = Target.AIM
 
         override fun periodic() {
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
+
+            io.setPivotPosition(processedAbsoluteEncoderPosition)
+            Logger.recordOutput("Shooter/Pivot/Processed Absolute Encoder", processedAbsoluteEncoderPosition)
+            Logger.recordOutput("Shooter/Pivot/Required Offset", -inputs.absoluteEncoderPosition)
 
             armLigament.angle = inputs.leftPosition.degrees
 
@@ -232,16 +240,15 @@ object Shooter {
             val speakerTranslation = DriverStation.getAlliance()
                 .orElse(DriverStation.Alliance.Blue)
                 .speakerTranslation
-                val speakerPose = Pose2d(
+            val speakerPose = Pose2d(
                     speakerTranslation.toTranslation2d(),
                     Rotation2d()
                 )
-                val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
+            val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                     .minus(Translation2d(0.3, 0.0)).norm
-            Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance))
             abs((Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
-                    2.2
-                ).radians
+                2.2
+            ).radians
             }
 
 

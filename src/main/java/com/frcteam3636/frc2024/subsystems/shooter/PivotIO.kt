@@ -10,7 +10,10 @@ import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
-import com.frcteam3636.frc2024.utils.math.*
+import com.frcteam3636.frc2024.utils.math.MotorFFGains
+import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.motorFFGains
+import com.frcteam3636.frc2024.utils.math.pidGains
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
@@ -92,7 +95,7 @@ interface PivotIO {
 
     fun driveVelocity(velocity: Measure<Velocity<Angle>>) {}
 
-    fun resetPivotToAbsoluteEncoder() {}
+    fun setPivotPosition(newPosition: Rotation2d) {}
 }
 
 class PivotIOKraken : PivotIO {
@@ -104,10 +107,6 @@ class PivotIOKraken : PivotIO {
         distancePerRotation = SENSOR_TO_PIVOT_RATIO
     }
     private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
-
-    private val absoluteEncoderPosition
-        get() =
-            Rotation2d((rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians) % TAU)
 
 
     private val absoluteEncoderOffset = Rotation2d.fromDegrees(546.0) + LIMIT_SWITCH_OFFSET
@@ -152,11 +151,9 @@ class PivotIOKraken : PivotIO {
     private val leftLimitSwitchUnpressed = DigitalInput(1)
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
-        resetPivotToAbsoluteEncoder()
-
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
-        inputs.absoluteEncoderPosition = absoluteEncoderPosition
+        inputs.absoluteEncoderPosition = this.rawAbsoluteEncoderPosition
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
 
@@ -172,8 +169,6 @@ class PivotIOKraken : PivotIO {
         inputs.rotorVelocityLeft = Units.rotationsToRadians(leftMotor.rotorVelocity.value)
         inputs.rotorDistanceRight = Units.rotationsToRadians(rightMotor.rotorPosition.value)
         inputs.rotorVelocityRight = Units.rotationsToRadians(rightMotor.rotorVelocity.value)
-
-        Logger.recordOutput("Shooter/Pivot/Required Offset", -rawAbsoluteEncoderPosition)
     }
 
     override fun pivotToAndStop(position: Rotation2d) {
@@ -183,10 +178,10 @@ class PivotIOKraken : PivotIO {
         Logger.recordOutput("Shooter/Pivot/Velocity Setpoint", 0.0)
     }
 
-    override fun resetPivotToAbsoluteEncoder() {
+    override fun setPivotPosition(newPosition: Rotation2d) {
 
-        leftMotor.setPosition(absoluteEncoderPosition.rotations)
-        rightMotor.setPosition(absoluteEncoderPosition.rotations)
+        leftMotor.setPosition(newPosition.rotations)
+        rightMotor.setPosition(newPosition.rotations)
     }
 
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
