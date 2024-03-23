@@ -17,10 +17,7 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig
 import com.pathplanner.lib.util.ReplanningConfig
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
-import edu.wpi.first.math.geometry.Pose2d
-import edu.wpi.first.math.geometry.Rotation2d
-import edu.wpi.first.math.geometry.Rotation3d
-import edu.wpi.first.math.geometry.Translation2d
+import edu.wpi.first.math.geometry.*
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
@@ -37,6 +34,7 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
+import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -93,14 +91,13 @@ object Drivetrain : Subsystem {
 //                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
 //            )
 //        ),
-        //incorrect pose
-//        "Blowfish" to PhotonVisionPoseIOReal(
-//            "blowfish",
-//            Transform3d(
-//                Translation3d(-0.3656, -0.2794, 0.22),
-//                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
-//            )
-//        ),
+        "Blowfish" to PhotonVisionPoseIOReal(
+            "blowfish",
+            Transform3d(
+                Translation3d(-0.3656, -0.2794, 0.22),
+                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
+            )
+        ),
         "Limelight" to LimelightPoseIOReal(
             "limelight",
         )
@@ -264,6 +261,7 @@ object Drivetrain : Subsystem {
         }
 
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
+        Logger.recordOutput("Drivetrain/Polar Driving Target", target)
         val rotationPIDController = PIDController(ROTATION_PID_GAINS).apply {
             enableContinuousInput(0.0, TAU)
         }

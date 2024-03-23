@@ -11,6 +11,7 @@ import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Angle
 import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
@@ -195,7 +196,7 @@ object Shooter {
             armLigament.angle = inputs.leftPosition.degrees
 
             Logger.recordOutput("Shooter", mechanism)
-            Logger.recordOutput("Shooter/Pivot/Is Stowed", isStowed())
+            Logger.recordOutput("Shooter/Pivot/Is Stowed", isStowed.asBoolean)
         }
 
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
@@ -205,6 +206,23 @@ object Shooter {
             (abs((goal - inputs.leftPosition).radians) < PIVOT_POSITION_TOLERANCE.radians)
                     && (abs(inputs.leftVelocity.radians) < PIVOT_VELOCITY_TOLERANCE.radians)
         })
+
+        fun holdCurrentPosition(): Command = defer {
+            pivotAndStop(inputs.leftPosition)
+        }
+
+        fun runAtVelocity(velocity: () -> Measure<Velocity<Angle>>): Command {
+            return defer {
+                var setpoint = inputs.leftPosition
+                runEnd({
+                    val changeInSetpoint = velocity().`in`(RadiansPerSecond) * Robot.period
+                    setpoint += Rotation2d(changeInSetpoint)
+                    io.pivotToAndStop(setpoint)
+                }, {
+                    io.pivotToAndStop(inputs.leftPosition)
+                })
+            }
+        }
 
         val atSetpoint = Trigger {
             abs((inputs.leftPosition - target.profile.position()).degrees) < 2.0
@@ -227,10 +245,8 @@ object Shooter {
             }
 
 
-
-        fun isStowed(): Boolean {
-
-            return (abs((Rotation2d.fromDegrees(-27.0) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(2.5).radians)
+        val isStowed = Trigger {
+            abs((Rotation2d.fromDegrees(-27.0) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(2.5).radians
         }
 
         fun setTarget(target: Target): Command =
@@ -278,7 +294,7 @@ object Shooter {
             SPEAKER(
                 PivotProfile(
                     {
-                        Rotation2d.fromDegrees(150.0)
+                        Rotation2d.fromDegrees(120.0)
 
                     },
                     {
@@ -294,7 +310,7 @@ object Shooter {
             ),
             PODIUM(
                 PivotProfile(
-                    { Rotation2d.fromDegrees(110.0) },
+                    { Rotation2d.fromDegrees(135.0) },
                     { Rotation2d() }
                 )
             ),
@@ -348,7 +364,7 @@ val DriverStation.Alliance.speakerTranslation: Translation3d
     }
 
 //amps
-internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(28000.0)
+internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(25000.0)
 
 internal val NOTE_EXIT_VELOCITY : Measure<Velocity<Distance>> = MetersPerSecond.of(4.577)
 internal val GRAVITY_ACCELERATION : Measure<Velocity<Velocity<Distance>>> = MetersPerSecondPerSecond.of(9.8)

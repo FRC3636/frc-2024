@@ -15,7 +15,6 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.util.struct.Struct
 import edu.wpi.first.util.struct.StructSerializable
-import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -30,13 +29,13 @@ interface AbsolutePoseIO {
         var measurement: AbsolutePoseMeasurement? = null
 
         override fun toLog(table: LogTable) {
-            if (measurement != null) {
-                table.put("Measurement", measurement)
-            }
+//            if (measurement != null) {
+//                table.put("Measurement", measurement)
+//            }
         }
 
         override fun fromLog(table: LogTable?) {
-            measurement = table?.get("Measurement", measurement)!![0]
+//            measurement = table?.get("Measurement", measurement)!![0]
         }
     }
 

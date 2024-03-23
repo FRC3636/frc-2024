@@ -9,8 +9,8 @@ import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.networktables.NetworkTableInstance
+import edu.wpi.first.units.Units
 import edu.wpi.first.wpilibj.*
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
@@ -127,7 +127,7 @@ object Robot : LoggedRobot() {
 
         NamedCommands.registerCommand(
             "revAndShoot",
-            Commands.sequence(
+            Commands.race(
                 Shooter.Flywheels.rev(590.0, 0.0),
                 Shooter.Feeder.feed().withTimeout(0.7)
             )
@@ -160,7 +160,7 @@ object Robot : LoggedRobot() {
                 }, setOf(Drivetrain))
             )
 
-        // Follow a motion profile to the selected pivot targetz
+        // Follow a motion profile to the selected pivot target
         controller.leftTrigger()
             .debounce(0.1)
             .whileTrue(
@@ -175,6 +175,11 @@ object Robot : LoggedRobot() {
         controller.x().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.AIM))
         controller.y().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.PODIUM))
         controller.b().onTrue(Shooter.Pivot.setTarget(Shooter.Pivot.Target.SPEAKER))
+
+        // Pivot velocity control
+        controller.button(8)
+            .whileTrue(Shooter.Pivot.runAtVelocity { Units.DegreesPerSecond.of(controller.leftY * 30) })
+            .onFalse(Shooter.Pivot.holdCurrentPosition())
 
         // Intake
         controller.rightBumper()
@@ -198,6 +203,7 @@ object Robot : LoggedRobot() {
 
         // Shoot a note.
         Trigger(joystickRight::getTrigger)
+            .and(Shooter.Pivot.isStowed.negate())
             .whileTrue(
                 Commands.parallel(
                     Commands.either(
@@ -218,7 +224,7 @@ object Robot : LoggedRobot() {
 
         JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({ Drivetrain.zeroGyro() }))
 
-        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
+//        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
 
         // Switch pivot brake mode on and off while disabled.
         Trigger(brakeModeToggle::get)
@@ -265,7 +271,7 @@ private fun doIntakeSequence(): Command =
     Commands.sequence(
         Intake.intake(),
         Commands.runOnce({ Note.state = Note.State.HANDOFF }),
-        Commands.waitUntil(Shooter.Pivot::isStowed),
+        Commands.waitUntil(Shooter.Pivot.isStowed),
         Commands.race(
             Commands.parallel(
                 Intake.index(),
@@ -280,7 +286,7 @@ private fun doIntakeSequence(): Command =
                 //contacted note
                 Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //note stowed
-                Commands.waitUntil (Trigger{ !Shooter.Flywheels.aboveIntakeThreshold }.debounce(0.5)),
+                Commands.waitUntil(Trigger { !Shooter.Flywheels.aboveIntakeThreshold }),
                 Commands.runOnce({ Note.state = Note.State.SHOOTER })
             )
         )

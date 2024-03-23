@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024.subsystems.shooter
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
 import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
+import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.signals.GravityTypeValue
 import com.ctre.phoenix6.signals.InvertedValue
@@ -13,6 +14,9 @@ import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.units.Angle
+import edu.wpi.first.units.Measure
+import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DigitalInput
 import edu.wpi.first.wpilibj.DutyCycleEncoder
 import edu.wpi.first.wpilibj.Timer
@@ -86,6 +90,8 @@ interface PivotIO {
     fun driveVoltage(volts: Double) {}
     fun setBrakeMode(enabled: Boolean) {}
 
+    fun driveVelocity(velocity: Measure<Velocity<Angle>>) {}
+
     fun resetPivotToAbsoluteEncoder() {}
 }
 
@@ -103,10 +109,13 @@ class PivotIOKraken : PivotIO {
         get() = if (rawAbsoluteEncoderPosition.degrees + absoluteEncoderOffset.degrees > -40) {
             Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians)
         } else {
-            Rotation2d(rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians + TAU)
+            Rotation2d(
+                rawAbsoluteEncoderPosition.radians + absoluteEncoderOffset.radians +
+                        TAU
+            )
         }
 
-    private val absoluteEncoderOffset = Rotation2d.fromDegrees(29.85) + LIMIT_SWITCH_OFFSET
+    private val absoluteEncoderOffset = Rotation2d.fromDegrees(546.0) + LIMIT_SWITCH_OFFSET
 
     init {
         val config = TalonFXConfiguration().apply {
@@ -170,7 +179,6 @@ class PivotIOKraken : PivotIO {
         inputs.rotorVelocityRight = Units.rotationsToRadians(rightMotor.rotorVelocity.value)
 
         Logger.recordOutput("Shooter/Pivot/Required Offset", -rawAbsoluteEncoderPosition)
-
     }
 
     override fun pivotToAndStop(position: Rotation2d) {
@@ -222,6 +230,14 @@ class PivotIOKraken : PivotIO {
     override fun driveVoltage(volts: Double) {
         leftMotor.setControl(VoltageOut(volts))
         rightMotor.setControl(VoltageOut(volts))
+    }
+
+    override fun driveVelocity(velocity: Measure<Velocity<Angle>>) {
+        val control = VelocityTorqueCurrentFOC(velocity.`in`(edu.wpi.first.units.Units.RotationsPerSecond)).apply {
+            Slot = 0
+        }
+        leftMotor.setControl(control)
+        rightMotor.setControl(control)
     }
 
     internal companion object Constants {
