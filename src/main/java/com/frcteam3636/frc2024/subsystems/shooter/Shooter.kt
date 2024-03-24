@@ -189,7 +189,7 @@ object Shooter {
 
         private val processedAbsoluteEncoderPosition
             get() =
-                Rotation2d((inputs.absoluteEncoderPosition.radians + inputs.absoluteEncoderPosition.radians) % TAU)
+                Rotation2d((inputs.absoluteEncoderPosition.radians + PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians) % TAU)
 
         var target: Target = Target.AIM
 
