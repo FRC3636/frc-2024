@@ -1,7 +1,6 @@
 package com.frcteam3636.frc2024
 
 import com.ctre.phoenix6.StatusCode
-import com.frcteam3636.frc2024.subsystems.climber.Climber
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj.RobotController
@@ -26,7 +25,7 @@ object Dashboard {
         }
 
         thread(isDaemon = true) {
-            val canDiagnostics = TalonFXDiagnosticCollector(Drivetrain, Climber, Shooter.Pivot)
+            val canDiagnostics = TalonFXDiagnosticCollector(Drivetrain, Shooter.Pivot)
             while (true) {
                 val canStatus = canDiagnostics.tryReceivePeriodic()
                 SmartDashboard.putBoolean("CAN Bus OK", canStatus == StatusCode.OK)
@@ -42,4 +41,3 @@ object Dashboard {
         SmartDashboard.putBoolean("All Cameras OK", Drivetrain.allCamerasConnected)
     }
 }
-
