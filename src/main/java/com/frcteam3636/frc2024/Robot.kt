@@ -248,15 +248,9 @@ object Robot : LoggedRobot() {
     }
 
     override fun testInit() {
-        // Cancels all running commands at the start of test mode.
-        CommandScheduler.getInstance().cancelAll()
-        testCommand = testSequence(tests, controller.hid).apply {
-            schedule()
-        }
     }
 
     override fun testExit() {
-        testCommand?.cancel()
     }
 
     // A model of robot, depending on where we're deployed to.
