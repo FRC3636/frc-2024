@@ -18,7 +18,10 @@ import com.pathplanner.lib.util.HolonomicPathFollowerConfig
 import com.pathplanner.lib.util.ReplanningConfig
 import edu.wpi.first.math.VecBuilder
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator
-import edu.wpi.first.math.geometry.*
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.geometry.Rotation2d
+import edu.wpi.first.math.geometry.Rotation3d
+import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.kinematics.ChassisSpeeds
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
@@ -28,7 +31,6 @@ import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.Joystick
-import edu.wpi.first.wpilibj.RobotBase
 import edu.wpi.first.wpilibj2.command.Command
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController
@@ -36,7 +38,6 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
-import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
@@ -65,22 +66,45 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     }
     private val inputs = DrivetrainIO.Inputs()
 
+
     private val absolutePoseIOs = mapOf(
-        "Fljorg" to PhotonVisionPoseIOReal(
-            "fljorg",
-            Transform3d(Translation3d(0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Bloop" to PhotonVisionPoseIOReal(
-            "bloop",
-            Transform3d(Translation3d(-0.1175, 0.3175, 0.0), Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Freedom" to PhotonVisionPoseIOReal(
-            "freedom",
-            Transform3d(Translation3d(0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0))
-        ),
-        "Brack" to PhotonVisionPoseIOReal(
-            "brack",
-            Transform3d(Translation3d(-0.1175, -0.3175, 0.0), Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0))
+//        "Fljorg" to PhotonVisionPoseIOReal(
+//            "fljorg",
+//            Transform3d(
+//                Translation3d(0.1175, 0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI * 0.25) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Bloop" to PhotonVisionPoseIOReal(
+//            "bloop",
+//            Transform3d(
+//                Translation3d(-0.1175, 0.3175, 0.45),
+//                Rotation3d(0.0, 0.0, PI * 0.5) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Freedom" to PhotonVisionPoseIOReal(
+//            "freedom",
+//            Transform3d(
+//                Translation3d(0.1175, -0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.75)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Brack" to PhotonVisionPoseIOReal(
+//            "brack",
+//            Transform3d(
+//                Translation3d(-0.1175, -0.3175, 0.0),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+//        "Blowfish" to PhotonVisionPoseIOReal(
+//            "blowfish",
+//            Transform3d(
+//                Translation3d(-0.3656, -0.2794, 0.22),
+//                Rotation3d(0.0, 0.0, PI + (PI * 0.5)) + Rotation3d(0.0, 1.31, 0.0)
+//            )
+//        ),
+        "Limelight" to LimelightPoseIOReal(
+            "limelight",
         )
     ).mapValues { Pair(it.value, AbsolutePoseIO.Inputs()) }
 
@@ -97,7 +121,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             inputs.measuredPositions.toTypedArray(), // initial module positions
             Pose2d(), // initial pose
             WHEEL_ODOMETRY_STD_DEV,
-            VecBuilder.fill(0.0, 0.0, 0.0) //will be overwritten be each added vision measurement
+            VecBuilder.fill(0.7, 0.7, 999999.0) //will be overwritten be each added vision measurement
         )
 
     val gyroConnected
@@ -107,6 +131,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
         get() = absolutePoseIOs.values.all { it.first.cameraConnected }
 
     init {
+
         Pathfinding.setPathfinder(
             when (Robot.model) {
                 Robot.Model.SIMULATION -> LocalADStarAK()
@@ -123,9 +148,12 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             { DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red) },
             this
         )
+
     }
 
     override fun periodic() {
+
+
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
 
@@ -134,18 +162,19 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
             io.updateInputs(inputs)
             Logger.processInputs("Absolute Pose/$name", inputs)
-
+            Logger.recordOutput("Absolute Pose/$name/Is Null", inputs.measurement == null)
 
             inputs.measurement?.let {
                 poseEstimator.addAbsolutePoseMeasurement(it)
+                Logger.recordOutput("Drivetrain/Last Added Pose", it.pose)
             }
         }
-
 
         poseEstimator.update(
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
+
 
         Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
         Logger.recordOutput("Drivetrain/Estimated Pose", estimatedPose)
@@ -181,10 +210,8 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
         //
         // Note that the speeds are relative to the chassis, not the field.
         set(value) {
-            val states = kinematics.toCornerSwerveModuleStates(value)
-
-            // TODO: desaturate states
-
+            val discretized = ChassisSpeeds.discretize(value, Robot.period)
+            val states = kinematics.toCornerSwerveModuleStates(discretized)
             moduleStates = states
         }
 
@@ -211,7 +238,8 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
                 || abs(translationJoystick.y) > JOYSTICK_DEADBAND
                 || abs(rotationJoystick.x) > JOYSTICK_DEADBAND
             ) {
-                val translationInput = Translation2d(-translationJoystick.y, -translationJoystick.x).rotateBy(DRIVER_ROTATION)
+                val translationInput =
+                    Translation2d(-translationJoystick.y, -translationJoystick.x).rotateBy(DRIVER_ROTATION)
 
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -227,6 +255,10 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             }
         }
 
+    fun findWheelCircumfrence(): Command =
+        runOnce {
+            zeroGyro()
+        }
 
     fun driveWithController(controller: CommandXboxController): Command =
         run {
@@ -240,55 +272,29 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
         }
 
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
-        val rotationPIDController = PIDController(ROTATION_PID_GAINS)
+        Logger.recordOutput("Drivetrain/Polar Driving Target", target)
+        val rotationPIDController = PIDController(ROTATION_PID_GAINS).apply {
+            enableContinuousInput(0.0, TAU)
+        }
         return run {
             val magnitude = rotationPIDController.calculate(
-                estimatedPose.rotation.radians,
-                target.minus(estimatedPose.translation).angle.radians
+                target.minus(estimatedPose.translation).angle.radians - (TAU/2),
+                estimatedPose.rotation.radians
             )
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                -translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
-                -translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
+                translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
+                translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
                 magnitude,
                 gyroRotation.toRotation2d(),
             )
         }
     }
 
-    fun translationStaticTest() = run {
-        chassisSpeeds = ChassisSpeeds(
-            0.25 * FREE_SPEED.baseUnitMagnitude(),
-            0.0,
-            0.0,
-        )
-    }
-
-    fun translationDynamicTest(): Command {
-        var angle = 0.0
-        return run {
-            angle += 0.05
-            val vX = cos(angle) * 0.25
-            val vY = sin(angle) * 0.25
-            chassisSpeeds = ChassisSpeeds(
-                vX * FREE_SPEED.baseUnitMagnitude(),
-                vY * FREE_SPEED.baseUnitMagnitude(),
-                0.0,
-            )
-        }
-    }
-
-    fun rotationStaticTest() = run {
-        chassisSpeeds = ChassisSpeeds(
-            0.0,
-            0.0,
-            0.25 * TAU,
-        )
-    }
-
     fun zeroGyro() {
         gyroRotation = Rotation3d()
     }
+
     fun pathfindToPose(target: Pose2d): Command =
         AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
 
@@ -421,8 +427,8 @@ internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
 internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
-internal val TRANSLATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
-internal val ROTATION_PID_GAINS = PIDGains(0.0, 0.0, 0.0)
+internal val TRANSLATION_PID_GAINS = PIDGains(0.5, 0.0, 1.0)
+internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.4)
 
 // Pathing
 internal val DEFAULT_PATHING_CONSTRAINTS =
@@ -435,7 +441,7 @@ internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
     ReplanningConfig(true, true, Units.inchesToMeters(3.0), Units.inchesToMeters(1.5)),
 )
 
-// ddrive with joysticks
+// drive with joysticks
 val DRIVER_ROTATION = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
     DriverStation.Alliance.Red -> Rotation2d.fromRotations(0.5)
     DriverStation.Alliance.Blue -> Rotation2d()
@@ -489,9 +495,3 @@ internal val MODULE_CAN_IDS_PRACTICE =
             REVMotorControllerId.BackLeftTurningMotor
         ),
     )
-
-enum class OrientationTarget(val position: Translation2d) {
-    Speaker(Translation2d()),
-    Amp(Translation2d()),
-    Source(Translation2d())
-}

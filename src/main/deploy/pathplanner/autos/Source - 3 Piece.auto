@@ -2,55 +2,36 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 1.3516291379928589,
-      "y": 5.528106212615967
+      "x": 0.8355161547660828,
+      "y": 4.452983856201172
     },
-    "rotation": 3.711631318707144e-33
+    "rotation": -59.743540698169184
   },
   "command": {
     "type": "sequential",
     "data": {
       "commands": [
         {
-          "type": "parallel",
+          "type": "race",
           "data": {
             "commands": [
               {
-                "type": "sequential",
+                "type": "named",
                 "data": {
-                  "commands": [
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "pivot"
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "shoot"
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "zeropivot"
-                      }
-                    }
-                  ]
+                  "name": "shootWhenReady"
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "knockintake"
+                  "name": "revAim"
                 }
               }
             ]
           }
         },
         {
-          "type": "deadline",
+          "type": "race",
           "data": {
             "commands": [
               {
@@ -60,19 +41,13 @@
                     {
                       "type": "path",
                       "data": {
-                        "pathName": "Middle Stage 1.1"
+                        "pathName": "Amp 3 Piece.1"
                       }
                     },
                     {
-                      "type": "wait",
+                      "type": "named",
                       "data": {
-                        "waitTime": 0.7
-                      }
-                    },
-                    {
-                      "type": "path",
-                      "data": {
-                        "pathName": "Middle Stage 2.1"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -81,7 +56,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "intake"
+                  "name": "stowIntakeRevAim"
                 }
               }
             ]
@@ -90,24 +65,50 @@
         {
           "type": "named",
           "data": {
-            "name": "pivot"
+            "name": "revAndShoot"
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Amp 3 Piece.2"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "waitUntilShootReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "shoot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "zeropivot"
+            "name": "revAndShoot"
           }
         }
       ]
     }
   },
-  "folder": null,
+  "folder": "Source Side",
   "choreoAuto": true
 }

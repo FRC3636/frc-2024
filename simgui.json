@@ -13,10 +13,14 @@
       "/AdvantageKit/RealOutputs/Climber": "Mechanism2d",
       "/AdvantageKit/RealOutputs/Shooter": "Mechanism2d",
       "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Auto Selector": "String Chooser",
       "/SmartDashboard/Auto selector": "String Chooser"
     }
   },
   "NetworkTables": {
+    "Persistent Values": {
+      "open": false
+    },
     "transitory": {
       "FMSInfo": {
         "open": true
@@ -35,6 +39,9 @@
     }
   },
   "NetworkTables Info": {
+    "AdvantageScope@1": {
+      "open": true
+    },
     "Clients": {
       "open": true
     },

@@ -2,55 +2,36 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 0.720498263835907,
-      "y": 4.336489677429199
+      "x": 0.8003471493721008,
+      "y": 6.668600082397461
     },
-    "rotation": -57.26477372789242
+    "rotation": 60.52408484195273
   },
   "command": {
     "type": "sequential",
     "data": {
       "commands": [
         {
-          "type": "parallel",
+          "type": "race",
           "data": {
             "commands": [
               {
-                "type": "sequential",
+                "type": "named",
                 "data": {
-                  "commands": [
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "pivot"
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "shoot"
-                      }
-                    },
-                    {
-                      "type": "named",
-                      "data": {
-                        "name": "zeropivot"
-                      }
-                    }
-                  ]
+                  "name": "revAim"
                 }
               },
               {
                 "type": "named",
                 "data": {
-                  "name": "knockintake"
+                  "name": "shootWhenReady"
                 }
               }
             ]
           }
         },
         {
-          "type": "deadline",
+          "type": "race",
           "data": {
             "commands": [
               {
@@ -60,19 +41,13 @@
                     {
                       "type": "path",
                       "data": {
-                        "pathName": "Right Stage 1.1"
+                        "pathName": "Source 3 Piece.1"
                       }
                     },
                     {
-                      "type": "wait",
+                      "type": "named",
                       "data": {
-                        "waitTime": 1.8
-                      }
-                    },
-                    {
-                      "type": "path",
-                      "data": {
-                        "pathName": "Right Stage 2.1"
+                        "name": "waitUntilShootReady"
                       }
                     }
                   ]
@@ -81,7 +56,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "intake"
+                  "name": "stowIntakeRevAim"
                 }
               }
             ]
@@ -90,24 +65,50 @@
         {
           "type": "named",
           "data": {
-            "name": "pivot"
+            "name": "revAndShoot"
+          }
+        },
+        {
+          "type": "race",
+          "data": {
+            "commands": [
+              {
+                "type": "sequential",
+                "data": {
+                  "commands": [
+                    {
+                      "type": "path",
+                      "data": {
+                        "pathName": "Source 3 Piece.2"
+                      }
+                    },
+                    {
+                      "type": "named",
+                      "data": {
+                        "name": "waitUntilShootReady"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "named",
+                "data": {
+                  "name": "stowIntakeRevAim"
+                }
+              }
+            ]
           }
         },
         {
           "type": "named",
           "data": {
-            "name": "shoot"
-          }
-        },
-        {
-          "type": "named",
-          "data": {
-            "name": "zeropivot"
+            "name": "revAndShoot"
           }
         }
       ]
     }
   },
-  "folder": null,
+  "folder": "Amp Side",
   "choreoAuto": true
 }
