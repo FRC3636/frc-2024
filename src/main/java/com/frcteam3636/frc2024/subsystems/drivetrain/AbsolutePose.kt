@@ -15,6 +15,7 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.util.struct.Struct
 import edu.wpi.first.util.struct.StructSerializable
+import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -40,6 +41,8 @@ interface AbsolutePoseIO {
     }
 
     fun updateInputs(inputs: Inputs)
+
+    val cameraConnected: Boolean
 }
 
 class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
@@ -51,6 +54,9 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
     private val botPose = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(null)
     private val cl = table.getDoubleTopic("cl").subscribe(0.0)
     private val tl = table.getDoubleTopic("tl").subscribe(0.0)
+    private val disconnectTimeout = Timer().apply {
+        start()
+    }
 
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
         inputs.measurement = botPose.readQueue().lastOrNull()?.let { update ->
@@ -61,6 +67,8 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
             val pitch = Units.degreesToRadians(update.value[4])
             val yaw = Units.degreesToRadians(update.value[5])
             val tagCount = update.value[7]
+
+            disconnectTimeout.restart()
 
             if (tagCount == 0.0) {
                 return
@@ -79,14 +87,17 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
         }
     }
 
+    override val cameraConnected
+        get() = disconnectTimeout.hasElapsed(1.0)
 }
 
 class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) : AbsolutePoseIO {
+    private val camera = PhotonCamera(name).apply { driverMode = false }
     private val estimator =
         PhotonPoseEstimator(
             APRIL_TAG_FIELD_LAYOUT,
             PhotonPoseEstimator.PoseStrategy.MULTI_TAG_PNP_ON_COPROCESSOR,
-            PhotonCamera(name).apply { driverMode = false },
+            camera,
             chassisToCamera
         )
 
@@ -100,6 +111,9 @@ class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) : Absol
             )
         }
     }
+
+    override val cameraConnected
+        get() = camera.isConnected
 }
 
 data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val stdDeviation: Matrix<N3, N1>) :

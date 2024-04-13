@@ -1,8 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
+import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.BLACK
 import com.frcteam3636.frc2024.BLUE
-import com.frcteam3636.frc2024.Robot
 import com.frcteam3636.frc2024.WHITE
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.utils.math.*
@@ -179,7 +179,7 @@ object Shooter {
         })
     }
 
-    object Pivot : Subsystem {
+    object Pivot : Subsystem, TalonFXStatusProvider {
         private val io: PivotIO = when (Robot.model) {
             Robot.Model.SIMULATION -> PivotIOSim()
             Robot.Model.COMPETITION -> PivotIOKraken()
@@ -277,6 +277,8 @@ object Shooter {
             Commands.runOnce({
                 io.setBrakeMode(brake)
             })
+
+        override val talonCANStatuses = io.talonCANStatuses
 
         enum class Target(val profile: PivotProfile) {
             AIM(

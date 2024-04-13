@@ -235,6 +235,7 @@ object Robot : LoggedRobot() {
 
     override fun robotPeriodic() {
         CommandScheduler.getInstance().run()
+        Dashboard.update()
     }
 
     override fun autonomousInit() {
@@ -247,8 +248,9 @@ object Robot : LoggedRobot() {
     }
 
     override fun testInit() {
-        // Cancels all running commands at the start of test mode.
-        CommandScheduler.getInstance().cancelAll()
+    }
+
+    override fun testExit() {
     }
 
     // A model of robot, depending on where we're deployed to.
