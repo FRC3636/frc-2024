@@ -11,6 +11,7 @@ import kotlin.math.sign
 interface Gyro {
     var rotation: Rotation3d
     val connected: Boolean
+    val yaw: Float
 
     fun periodic() {}
 }
@@ -29,6 +30,9 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
             Logger.recordOutput("Gyro/Offset", offset)
         }
 
+    override val yaw: Float
+        get() = ahrs.yaw
+
 
     override val connected
         get() = ahrs.isConnected
@@ -37,6 +41,7 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
 class GyroSim(private val modules: PerCorner<SwerveModule>) : Gyro {
     override var rotation = Rotation3d()
     override val connected = true
+    override val yaw = 0.0f
 
     override fun periodic() {
         val moduleVelocities =

@@ -51,7 +51,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
         .getTable("limelight")
     private val stddev = VecBuilder.fill(.7, .7, 9999999.0)
 
-    private val botPose = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(null)
+    private val botPose = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(null)
     private val cl = table.getDoubleTopic("cl").subscribe(0.0)
     private val tl = table.getDoubleTopic("tl").subscribe(0.0)
     private val disconnectTimeout = Timer().apply {

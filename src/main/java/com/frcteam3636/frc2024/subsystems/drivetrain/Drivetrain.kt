@@ -27,6 +27,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
+import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
@@ -39,8 +40,6 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
 import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem, TalonFXStatusProvider {
@@ -152,7 +151,14 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     }
 
     override fun periodic() {
-
+        val entries = DoubleArray(6)
+        entries[0] = io.gyro.yaw.toDouble()
+        entries[1] = 0.0
+        entries[2] = 0.0
+        entries[3] = 0.0
+        entries[4] = 0.0
+        entries[5] = 0.0
+        NetworkTableInstance.getDefault().getTable("limelight").getEntry("robot_orientation_set").setDoubleArray(entries)
 
         io.updateInputs(inputs)
         Logger.processInputs("Drivetrain", inputs)
@@ -174,6 +180,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             inputs.gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray()
         )
+
 
 
         Logger.recordOutput("Drivetrain/Gyro Rotation", inputs.gyroRotation.toRotation2d())
