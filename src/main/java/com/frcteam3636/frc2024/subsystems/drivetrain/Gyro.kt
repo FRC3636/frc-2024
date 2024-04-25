@@ -12,6 +12,7 @@ interface Gyro {
     var rotation: Rotation3d
     val connected: Boolean
     val yaw: Float
+    val rate: Double
 
     fun periodic() {}
 }
@@ -32,7 +33,8 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
 
     override val yaw: Float
         get() = ahrs.yaw
-
+    override val rate: Double
+        get() = ahrs.rate
 
     override val connected
         get() = ahrs.isConnected
@@ -41,7 +43,9 @@ class GyroNavX(private var offset: Rotation3d = Rotation3d()) : Gyro {
 class GyroSim(private val modules: PerCorner<SwerveModule>) : Gyro {
     override var rotation = Rotation3d()
     override val connected = true
+    // TODO: Implement these
     override val yaw = 0.0f
+    override val rate = 0.0
 
     override fun periodic() {
         val moduleVelocities =

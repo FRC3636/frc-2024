@@ -70,7 +70,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
 
             disconnectTimeout.restart()
 
-            if (tagCount == 0.0) {
+            if (tagCount == 0.0 || Drivetrain.gyroRate > 720) {
                 return
             }
 

@@ -194,6 +194,9 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             io.resetGyro(value)
         }
 
+    val gyroRate
+        get() = io.gyro.rate
+
     private var moduleStates: PerCorner<SwerveModuleState>
         // Get the measured module states from the inputs.
         get() = inputs.measuredStates
