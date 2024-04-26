@@ -28,7 +28,7 @@ object Dashboard {
             val canDiagnostics = TalonFXDiagnosticCollector(Drivetrain, Shooter.Pivot)
             while (true) {
                 val canStatus = canDiagnostics.tryReceivePeriodic()
-                SmartDashboard.putBoolean("CAN Bus OK", (canStatus == StatusCode.OK && (RobotController.getCANStatus().transmitErrorCount <= 0 || RobotController.getCANStatus().receiveErrorCount <= 0)))
+                SmartDashboard.putBoolean("CAN Bus OK", (canStatus == StatusCode.OK && (RobotController.getCANStatus().transmitErrorCount == 0 || RobotController.getCANStatus().receiveErrorCount == 0)))
                 SmartDashboard.putString("CAN Status", canStatus.getName())
                 Thread.sleep(250)
             }
