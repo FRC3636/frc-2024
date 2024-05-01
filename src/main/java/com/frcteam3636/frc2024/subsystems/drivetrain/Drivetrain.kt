@@ -152,7 +152,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
     override fun periodic() {
         val entries = DoubleArray(6)
-        entries[0] = io.gyro.yaw.toDouble()
+        entries[0] = Units.radiansToDegrees(io.gyro.rotation.z)
         entries[1] = 0.0
         entries[2] = 0.0
         entries[3] = 0.0
