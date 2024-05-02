@@ -16,7 +16,6 @@ import com.frcteam3636.frc2024.utils.math.PIDGains
 import com.frcteam3636.frc2024.utils.math.motorFFGains
 import com.frcteam3636.frc2024.utils.math.pidGains
 import com.frcteam3636.frc2024.TalonFXStatusProvider
-import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
@@ -28,6 +27,7 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
+import kotlin.math.abs
 
 interface PivotIO: TalonFXStatusProvider {
     class Inputs : LoggableInputs {
@@ -109,7 +109,9 @@ class PivotIOKraken : PivotIO {
     private val absoluteEncoder = DutyCycleEncoder(DigitalInput(2)).apply {
         distancePerRotation = SENSOR_TO_PIVOT_RATIO
     }
-    private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get())
+    private var absoluteEncoderDynamicOffset = Rotation2d()
+    private var previousAbsoluteEncoderPosition: Rotation2d? = null
+    private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get()) + absoluteEncoderDynamicOffset
 
     init {
         val config = TalonFXConfiguration().apply {
@@ -154,6 +156,18 @@ class PivotIOKraken : PivotIO {
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
         inputs.absoluteEncoderPosition = this.rawAbsoluteEncoderPosition
+        if (previousAbsoluteEncoderPosition != null && abs(inputs.absoluteEncoderPosition.degrees - previousAbsoluteEncoderPosition!!.degrees) > 90.0) {
+            val offset = Rotation2d.fromDegrees(if (inputs.absoluteEncoderPosition.degrees > previousAbsoluteEncoderPosition!!.degrees) {
+                -360.0
+            } else {
+                360.0
+            })
+            absoluteEncoderDynamicOffset += offset
+            inputs.absoluteEncoderPosition += offset
+        }
+        previousAbsoluteEncoderPosition = inputs.absoluteEncoderPosition
+        Logger.recordOutput("Shooter/Pivot/Absolute Encoder Dynamic Offset", absoluteEncoderDynamicOffset)
+
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
 
@@ -162,7 +176,6 @@ class PivotIOKraken : PivotIO {
 
         inputs.acceleration = Rotation2d.fromRotations(rightMotor.acceleration.value)
 
-        //sysid shit
         inputs.voltageLeft = leftMotor.motorVoltage.value
         inputs.voltageRight = rightMotor.motorVoltage.value
         inputs.rotorDistanceLeft = Units.rotationsToRadians(leftMotor.rotorPosition.value)
@@ -251,7 +264,7 @@ class PivotIOKraken : PivotIO {
         const val RIGHT_ZERO_OFFSET = 0.38
 
         val LIMIT_SWITCH_OFFSET = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(-347.0) + LIMIT_SWITCH_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(10.18) + LIMIT_SWITCH_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
