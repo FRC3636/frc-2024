@@ -205,6 +205,7 @@ object Shooter {
 
             Logger.recordOutput("Shooter", mechanism)
             Logger.recordOutput("Shooter/Pivot/Is Stowed", isStowed.asBoolean)
+            Logger.recordOutput("Shooter/Pivot/Is Ready To Shoot", isReadyToShoot.asBoolean)
         }
 
         fun pivotAndStop(goal: Rotation2d): Command = Commands.sequence(runOnce {
