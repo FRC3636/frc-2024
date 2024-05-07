@@ -11,11 +11,8 @@ import com.ctre.phoenix6.signals.InvertedValue
 import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
-import com.frcteam3636.frc2024.utils.math.MotorFFGains
-import com.frcteam3636.frc2024.utils.math.PIDGains
-import com.frcteam3636.frc2024.utils.math.motorFFGains
-import com.frcteam3636.frc2024.utils.math.pidGains
 import com.frcteam3636.frc2024.TalonFXStatusProvider
+import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
@@ -23,11 +20,13 @@ import edu.wpi.first.units.Angle
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DigitalInput
+import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.DutyCycleEncoder
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import kotlin.math.abs
+import kotlin.math.sign
 
 interface PivotIO: TalonFXStatusProvider {
     class Inputs : LoggableInputs {
@@ -35,6 +34,7 @@ interface PivotIO: TalonFXStatusProvider {
         var rightPosition: Rotation2d = Rotation2d()
         var leftPosition: Rotation2d = Rotation2d()
 
+        var uncorrectedEncoderPosition = Rotation2d()
         var absoluteEncoderPosition: Rotation2d = Rotation2d()
 
         /** The angular velocity of the pivot. */
@@ -55,6 +55,7 @@ interface PivotIO: TalonFXStatusProvider {
         var leftLimitSwitchUnpressed: Boolean = false
 
         override fun toLog(table: org.littletonrobotics.junction.LogTable) {
+            table.put("Uncorrected Absolute Encoder Position", uncorrectedEncoderPosition)
             table.put("Absolute Encoder Position", absoluteEncoderPosition)
             table.put("Left Position", leftPosition)
             table.put("Right Position", rightPosition)
@@ -71,6 +72,7 @@ interface PivotIO: TalonFXStatusProvider {
         }
 
         override fun fromLog(table: org.littletonrobotics.junction.LogTable) {
+            uncorrectedEncoderPosition = table.get("Uncorrected Absolute Encoder Position", uncorrectedEncoderPosition)[0]
             absoluteEncoderPosition = table.get("Absolute Encoder Position", absoluteEncoderPosition)[0]
             leftLimitSwitchUnpressed = table.get("Left Limit Switch Unpressed", leftLimitSwitchUnpressed)
             absoluteEncoderPosition = table.get("Absolute Encoder Position", absoluteEncoderPosition)[0]
@@ -109,9 +111,10 @@ class PivotIOKraken : PivotIO {
     private val absoluteEncoder = DutyCycleEncoder(DigitalInput(2)).apply {
         distancePerRotation = SENSOR_TO_PIVOT_RATIO
     }
-    private var absoluteEncoderDynamicOffset = Rotation2d()
+    private var absoluteEncoderOffset = ABSOLUTE_ENCODER_OFFSET
+    private val rawAbsoluteEncoderPosition
+        get() = Rotation2d.fromRotations(-absoluteEncoder.get())
     private var previousAbsoluteEncoderPosition: Rotation2d? = null
-    private val rawAbsoluteEncoderPosition get() = Rotation2d.fromRotations(-absoluteEncoder.get()) + absoluteEncoderDynamicOffset
 
     init {
         val config = TalonFXConfiguration().apply {
@@ -155,18 +158,34 @@ class PivotIOKraken : PivotIO {
     override fun updateInputs(inputs: PivotIO.Inputs) {
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
-        inputs.absoluteEncoderPosition = this.rawAbsoluteEncoderPosition
-        if (previousAbsoluteEncoderPosition != null && abs(inputs.absoluteEncoderPosition.degrees - previousAbsoluteEncoderPosition!!.degrees) > 90.0) {
-            val offset = Rotation2d.fromDegrees(if (inputs.absoluteEncoderPosition.degrees > previousAbsoluteEncoderPosition!!.degrees) {
-                -360.0
-            } else {
-                360.0
-            })
-            absoluteEncoderDynamicOffset += offset
-            inputs.absoluteEncoderPosition += offset
+        inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
+        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + absoluteEncoderOffset.radians)
+        if (previousAbsoluteEncoderPosition != null) {
+            // If a jump occurs, this might be 362 degrees
+            val deltaEncoderPosition = Rotation2d(inputs.absoluteEncoderPosition.radians - previousAbsoluteEncoderPosition!!.radians)
+            Logger.recordOutput("Shooter/Pivot/Delta Encoder Position", deltaEncoderPosition)
+            // Correction math would undo the 360 degree jump, making this 2 degrees
+            var correctedDeltaPositionRadians = deltaEncoderPosition.radians
+            while (abs(correctedDeltaPositionRadians) > Units.degreesToRadians(180.0)) {
+                correctedDeltaPositionRadians -= TAU * sign(correctedDeltaPositionRadians)
+            }
+            Logger.recordOutput("Shooter/Pivot/Corrected Delta Encoder Position", correctedDeltaPositionRadians)
+            // The offset required to move the uncorrected encoder position to the corrected encoder position.
+            // E.g. -360
+            val offset = Rotation2d(correctedDeltaPositionRadians - deltaEncoderPosition.radians)
+            Logger.recordOutput("Shooter/Pivot/Correction offset", offset)
+            absoluteEncoderOffset = Rotation2d(absoluteEncoderOffset.radians + offset.radians)
+            inputs.absoluteEncoderPosition = Rotation2d(inputs.absoluteEncoderPosition.radians + offset.radians)
+
+            if (deltaEncoderPosition.radians != correctedDeltaPositionRadians) {
+                DriverStation.reportWarning(
+                    "Pivot absolute encoder jumped by ${-(offset).degrees} degrees!",
+                    false
+                )
+            }
         }
         previousAbsoluteEncoderPosition = inputs.absoluteEncoderPosition
-        Logger.recordOutput("Shooter/Pivot/Absolute Encoder Dynamic Offset", absoluteEncoderDynamicOffset)
+        Logger.recordOutput("Shooter/Pivot/Absolute Encoder Offset", absoluteEncoderOffset)
 
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
