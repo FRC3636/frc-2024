@@ -24,10 +24,7 @@ import edu.wpi.first.wpilibj2.command.Commands
 import edu.wpi.first.wpilibj2.command.Subsystem
 import edu.wpi.first.wpilibj2.command.button.Trigger
 import org.littletonrobotics.junction.Logger
-import kotlin.math.abs
-import kotlin.math.absoluteValue
-import kotlin.math.atan
-import kotlin.math.pow
+import kotlin.math.*
 
 object Shooter {
     object Flywheels : Subsystem {
@@ -187,19 +184,21 @@ object Shooter {
         }
         private val inputs = PivotIO.Inputs()
 
+        var target: Target = Target.AIM
+
+
         private val processedAbsoluteEncoderPosition
             get() =
-                Rotation2d(inputs.absoluteEncoderPosition.radians)
-
-        var target: Target = Target.AIM
+                Rotation2d((inputs.absoluteEncoderPosition.radians + PIVOT_MOD_OFFSET.radians).mod(TAU) - PIVOT_MOD_OFFSET.radians)
 
         override fun periodic() {
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
-            io.setPivotPosition(processedAbsoluteEncoderPosition)
-            Logger.recordOutput("Shooter/Pivot/Processed Absolute Encoder", processedAbsoluteEncoderPosition)
-            Logger.recordOutput("Shooter/Pivot/Required Offset", -inputs.absoluteEncoderPosition)
+            val encoderPos = processedAbsoluteEncoderPosition
+            io.setPivotPosition(encoderPos)
+            Logger.recordOutput("Shooter/Pivot/Processed Encoder Position", encoderPos)
+            Logger.recordOutput("Shooter/Pivot/Required Offset", -inputs.uncorrectedEncoderPosition)
 
             armLigament.angle = inputs.leftPosition.degrees
 
@@ -396,3 +395,5 @@ internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(13.0)
 internal val FLYWHEEL_SIDE_SEPERATION = Units.inchesToMeters(9.0)
 internal val FLYWHEEL_PID_GAINS = PIDGains(0.0029805, 0.0, 0.0)
 internal val FLYWHEEL_FF_GAINS = MotorFFGains(0.26294, 0.10896 / TAU, 0.010373 / TAU)
+
+internal val PIVOT_MOD_OFFSET = Rotation2d(PI/2)

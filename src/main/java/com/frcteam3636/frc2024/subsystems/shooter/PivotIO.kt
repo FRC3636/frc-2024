@@ -111,10 +111,8 @@ class PivotIOKraken : PivotIO {
     private val absoluteEncoder = DutyCycleEncoder(DigitalInput(2)).apply {
         distancePerRotation = SENSOR_TO_PIVOT_RATIO
     }
-    private var absoluteEncoderOffset = ABSOLUTE_ENCODER_OFFSET
     private val rawAbsoluteEncoderPosition
-        get() = Rotation2d.fromRotations(-absoluteEncoder.get())
-    private var previousAbsoluteEncoderPosition: Rotation2d? = null
+        get() = Rotation2d.fromRotations(-absoluteEncoder.absolutePosition)
 
     init {
         val config = TalonFXConfiguration().apply {
@@ -159,33 +157,7 @@ class PivotIOKraken : PivotIO {
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
-        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + absoluteEncoderOffset.radians)
-        if (previousAbsoluteEncoderPosition != null) {
-            // If a jump occurs, this might be 362 degrees
-            val deltaEncoderPosition = Rotation2d(inputs.absoluteEncoderPosition.radians - previousAbsoluteEncoderPosition!!.radians)
-            Logger.recordOutput("Shooter/Pivot/Delta Encoder Position", deltaEncoderPosition)
-            // Correction math would undo the 360 degree jump, making this 2 degrees
-            var correctedDeltaPositionRadians = deltaEncoderPosition.radians
-            while (abs(correctedDeltaPositionRadians) > Units.degreesToRadians(180.0)) {
-                correctedDeltaPositionRadians -= TAU * sign(correctedDeltaPositionRadians)
-            }
-            Logger.recordOutput("Shooter/Pivot/Corrected Delta Encoder Position", correctedDeltaPositionRadians)
-            // The offset required to move the uncorrected encoder position to the corrected encoder position.
-            // E.g. -360
-            val offset = Rotation2d(correctedDeltaPositionRadians - deltaEncoderPosition.radians)
-            Logger.recordOutput("Shooter/Pivot/Correction offset", offset)
-            absoluteEncoderOffset = Rotation2d(absoluteEncoderOffset.radians + offset.radians)
-            inputs.absoluteEncoderPosition = Rotation2d(inputs.absoluteEncoderPosition.radians + offset.radians)
-
-            if (deltaEncoderPosition.radians != correctedDeltaPositionRadians) {
-                DriverStation.reportWarning(
-                    "Pivot absolute encoder jumped by ${-(offset).degrees} degrees!",
-                    false
-                )
-            }
-        }
-        previousAbsoluteEncoderPosition = inputs.absoluteEncoderPosition
-        Logger.recordOutput("Shooter/Pivot/Absolute Encoder Offset", absoluteEncoderOffset)
+        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + ABSOLUTE_ENCODER_OFFSET.radians)
 
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
@@ -283,7 +255,7 @@ class PivotIOKraken : PivotIO {
         const val RIGHT_ZERO_OFFSET = 0.38
 
         val LIMIT_SWITCH_OFFSET = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(10.18) + LIMIT_SWITCH_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(9.13) + LIMIT_SWITCH_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
