@@ -48,7 +48,7 @@ interface AbsolutePoseIO {
 class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
     private val table = NetworkTableInstance
         .getDefault()
-        .getTable("limelight")
+        .getTable(name)
     private val stddev = VecBuilder.fill(.7, .7, 9999999.0)
 
     private val botPose = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(null)
