@@ -59,6 +59,14 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
     }
 
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
+        val entries = DoubleArray(6)
+        entries[0] = Units.radiansToDegrees(Drivetrain.estimatedPose.rotation.degrees)
+        entries[1] = 0.0
+        entries[2] = 0.0
+        entries[3] = 0.0
+        entries[4] = 0.0
+        entries[5] = 0.0
+        table.getEntry("robot_orientation_set").setDoubleArray(entries)
         inputs.measurement = botPose.readQueue().lastOrNull()?.let { update ->
             val x = update.value[0]
             val y = update.value[1]
