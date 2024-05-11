@@ -60,7 +60,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
 
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
         val entries = DoubleArray(6)
-        entries[0] = Units.radiansToDegrees(Drivetrain.estimatedPose.rotation.degrees)
+        entries[0] = Drivetrain.estimatedPose.rotation.degrees
         entries[1] = 0.0
         entries[2] = 0.0
         entries[3] = 0.0
