@@ -2,7 +2,7 @@
   description = "Coprocessor NixOS configurations for 3636's 2024 FRC robot.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixos-rk3588 = {
       url = "github:ryan4yin/nixos-rk3588";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -70,7 +70,8 @@
       };
 
       overlays.default = self: super: {
-        photonvision = self.callPackage ./pkgs/photonvision.nix { };
+        photonvision = self.callPackage ./pkgs/photonvision { };
+        pplib-coprocessor = self.callPackage ./pkgs/pplib-coprocessor { };
         rgb-2024 = rgb-2024.packages.${self.system}.default;
       };
 
