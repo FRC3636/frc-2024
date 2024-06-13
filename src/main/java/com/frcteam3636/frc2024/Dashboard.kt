@@ -11,13 +11,13 @@ import kotlin.concurrent.thread
 object Dashboard {
     init {
         thread(isDaemon = true) {
-            val visionPcAddr = InetAddress.getByName("10.36.36.10")
+            val noteDetectorIpAddr = InetAddress.getByName("10.36.36.10")
             while (true) {
                 try {
-                    val visionPcOnline = visionPcAddr.isReachable(1000)
-                    SmartDashboard.putBoolean("Vision PC OK", visionPcOnline)
+                    val noteDetectorOnline = noteDetectorIpAddr.isReachable(1000)
+                    SmartDashboard.putBoolean("Note Detector OK", noteDetectorOnline)
                 } catch (err: Exception) {
-                    SmartDashboard.putBoolean("Vision PC OK", false)
+                    SmartDashboard.putBoolean("Note Detector OK", false)
                     err.printStackTrace()
                 }
                 Thread.sleep(1000)
