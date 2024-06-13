@@ -277,64 +277,48 @@ object Robot : LoggedRobot() {
     }
 }
 
-fun generatePathToTargetThenIntakeAndReturnToPreviousPosition(target: Pose2d): Command {
-    val intialPosition = Drivetrain.estimatedPose
-    val constraints = PathConstraints(3.0, 1.0, edu.wpi.first.math.util.Units.degreesToRadians(540.0), edu.wpi.first.math.util.Units.degreesToRadians(720.0))
-    val pathfindToTargetCommand = AutoBuilder.pathfindToPose(
-        target,
-        constraints,
-        0.0,
-        0.0
-    )
-    val pathfindToPreviousPositionCommand = AutoBuilder.pathfindToPose(
-        intialPosition,
-        constraints,
-        0.0,
-        0.0
-    )
-    return Commands.sequence(
-        pathfindToTargetCommand,
-        autoIntake(),
-        pathfindToPreviousPositionCommand
-    )
-}
-
-fun autoIntake(): Command =
-    Commands.sequence(
-        intake(),
-        Commands.runOnce({ Note.state = Note.State.HANDOFF }),
-        Commands.race(
-            Commands.parallel(
-                Intake.index(),
-                Shooter.Feeder.intake(),
-                Shooter.Flywheels.intake(),
-            ),
-            Commands.sequence(
-                //spinning up
-                Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
-                //reached velocity setpoint
-                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
-                //contacted note
-                Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
-                //note stowed
-                Commands.waitUntil(Trigger { !Shooter.Flywheels.aboveIntakeThreshold }),
-                Commands.runOnce({ Note.state = Note.State.SHOOTER })
+fun generatePathToTargetThenIntakeAndReturnToPreviousPosition(): Command {
+    return Commands.defer({
+        if (Intake.inputs.target == null) {
+            Commands.none()
+        } else {
+            val intialPosition = Drivetrain.estimatedPose
+            val constraints = PathConstraints(3.0, 1.0, edu.wpi.first.math.util.Units.degreesToRadians(540.0), edu.wpi.first.math.util.Units.degreesToRadians(720.0))
+            val pathfindToTargetCommand = AutoBuilder.pathfindToPose(
+                Intake.inputs.target,
+                constraints,
+                0.0,
+                0.0
             )
-        )
-    ).withTimeout(1.5)
+            val pathfindToPreviousPositionCommand = AutoBuilder.pathfindToPose(
+                intialPosition,
+                constraints,
+                0.0,
+                0.0
+            )
+            Commands.sequence(
+                pathfindToTargetCommand,
+                intake().withTimeout(1.5),
+                pathfindToPreviousPositionCommand
+            )
+        }
+
+    }, setOf(Intake, Drivetrain))
+
+}
 
 private fun doIntakeAutoSequence(): Command =
     Commands.sequence(
         Commands.waitUntil(Shooter.Pivot.isStowed),
-        autoIntake(),
-        Commands.either(Intake.inputs.target?.let { generatePathToTargetThenIntakeAndReturnToPreviousPosition(it) }, Commands.none()) {
-            Note.state == Note.State.NONE && Intake.inputs.target != null
+        doIntakeSequence().withTimeout(1.5),
+        Commands.either(generatePathToTargetThenIntakeAndReturnToPreviousPosition(), Commands.none()) {
+            Note.state == Note.State.NONE
         }
     )
 
 private fun doIntakeSequence(): Command =
     Commands.sequence(
-        Intake.intake(),
+        intake(),
         Commands.runOnce({ Note.state = Note.State.HANDOFF }),
         Commands.waitUntil(Shooter.Pivot.isStowed),
         Commands.race(
