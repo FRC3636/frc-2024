@@ -112,7 +112,7 @@ object Robot : LoggedRobot() {
             Commands.sequence(
                 Commands.parallel(
                     Shooter.Pivot.pivotAndStop(Shooter.Pivot.Target.STOWED.profile.position()),
-                    doIntakeSequence()
+                    doIntakeAutoSequence()
                 ),
                 Commands.parallel(
                     Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
@@ -323,13 +323,38 @@ fun autoIntake(): Command =
         )
     ).withTimeout(1.5)
 
-private fun doIntakeSequence(): Command =
+private fun doIntakeAutoSequence(): Command =
     Commands.sequence(
         Commands.waitUntil(Shooter.Pivot.isStowed),
         autoIntake(),
         Commands.either(Intake.inputs.target?.let { generatePathToTargetThenIntakeAndReturnToPreviousPosition(it) }, Commands.none()) {
             Note.state == Note.State.NONE && Intake.inputs.target != null
         }
+    )
+
+private fun doIntakeSequence(): Command =
+    Commands.sequence(
+        Intake.intake(),
+        Commands.runOnce({ Note.state = Note.State.HANDOFF }),
+        Commands.waitUntil(Shooter.Pivot.isStowed),
+        Commands.race(
+            Commands.parallel(
+                Intake.index(),
+                Shooter.Feeder.intake(),
+                Shooter.Flywheels.intake(),
+            ),
+            Commands.sequence(
+                //spinning up
+                Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
+                //reached velocity setpoint
+                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
+                //contacted note
+                Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
+                //note stowed
+                Commands.waitUntil(Trigger { !Shooter.Flywheels.aboveIntakeThreshold }),
+                Commands.runOnce({ Note.state = Note.State.SHOOTER })
+            )
+        )
     )
 
 object Note {
