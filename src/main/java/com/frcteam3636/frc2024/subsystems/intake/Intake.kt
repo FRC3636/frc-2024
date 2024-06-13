@@ -1,8 +1,17 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
+import com.frcteam3636.frc2024.Note
 import com.frcteam3636.frc2024.Robot
-import edu.wpi.first.wpilibj2.command.*
+import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
+import com.pathplanner.lib.auto.AutoBuilder
+import com.pathplanner.lib.path.PathConstraints
+import edu.wpi.first.math.geometry.Pose2d
+import edu.wpi.first.math.util.Units
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Commands
+import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
+
 
 object Intake : Subsystem {
     private var io: IntakeIO = when (Robot.model) {
@@ -38,9 +47,13 @@ object Intake : Subsystem {
             },
             {
                 io.setUnderBumperRoller(0.0)
+                if (inputs.isIntaking)
+                    Note.state = Note.State.HANDOFF
 //                io.setOverBumperRoller(0.0)
             }
         ).until(inputs::isIntaking)
+
+
 
     fun index(): Command =
         Commands.sequence(
