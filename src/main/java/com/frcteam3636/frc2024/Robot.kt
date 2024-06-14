@@ -3,7 +3,6 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.LocalADStarAK
 import com.frcteam3636.frc2024.subsystems.intake.Intake
-import com.frcteam3636.frc2024.subsystems.intake.Intake.inputs
 import com.frcteam3636.frc2024.subsystems.intake.Intake.intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
@@ -14,7 +13,6 @@ import com.pathplanner.lib.pathfinding.Pathfinding
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
 import edu.wpi.first.hal.HAL
-import edu.wpi.first.math.geometry.Pose2d
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.Units
 import edu.wpi.first.wpilibj.*
@@ -33,7 +31,6 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
-import kotlin.io.path.Path
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -310,7 +307,7 @@ fun generatePathToTargetThenIntakeAndReturnToPreviousPosition(): Command {
             list.clear()
             list.add(targetPoint)
             list.add(initialPoint)
-            val returnPath = PathPlannerPath.fromPathPoints(list, constraints, GoalEndState(0.0, Intake.inputs.target!!.rotation))
+            val returnPath = PathPlannerPath.fromPathPoints(list, constraints, GoalEndState(0.0, initialPosition.rotation))
             Commands.sequence(
                 AutoBuilder.followPath(path),
                 intake().withTimeout(1.5),
