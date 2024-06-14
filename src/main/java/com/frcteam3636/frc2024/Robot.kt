@@ -3,12 +3,13 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.drivetrain.LocalADStarAK
 import com.frcteam3636.frc2024.subsystems.intake.Intake
+import com.frcteam3636.frc2024.subsystems.intake.Intake.inputs
 import com.frcteam3636.frc2024.subsystems.intake.Intake.intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
-import com.pathplanner.lib.path.PathConstraints
+import com.pathplanner.lib.path.*
 import com.pathplanner.lib.pathfinding.Pathfinding
 import edu.wpi.first.hal.FRCNetComm.tInstances
 import edu.wpi.first.hal.FRCNetComm.tResourceType
@@ -32,6 +33,7 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.networktables.NT4Publisher
 import org.littletonrobotics.junction.wpilog.WPILOGReader
 import org.littletonrobotics.junction.wpilog.WPILOGWriter
+import kotlin.io.path.Path
 
 /**
  * The VM is configured to automatically run this object (which basically functions as a singleton
@@ -282,24 +284,35 @@ fun generatePathToTargetThenIntakeAndReturnToPreviousPosition(): Command {
         if (Intake.inputs.target == null) {
             Commands.none()
         } else {
-            val intialPosition = Drivetrain.estimatedPose
+            val initialPosition = Drivetrain.estimatedPose
             val constraints = PathConstraints(3.0, 1.0, edu.wpi.first.math.util.Units.degreesToRadians(540.0), edu.wpi.first.math.util.Units.degreesToRadians(720.0))
-            val pathfindToTargetCommand = AutoBuilder.pathfindToPose(
-                Intake.inputs.target,
-                constraints,
-                0.0,
-                0.0
+            val list: ArrayList<PathPoint> = ArrayList()
+            val initialPoint = PathPoint(
+                initialPosition.translation,
+                RotationTarget(
+                    0.0,
+                    Drivetrain.estimatedPose.rotation
+                )
             )
-            val pathfindToPreviousPositionCommand = AutoBuilder.pathfindToPose(
-                intialPosition,
-                constraints,
-                0.0,
-                0.0
+            list.add(initialPoint)
+            val targetPoint = PathPoint(
+                Intake.inputs.target!!.translation,
+                RotationTarget(
+                    0.0,
+                    Intake.inputs.target!!.rotation,
+                ),
+                constraints
             )
+            list.add(targetPoint)
+            val path = PathPlannerPath.fromPathPoints(list, constraints, GoalEndState(0.0, Intake.inputs.target!!.rotation))
+            list.clear()
+            list.add(targetPoint)
+            list.add(initialPoint)
+            val returnPath = PathPlannerPath.fromPathPoints(list, constraints, GoalEndState(0.0, Intake.inputs.target!!.rotation))
             Commands.sequence(
-                pathfindToTargetCommand,
+                AutoBuilder.followPath(path),
                 intake().withTimeout(1.5),
-                pathfindToPreviousPositionCommand
+                AutoBuilder.followPath(returnPath)
             )
         }
 

@@ -33,7 +33,7 @@ interface IntakeIO {
             table?.put("UTB Current", utbCurrent)
             table?.put("Is Intaking", isIntaking)
             table?.put("Beam Break", beamBreak)
-
+            table?.put("Target", target)
         }
 
         override fun fromLog(table: LogTable) {
@@ -43,6 +43,7 @@ interface IntakeIO {
             utbCurrent = table.get("UTB Current", utbCurrent)
             isIntaking = table.get("Is Intaking", isIntaking)
             beamBreak = table.get("Beam Break", beamBreak)
+            target = table.get("Target", target)[0]
         }
     }
 
