@@ -246,7 +246,7 @@ object Shooter {
                 )
             val distance = speakerPose.translation.minus(Drivetrain.estimatedPose.translation)
                     .minus(Translation2d(0.3, 0.0)).norm
-            abs((Rotation2d((TAU / 2) - atan(speakerTranslation.z / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
+            abs((Rotation2d(PI - atan(speakerTranslation.z / distance)) - inputs.leftPosition).radians) < Rotation2d.fromDegrees(
                 2.2
             ).radians
             }
