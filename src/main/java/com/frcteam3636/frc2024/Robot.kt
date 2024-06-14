@@ -291,7 +291,8 @@ fun generatePathToTargetThenIntakeAndReturnToPreviousPosition(): Command {
                 initialPosition.translation,
                 RotationTarget(
                     0.0,
-                    Drivetrain.estimatedPose.rotation
+                    Drivetrain.estimatedPose.rotation,
+                    true
                 )
             )
             list.add(initialPoint)
@@ -300,6 +301,7 @@ fun generatePathToTargetThenIntakeAndReturnToPreviousPosition(): Command {
                 RotationTarget(
                     0.0,
                     Intake.inputs.target!!.rotation,
+                    true
                 ),
                 constraints
             )
