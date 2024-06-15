@@ -443,9 +443,10 @@ internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
 )
 
 // drive with joysticks
-val DRIVER_ROTATION = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
+val DRIVER_ROTATION: Rotation2d? = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
     DriverStation.Alliance.Red -> Rotation2d.fromRotations(0.5)
     DriverStation.Alliance.Blue -> Rotation2d()
+    null -> Rotation2d()
 }
 
 // CAN IDs
