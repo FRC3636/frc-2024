@@ -255,7 +255,7 @@ class PivotIOKraken : PivotIO {
         const val RIGHT_ZERO_OFFSET = 0.38
 
         val LIMIT_SWITCH_OFFSET = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(9.13) + LIMIT_SWITCH_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(8.07) + LIMIT_SWITCH_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
