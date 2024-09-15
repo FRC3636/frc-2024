@@ -183,12 +183,12 @@ object Robot : LoggedRobot() {
             .whileTrue(Shooter.Pivot.runAtVelocity { Units.DegreesPerSecond.of(controller.leftY * 30) })
             .onFalse(Shooter.Pivot.holdCurrentPosition())
 
-        // Intake
-        controller.rightBumper()
-            .debounce(0.150)
-            .whileTrue(
-                doIntakeSequence()
-            )
+        // Intake - currently broken in hardware (hex shaft bent)
+//        controller.rightBumper()
+//            .debounce(0.150)
+//            .whileTrue(
+//                doIntakeSequence()
+//            )
 
         // Outtake
         controller.leftBumper()
@@ -210,7 +210,7 @@ object Robot : LoggedRobot() {
                 Commands.parallel(
                     Commands.either(
                         Shooter.Flywheels.rev(590.0, 0.0),
-                        Shooter.Flywheels.rev(65.6, 0.0),
+                        Shooter.Flywheels.rev(100.0, 0.0),
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
