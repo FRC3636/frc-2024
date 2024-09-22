@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024.subsystems.drivetrain
 import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.Slot0Configs
+import com.ctre.phoenix6.configs.TorqueCurrentConfigs
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.frcteam3636.frc2024.*
 import com.frcteam3636.frc2024.utils.math.*
@@ -120,9 +121,11 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
             pidGains = DRIVING_PID_GAINS_TALON
             motorFFGains = DRIVING_FF_GAINS_TALON
         })
+        // https://v6.docs.ctr-electronics.com/en/stable/docs/hardware-reference/talonfx/improving-performance-with-current-limits.html#stator-and-supply-current-limits
         configurator.apply(
-            CurrentLimitsConfigs().apply {
-                SupplyCurrentLimit = DRIVING_CURRENT_LIMIT
+            TorqueCurrentConfigs().apply {
+                withPeakForwardTorqueCurrent(DRIVING_CURRENT_LIMIT)
+                withPeakReverseTorqueCurrent(DRIVING_CURRENT_LIMIT)
             }
         )
 
