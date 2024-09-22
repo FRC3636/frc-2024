@@ -125,7 +125,7 @@ class DrivingTalon(id: CTREMotorControllerId) : DrivingMotor {
         configurator.apply(
             TorqueCurrentConfigs().apply {
                 withPeakForwardTorqueCurrent(DRIVING_CURRENT_LIMIT)
-                withPeakReverseTorqueCurrent(DRIVING_CURRENT_LIMIT)
+                withPeakReverseTorqueCurrent(-DRIVING_CURRENT_LIMIT)
             }
         )
 
