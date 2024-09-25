@@ -29,6 +29,7 @@ import kotlin.math.abs
 import kotlin.math.sign
 
 interface PivotIO: TalonFXStatusProvider {
+    var offset: Rotation2d;
     class Inputs : LoggableInputs {
         /** The pitch of the pivot relative to the chassis. */
         var rightPosition: Rotation2d = Rotation2d()
@@ -153,11 +154,13 @@ class PivotIOKraken : PivotIO {
 
     private val leftLimitSwitchUnpressed = DigitalInput(1)
 
+    override var offset = ABSOLUTE_ENCODER_OFFSET;
+
     override fun updateInputs(inputs: PivotIO.Inputs) {
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
-        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + ABSOLUTE_ENCODER_OFFSET.radians)
+        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + offset.radians)
 
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
@@ -261,7 +264,8 @@ class PivotIOKraken : PivotIO {
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
 }
 
-class PivotIOSim : PivotIO {
+class PivotIOSim() : PivotIO {
+    override var offset = Rotation2d();
     private val profile = TrapezoidProfile(
         TrapezoidProfile.Constraints(
             PivotIOKraken.PROFILE_VELOCITY,

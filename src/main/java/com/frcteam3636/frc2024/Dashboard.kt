@@ -42,5 +42,6 @@ object Dashboard {
         SmartDashboard.putBoolean("Battery Full", RobotController.getBatteryVoltage() >= 12.3)
         SmartDashboard.putBoolean("NavX OK", Drivetrain.gyroConnected)
         SmartDashboard.putBoolean("All Cameras OK", Drivetrain.allCamerasConnected)
+        
     }
 }

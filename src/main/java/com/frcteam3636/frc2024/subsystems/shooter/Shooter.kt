@@ -17,6 +17,7 @@ import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DriverStation
+import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard
 import edu.wpi.first.wpilibj.smartdashboard.Mechanism2d
 import edu.wpi.first.wpilibj.smartdashboard.MechanismLigament2d
 import edu.wpi.first.wpilibj2.command.Command
@@ -182,6 +183,11 @@ object Shooter {
             Robot.Model.COMPETITION -> PivotIOKraken()
             Robot.Model.PRACTICE -> TODO()
         }
+        private val tab = Shuffleboard.getTab("Pivot");
+        private val zeroPos =
+            tab.add("Zero Position", PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians).getEntry();
+
+
         private val inputs = PivotIO.Inputs()
 
         var target: Target = Target.AIM
@@ -192,6 +198,9 @@ object Shooter {
                 Rotation2d((inputs.absoluteEncoderPosition.radians + PIVOT_MOD_OFFSET.radians).mod(TAU) - PIVOT_MOD_OFFSET.radians)
 
         override fun periodic() {
+            val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians);
+            io.offset = Rotation2d(currentZero)
+
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
