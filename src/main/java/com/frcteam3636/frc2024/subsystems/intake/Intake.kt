@@ -1,7 +1,8 @@
 package com.frcteam3636.frc2024.subsystems.intake
 
 import com.frcteam3636.frc2024.Robot
-import edu.wpi.first.wpilibj2.command.*
+import edu.wpi.first.wpilibj2.command.Command
+import edu.wpi.first.wpilibj2.command.Subsystem
 import org.littletonrobotics.junction.Logger
 
 object Intake : Subsystem {
@@ -38,11 +39,10 @@ object Intake : Subsystem {
             }
         ).until(inputs::isIntaking)
 
-    fun index(): Command =
-        Commands.sequence(
-            Commands.runOnce({ io.setUnderBumperRoller(0.5) }),
-            Commands.waitSeconds(3.0),
-        ).finallyDo(Runnable {
+    fun index(): Command = startEnd({
+            io.setUnderBumperRoller(0.5)
+        }, {
             io.setUnderBumperRoller(0.0)
         })
+        .withTimeout(3.0)
 }
