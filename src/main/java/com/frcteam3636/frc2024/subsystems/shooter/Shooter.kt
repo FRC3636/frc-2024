@@ -1,9 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.shooter
 
 import com.frcteam3636.frc2024.*
-import com.frcteam3636.frc2024.BLACK
-import com.frcteam3636.frc2024.BLUE
-import com.frcteam3636.frc2024.WHITE
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.utils.math.*
 import edu.wpi.first.math.geometry.Pose2d
@@ -196,6 +193,8 @@ object Shooter {
         private val processedAbsoluteEncoderPosition
             get() =
                 Rotation2d((inputs.absoluteEncoderPosition.radians + PIVOT_MOD_OFFSET.radians).mod(TAU) - PIVOT_MOD_OFFSET.radians)
+
+        val encoderConnected get() = inputs.absoluteEncoderConnected
 
         override fun periodic() {
             val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians);

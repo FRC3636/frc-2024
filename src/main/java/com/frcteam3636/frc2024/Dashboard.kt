@@ -1,11 +1,9 @@
 package com.frcteam3636.frc2024
 
-import com.ctre.phoenix6.StatusCode
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
-import java.net.InetAddress
 import kotlin.concurrent.thread
 
 object Dashboard {
@@ -33,6 +31,7 @@ object Dashboard {
                 SmartDashboard.putNumber("CAN Bus Utilization", canStatus.percentBusUtilization)
                 SmartDashboard.putBoolean("CANivore Bus OK", (talonCanStatus.isOK))
                 SmartDashboard.putString("CANivore Bus Status", talonCanStatus.getName())
+                SmartDashboard.putBoolean("Pivot Encoder OK", Shooter.Pivot.encoderConnected)
                 Thread.sleep(250)
             }
         }

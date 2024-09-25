@@ -12,7 +12,10 @@ import com.ctre.phoenix6.signals.NeutralModeValue
 import com.frcteam3636.frc2024.CTREMotorControllerId
 import com.frcteam3636.frc2024.TalonFX
 import com.frcteam3636.frc2024.TalonFXStatusProvider
-import com.frcteam3636.frc2024.utils.math.*
+import com.frcteam3636.frc2024.utils.math.MotorFFGains
+import com.frcteam3636.frc2024.utils.math.PIDGains
+import com.frcteam3636.frc2024.utils.math.motorFFGains
+import com.frcteam3636.frc2024.utils.math.pidGains
 import edu.wpi.first.math.geometry.Rotation2d
 import edu.wpi.first.math.trajectory.TrapezoidProfile
 import edu.wpi.first.math.util.Units
@@ -20,13 +23,10 @@ import edu.wpi.first.units.Angle
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Velocity
 import edu.wpi.first.wpilibj.DigitalInput
-import edu.wpi.first.wpilibj.DriverStation
 import edu.wpi.first.wpilibj.DutyCycleEncoder
 import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
-import kotlin.math.abs
-import kotlin.math.sign
 
 interface PivotIO: TalonFXStatusProvider {
     var offset: Rotation2d;
@@ -55,6 +55,8 @@ interface PivotIO: TalonFXStatusProvider {
         var rotorVelocityRight: Double = 0.0
         var leftLimitSwitchUnpressed: Boolean = false
 
+        var absoluteEncoderConnected = false
+
         override fun toLog(table: org.littletonrobotics.junction.LogTable) {
             table.put("Uncorrected Absolute Encoder Position", uncorrectedEncoderPosition)
             table.put("Absolute Encoder Position", absoluteEncoderPosition)
@@ -70,6 +72,7 @@ interface PivotIO: TalonFXStatusProvider {
             table.put("Rotor Velocity Left", rotorVelocityLeft)
             table.put("Rotor Distance Right (rotations)", rotorDistanceRight)
             table.put("Rotor Velocity Right", rotorVelocityRight)
+            table.put("Absolute Encoder Connected", absoluteEncoderConnected)
         }
 
         override fun fromLog(table: org.littletonrobotics.junction.LogTable) {
@@ -87,7 +90,7 @@ interface PivotIO: TalonFXStatusProvider {
             rotorDistanceLeft = table.get("Rotor Distance Left (rotations)", rotorDistanceLeft)
             rotorVelocityLeft = table.get("Rotor Velocity Left", rotorVelocityLeft)
             rotorDistanceRight = table.get("Rotor Distance Right (rotations)", rotorDistanceRight)
-            rotorVelocityRight = table.get("Rotor Velocity Right", rotorVelocityRight)
+            absoluteEncoderConnected = table.get("Absolute Encoder Connected", absoluteEncoderConnected)
         }
     }
 
@@ -154,9 +157,10 @@ class PivotIOKraken : PivotIO {
 
     private val leftLimitSwitchUnpressed = DigitalInput(1)
 
-    override var offset = ABSOLUTE_ENCODER_OFFSET;
+    override var offset: Rotation2d = ABSOLUTE_ENCODER_OFFSET
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
+        inputs.absoluteEncoderConnected = absoluteEncoder.isConnected
         inputs.leftLimitSwitchUnpressed = leftLimitSwitchUnpressed.get()
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
@@ -283,6 +287,8 @@ class PivotIOSim() : PivotIO {
         inputs.leftVelocity = Rotation2d(state.velocity)
         inputs.rightPosition = Rotation2d(state.position)
         inputs.rightVelocity = Rotation2d(state.velocity)
+        inputs.absoluteEncoderPosition = Rotation2d(state.position)
+        inputs.absoluteEncoderConnected = true
     }
 
     override fun pivotToAndStop(position: Rotation2d) {
