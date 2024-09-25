@@ -63,6 +63,7 @@ object Robot : LoggedRobot() {
                 1, PowerDistribution.ModuleType.kRev
             ) // Enables power distribution logging
         } else {
+            DriverStation.silenceJoystickConnectionWarning(true)
             var logPath: String? = null
             try {
                 logPath = LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or
@@ -148,17 +149,17 @@ object Robot : LoggedRobot() {
 
 
         // Polar driving
-        Trigger(joystickLeft::getTrigger)
-            .whileTrue(
-                Commands.defer({
-                    Drivetrain.driveWithJoystickPointingTowards(
-                        joystickLeft,
-                        DriverStation.getAlliance()
-                            .orElse(DriverStation.Alliance.Blue)
-                            .speakerTranslation.toTranslation2d()
-                    )
-                }, setOf(Drivetrain))
-            )
+//        Trigger(joystickLeft::getTrigger)
+//            .whileTrue(
+//                Commands.defer({
+//                    Drivetrain.driveWithJoystickPointingTowards(
+//                        joystickLeft,
+//                        DriverStation.getAlliance()
+//                            .orElse(DriverStation.Alliance.Blue)
+//                            .speakerTranslation.toTranslation2d()
+//                    )
+//                }, setOf(Drivetrain))
+//            )
 
         // Follow a motion profile to the selected pivot target
         controller.leftTrigger()
@@ -182,12 +183,12 @@ object Robot : LoggedRobot() {
             .whileTrue(Shooter.Pivot.runAtVelocity { Units.DegreesPerSecond.of(controller.leftY * 30) })
             .onFalse(Shooter.Pivot.holdCurrentPosition())
 
-        // Intake
-        controller.rightBumper()
-            .debounce(0.150)
-            .whileTrue(
-                doIntakeSequence()
-            )
+        // Intake - currently broken in hardware (hex shaft bent)
+//        controller.rightBumper()
+//            .debounce(0.150)
+//            .whileTrue(
+//                doIntakeSequence()
+//            )
 
         // Outtake
         controller.leftBumper()
@@ -209,7 +210,7 @@ object Robot : LoggedRobot() {
                 Commands.parallel(
                     Commands.either(
                         Shooter.Flywheels.rev(590.0, 0.0),
-                        Shooter.Flywheels.rev(65.6, 0.0),
+                        Shooter.Flywheels.rev(100.0, 0.0),
                     ) { Shooter.Pivot.target != Shooter.Pivot.Target.AMP },
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
@@ -222,8 +223,15 @@ object Robot : LoggedRobot() {
                     )
                 )
             )
+        Trigger(joystickLeft::getTrigger)
+            .whileTrue(
+                Shooter.Flywheels.intake()
+            )
 
-        JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({ Drivetrain.zeroGyro() }))
+        JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({
+            println("Zeroing gyro.");
+            Drivetrain.zeroGyro()
+        }))
 
 //        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
 

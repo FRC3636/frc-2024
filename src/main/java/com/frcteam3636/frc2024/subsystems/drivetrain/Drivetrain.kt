@@ -244,9 +244,9 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        translationInput.x * FREE_SPEED.baseUnitMagnitude(),
-                        translationInput.y * FREE_SPEED.baseUnitMagnitude(),
-                        -rotationJoystick.x * TAU * 1.25,
+                        translationInput.x * FREE_SPEED.baseUnitMagnitude() * 1.0 / 3.0,
+                        translationInput.y * FREE_SPEED.baseUnitMagnitude() * 1.0 / 3.0,
+                        -rotationJoystick.x * TAU * 1.25 * 1.0 / 2.0,
                         gyroRotation.toRotation2d()
                     )
             } else {
@@ -366,7 +366,7 @@ class DrivetrainIOSim : DrivetrainIO() {
 internal val WHEEL_BASE: Double = Units.inchesToMeters(30.0)
 internal val TRACK_WIDTH: Double = Units.inchesToMeters(28.0)
 
-internal const val JOYSTICK_DEADBAND = 0.04
+internal const val JOYSTICK_DEADBAND = 0.15
 
 internal val COMP_MODULE_POSITIONS =
     PerCorner(
@@ -378,12 +378,12 @@ internal val COMP_MODULE_POSITIONS =
         backLeft =
         Pose2d(
             Translation2d(-WHEEL_BASE, TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(270.0)
+            Rotation2d.fromDegrees(90.0)
         ),
         backRight =
         Pose2d(
             Translation2d(-WHEEL_BASE, -TRACK_WIDTH) / 2.0,
-            Rotation2d.fromDegrees(0.0)
+            Rotation2d.fromDegrees(180.0)
         ),
         frontRight =
         Pose2d(
