@@ -3,7 +3,6 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
-import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -43,6 +42,7 @@ object Robot : LoggedRobot() {
     private val controller = CommandXboxController(2)
     private val joystickLeft = Joystick(0)
     private val joystickRight = Joystick(1)
+    @Suppress("unused")
     private val joystickDev = Joystick(3)
     private lateinit var autoChooser: SendableChooser<Command>
 
@@ -229,7 +229,7 @@ object Robot : LoggedRobot() {
             )
 
         JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({
-            println("Zeroing gyro.");
+            println("Zeroing gyro.")
             Drivetrain.zeroGyro()
         }))
 

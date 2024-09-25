@@ -8,20 +8,6 @@ import kotlin.concurrent.thread
 
 object Dashboard {
     init {
-//        thread(isDaemon = true) {
-//            val visionPcAddr = InetAddress.getByName("10.36.36.10")
-//            while (true) {
-//                try {
-//                    val visionPcOnline = visionPcAddr.isReachable(1000)
-//                    SmartDashboard.putBoolean("Vision PC OK", visionPcOnline)
-//                } catch (err: Exception) {
-//                    SmartDashboard.putBoolean("Vision PC OK", false)
-//                    err.printStackTrace()
-//                }
-//                Thread.sleep(1000)
-//            }
-//        }
-
         thread(isDaemon = true) {
             val canDiagnostics = TalonFXDiagnosticCollector(Drivetrain, Shooter.Pivot)
             while (true) {
@@ -41,6 +27,5 @@ object Dashboard {
         SmartDashboard.putBoolean("Battery Full", RobotController.getBatteryVoltage() >= 12.3)
         SmartDashboard.putBoolean("NavX OK", Drivetrain.gyroConnected)
         SmartDashboard.putBoolean("All Cameras OK", Drivetrain.allCamerasConnected)
-        
     }
 }

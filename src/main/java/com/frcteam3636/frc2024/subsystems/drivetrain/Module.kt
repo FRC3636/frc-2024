@@ -1,7 +1,6 @@
 package com.frcteam3636.frc2024.subsystems.drivetrain
 
 import com.ctre.phoenix6.StatusSignal
-import com.ctre.phoenix6.configs.CurrentLimitsConfigs
 import com.ctre.phoenix6.configs.Slot0Configs
 import com.ctre.phoenix6.configs.TorqueCurrentConfigs
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
@@ -233,8 +232,8 @@ internal val WHEEL_CIRCUMFERENCE = WHEEL_RADIUS * TAU
 internal const val NEO_FREE_SPEED_RPM = 5676.0
 internal const val NEO_FREE_SPEED_RPS: Double = NEO_FREE_SPEED_RPM / 60
 
-internal val DRIVING_GEAR_RATIO_TALON = 1.0 / 3.56
-internal val DRIVING_GEAR_RATIO_NEO = 0.0
+internal const val DRIVING_GEAR_RATIO_TALON = 1.0 / 3.56
+internal const val DRIVING_GEAR_RATIO_NEO = 0.0
 
 internal val DRIVING_PID_GAINS_TALON: PIDGains = PIDGains(4.0, 0.0, 0.1)
 internal val DRIVING_PID_GAINS_NEO: PIDGains = PIDGains(0.04, 0.0, 0.0)
@@ -243,5 +242,5 @@ internal val DRIVING_FF_GAINS_NEO: MotorFFGains =
     MotorFFGains(0.0, 1 / NEO_FREE_SPEED_RPS, 0.0) // TODO: ensure this is right
 
 internal val TURNING_PID_GAINS: PIDGains = PIDGains(1.7, 0.0, 0.125)
-internal val DRIVING_CURRENT_LIMIT = 35.0
-internal val TURNING_CURRENT_LIMIT = 20.0
+internal const val DRIVING_CURRENT_LIMIT = 35.0
+internal const val TURNING_CURRENT_LIMIT = 20.0

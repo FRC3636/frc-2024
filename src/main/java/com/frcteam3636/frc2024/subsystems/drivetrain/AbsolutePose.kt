@@ -99,6 +99,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
         get() = disconnectTimeout.hasElapsed(1.0)
 }
 
+@Suppress("unused")
 class PhotonVisionPoseIOReal(name: String, chassisToCamera: Transform3d) : AbsolutePoseIO {
     private val camera = PhotonCamera(name).apply { driverMode = false }
     private val estimator =
@@ -128,6 +129,7 @@ data class AbsolutePoseMeasurement(val pose: Pose3d, val timestamp: Double, val 
     StructSerializable {
     companion object {
         @JvmField
+        @Suppress("unused")
         val struct = AbsolutePoseMeasurementStruct()
     }
 }
@@ -162,6 +164,7 @@ class AbsolutePoseMeasurementStruct : Struct<AbsolutePoseMeasurement> {
 }
 
 internal val APRIL_TAG_FIELD_LAYOUT = AprilTagFieldLayout.loadFromResource(AprilTagFields.k2024Crescendo.m_resourceFile)
+@Suppress("unused")
 internal const val APRIL_TAG_AMBIGUITY_FILTER = 0.3
 internal val APRIL_TAG_STD_DEV = { distance: Double, count: Int ->
     val distanceMultiplier = (distance - (count - 1) * 3).pow(2.0)

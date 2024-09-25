@@ -38,9 +38,10 @@ interface AmpMechIO {
     fun zero() {}
 }
 
+@Suppress("unused")
 class AmpMechIOReal : AmpMechIO {
 
-    val pivotMotor = CANSparkFlex(REVMotorControllerId.AmpMech, CANSparkLowLevel.MotorType.kBrushless).apply {
+    private val pivotMotor = CANSparkFlex(REVMotorControllerId.AmpMech, CANSparkLowLevel.MotorType.kBrushless).apply {
         restoreFactoryDefaults()
         inverted = false
         encoder.positionConversionFactor = TAU * GEAR_RATIO

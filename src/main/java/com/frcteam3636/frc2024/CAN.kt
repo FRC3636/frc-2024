@@ -23,7 +23,6 @@ enum class REVMotorControllerId(val num: Int) {
     Indexer(13),
     AmpMech(14),
 
-    OverTheBumperIntakeFeed(20),
     UnderTheBumperIntakeRoller(21),
 }
 
@@ -40,8 +39,6 @@ enum class CTREMotorControllerId(val num: Int, val bus: String) {
     FrontRightDrivingMotor(4, "*"),
     RightPivotMotor(10, "*"),
     LeftPivotMotor(11, "*"),
-
-    ClimberMotor(30, "*"),
 }
 
 fun TalonFX(id: CTREMotorControllerId) = TalonFX(id.num, id.bus)

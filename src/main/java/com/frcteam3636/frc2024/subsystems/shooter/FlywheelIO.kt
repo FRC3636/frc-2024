@@ -5,9 +5,8 @@ import com.frcteam3636.frc2024.REVMotorControllerId
 import com.revrobotics.CANSparkLowLevel
 import edu.wpi.first.math.system.plant.DCMotor
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.units.Measure
+import edu.wpi.first.units.*
 import edu.wpi.first.units.Units.*
-import edu.wpi.first.units.Voltage
 import edu.wpi.first.wpilibj.simulation.FlywheelSim
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
@@ -15,14 +14,14 @@ import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface FlywheelIO {
     class Inputs : LoggableInputs {
-        var leftSpeed = RadiansPerSecond.zero()
-        var rightSpeed = RadiansPerSecond.zero()
+        var leftSpeed: Measure<Velocity<Angle>> = RadiansPerSecond.zero()
+        var rightSpeed: Measure<Velocity<Angle>> = RadiansPerSecond.zero()
         var leftVoltage: Double = 0.0
         var rightVoltage: Double = 0.0
-        var leftCurrent = Amps.zero()
-        var rightCurrent = Amps.zero()
-        var leftPos = Radians.zero()
-        var rightPos = Radians.zero()
+        var leftCurrent: Measure<Current> = Amps.zero()
+        var rightCurrent: Measure<Current> = Amps.zero()
+        var leftPos: Measure<Angle> = Radians.zero()
+        var rightPos: Measure<Angle> = Radians.zero()
 
         override fun toLog(table: LogTable) {
             table.put("Left Speed", leftSpeed)

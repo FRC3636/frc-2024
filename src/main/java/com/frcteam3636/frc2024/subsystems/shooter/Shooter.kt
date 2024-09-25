@@ -9,7 +9,6 @@ import edu.wpi.first.math.geometry.Translation2d
 import edu.wpi.first.math.geometry.Translation3d
 import edu.wpi.first.math.util.Units
 import edu.wpi.first.units.Angle
-import edu.wpi.first.units.Distance
 import edu.wpi.first.units.Measure
 import edu.wpi.first.units.Units.*
 import edu.wpi.first.units.Velocity
@@ -180,9 +179,9 @@ object Shooter {
             Robot.Model.COMPETITION -> PivotIOKraken()
             Robot.Model.PRACTICE -> TODO()
         }
-        private val tab = Shuffleboard.getTab("Pivot");
+        private val tab = Shuffleboard.getTab("Pivot")
         private val zeroPos =
-            tab.add("Zero Position", PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians).getEntry();
+            tab.add("Zero Position", PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians).entry
 
 
         private val inputs = PivotIO.Inputs()
@@ -197,7 +196,7 @@ object Shooter {
         val encoderConnected get() = inputs.absoluteEncoderConnected
 
         override fun periodic() {
-            val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians);
+            val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians)
             io.offset = Rotation2d(currentZero)
 
             io.updateInputs(inputs)
@@ -240,6 +239,7 @@ object Shooter {
             }
         }
 
+        @Suppress("unused")
         val atSetpoint = Trigger {
             abs((inputs.leftPosition - target.profile.position()).degrees) < 2.0
         }
@@ -394,8 +394,6 @@ val DriverStation.Alliance.speakerTranslation: Translation3d
 //amps
 internal val FLYWHEEL_INTAKE_CURRENT_THRESHOLD = Amps.of(25000.0)
 
-internal val NOTE_EXIT_VELOCITY : Measure<Velocity<Distance>> = MetersPerSecond.of(4.577)
-internal val GRAVITY_ACCELERATION : Measure<Velocity<Velocity<Distance>>> = MetersPerSecondPerSecond.of(9.8)
 internal val PIVOT_POSITION_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val PIVOT_VELOCITY_TOLERANCE = Rotation2d.fromDegrees(2.0)
 internal val FLYWHEEL_VELOCITY_TOLERANCE = RadiansPerSecond.of(13.0)

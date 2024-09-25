@@ -236,8 +236,8 @@ class PivotIOKraken : PivotIO {
     }
 
     internal companion object Constants {
-        val GEAR_RATIO = 51.2
-        val SENSOR_TO_PIVOT_RATIO = 1.0
+        const val GEAR_RATIO = 51.2
+        const val SENSOR_TO_PIVOT_RATIO = 1.0
 
 //        val PID_GAINS = PIDGains(120.0, 0.0, 100.0)
 //        val FF_GAINS = MotorFFGains(7.8, 0.0, 0.0)
@@ -245,20 +245,20 @@ class PivotIOKraken : PivotIO {
         //gains solved for analytically
         val PID_GAINS = PIDGains(1500.00594, 0.0, 125.0)
         val FF_GAINS = MotorFFGains(2.5, 0.0, 0.0)
-        val GRAVITY_GAIN = 11.5
+        const val GRAVITY_GAIN = 11.5
 
-        val PROFILE_VELOCITY = 70.0
-        val PROFILE_ACCELERATION = 50.0
-        val PROFILE_JERK = 80.0
+        const val PROFILE_VELOCITY = 70.0
+        const val PROFILE_ACCELERATION = 50.0
+        const val PROFILE_JERK = 80.0
 
-        val HARDSTOP_OFFSET = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET = Rotation2d.fromDegrees(8.07) + HARDSTOP_OFFSET
+        val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
+        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(8.07) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
 }
 
-class PivotIOSim() : PivotIO {
+class PivotIOSim : PivotIO {
     override var offset = Rotation2d()
     private val profile = TrapezoidProfile(
         TrapezoidProfile.Constraints(

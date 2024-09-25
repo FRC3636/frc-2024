@@ -27,7 +27,6 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics
 import edu.wpi.first.math.kinematics.SwerveModulePosition
 import edu.wpi.first.math.kinematics.SwerveModuleState
 import edu.wpi.first.math.util.Units
-import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.units.Units.MetersPerSecond
 import edu.wpi.first.units.Units.RadiansPerSecond
 import edu.wpi.first.wpilibj.DriverStation
@@ -179,7 +178,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     }
 
     // The rotation of the robot as measured by the gyro.
-    var gyroRotation
+    private var gyroRotation
         get() = inputs.gyroRotation
         set(value) {
             io.resetGyro(value)
@@ -204,7 +203,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
     // The current speed of chassis relative to the ground, assuming that the wheels have perfect
     // traction with the ground.
-    var chassisSpeeds: ChassisSpeeds
+    private var chassisSpeeds: ChassisSpeeds
         // Get the chassis speeds from the measured module states.
         get() = kinematics.cornerStatesToChassisSpeeds(inputs.measuredStates)
         // Set the drivetrain to move with the given chassis speeds.
@@ -214,14 +213,6 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             val discretized = ChassisSpeeds.discretize(value, Robot.period)
             val states = kinematics.toCornerSwerveModuleStates(discretized)
             moduleStates = states
-        }
-
-    // Set the drivetrain to an X-formation to passively prevent movement in any direction.
-    fun brake(): Command =
-        runOnce {
-            // set the modules to radiate outwards from the chassis origin
-            moduleStates =
-                MODULE_POSITIONS.map { position -> SwerveModuleState(0.0, position.translation.angle) }
         }
 
     // Get the estimated pose of the drivetrain using the pose estimator.
@@ -256,11 +247,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             }
         }
 
-    fun findWheelCircumfrence(): Command =
-        runOnce {
-            zeroGyro()
-        }
-
+    @Suppress("unused")
     fun driveWithController(controller: CommandXboxController): Command =
         run {
             chassisSpeeds =
@@ -272,6 +259,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
                 )
         }
 
+    @Suppress("unused")
     fun driveWithJoystickPointingTowards(translationJoystick: Joystick, target: Translation2d): Command {
         Logger.recordOutput("Drivetrain/Polar Driving Target", target)
         val rotationPIDController = PIDController(ROTATION_PID_GAINS).apply {
@@ -296,6 +284,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
         gyroRotation = Rotation3d()
     }
 
+    @Suppress("unused")
     fun pathfindToPose(target: Pose2d): Command =
         AutoBuilder.pathfindToPose(target, DEFAULT_PATHING_CONSTRAINTS, 0.0)
 
@@ -308,7 +297,7 @@ abstract class DrivetrainIO {
 
     class Inputs : LoggableInputs {
         var gyroRotation: Rotation3d = Rotation3d()
-            set(value: Rotation3d) {
+            set(value) {
                 synchronized(this) { field = value }
             }
         var measuredStates: PerCorner<SwerveModuleState> =
@@ -443,7 +432,8 @@ internal val PATH_FOLLOWER_CONFIG = HolonomicPathFollowerConfig(
 )
 
 // drive with joysticks
-val DRIVER_ROTATION = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
+@Suppress("WHEN_ENUM_CAN_BE_NULL_IN_JAVA")
+val DRIVER_ROTATION: Rotation2d = when (DriverStation.getAlliance().orElse(DriverStation.Alliance.Blue)) {
     DriverStation.Alliance.Red -> Rotation2d.fromRotations(0.5)
     DriverStation.Alliance.Blue -> Rotation2d()
 }
