@@ -183,12 +183,12 @@ object Robot : LoggedRobot() {
             .whileTrue(Shooter.Pivot.runAtVelocity { Units.DegreesPerSecond.of(controller.leftY * 30) })
             .onFalse(Shooter.Pivot.holdCurrentPosition())
 
-        // Intake - currently broken in hardware (hex shaft bent)
-//        controller.rightBumper()
-//            .debounce(0.150)
-//            .whileTrue(
-//                doIntakeSequence()
-//            )
+        // Intake
+        controller.rightBumper()
+            .debounce(0.150)
+            .whileTrue(
+                doIntakeSequence()
+            )
 
         // Outtake
         controller.leftBumper()
@@ -293,7 +293,7 @@ private fun doIntakeSequence(): Command =
                 //spinning up
                 Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //reached velocity setpoint
-                Commands.waitUntil { !Shooter.Flywheels.aboveIntakeThreshold },
+                Commands.waitUntil { !(Shooter.Flywheels.aboveIntakeThreshold) },
                 //contacted note
                 Commands.waitUntil { Shooter.Flywheels.aboveIntakeThreshold },
                 //note stowed
