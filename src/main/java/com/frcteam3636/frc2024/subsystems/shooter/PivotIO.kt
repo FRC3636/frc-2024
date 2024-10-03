@@ -164,7 +164,7 @@ class PivotIOKraken : PivotIO {
 
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
-        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + ABSOLUTE_ENCODER_OFFSET.radians)
+        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + zeroOffset.radians)
 
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
