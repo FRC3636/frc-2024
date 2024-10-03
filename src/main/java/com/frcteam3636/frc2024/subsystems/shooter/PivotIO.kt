@@ -152,7 +152,7 @@ class PivotIOKraken : PivotIO {
         leftMotor.setPosition(HARDSTOP_OFFSET.rotations)
         rightMotor.setPosition(HARDSTOP_OFFSET.rotations)
         // Potentially dangerous. This assumes that the pivot is in the zero position on code startup.
-        ABSOLUTE_ENCODER_OFFSET = rawAbsoluteEncoderPosition + HARDSTOP_OFFSET
+        ABSOLUTE_ENCODER_OFFSET = -rawAbsoluteEncoderPosition + HARDSTOP_OFFSET
     }
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
