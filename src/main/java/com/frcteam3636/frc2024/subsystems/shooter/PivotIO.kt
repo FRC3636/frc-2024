@@ -29,7 +29,6 @@ import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 
 interface PivotIO: TalonFXStatusProvider {
-    var offset: Rotation2d
     class Inputs : LoggableInputs {
         /** The pitch of the pivot relative to the chassis. */
         var rightPosition: Rotation2d = Rotation2d()
@@ -109,7 +108,7 @@ class PivotIOKraken : PivotIO {
 
     private val rightMotor = TalonFX(CTREMotorControllerId.RightPivotMotor)
 
-    private val absoluteEncoder = DutyCycleEncoder(DigitalInput(2)).apply {
+    private val absoluteEncoder = DutyCycleEncoder(DigitalInput(7)).apply {
         distancePerRotation = SENSOR_TO_PIVOT_RATIO
     }
     private val rawAbsoluteEncoderPosition
@@ -152,13 +151,11 @@ class PivotIOKraken : PivotIO {
         rightMotor.setPosition(HARDSTOP_OFFSET.rotations)
     }
 
-    override var offset: Rotation2d = ABSOLUTE_ENCODER_OFFSET
-
     override fun updateInputs(inputs: PivotIO.Inputs) {
         inputs.absoluteEncoderConnected = absoluteEncoder.isConnected
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
-        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + offset.radians)
+        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + ABSOLUTE_ENCODER_OFFSET.radians)
 
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
@@ -252,14 +249,14 @@ class PivotIOKraken : PivotIO {
         const val PROFILE_JERK = 80.0
 
         val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(167.1) + HARDSTOP_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(138.8) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
 }
 
 class PivotIOSim : PivotIO {
-    override var offset = Rotation2d()
+    var offset = Rotation2d()
     private val profile = TrapezoidProfile(
         TrapezoidProfile.Constraints(
             PivotIOKraken.PROFILE_VELOCITY,

@@ -197,7 +197,7 @@ object Shooter {
 
         override fun periodic() {
             val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians)
-            io.offset = Rotation2d(currentZero)
+//            io.offset = Rotation2d(currentZero)
 
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)

@@ -51,7 +51,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
         .getTable(name)
     private val stddev = VecBuilder.fill(.7, .7, 9999999.0)
 
-    private val botPose = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(null)
+    private val botPose = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(null)
     private val cl = table.getDoubleTopic("cl").subscribe(0.0)
     private val tl = table.getDoubleTopic("tl").subscribe(0.0)
     private val disconnectTimeout = Timer().apply {
@@ -59,14 +59,14 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
     }
 
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
-        val entries = DoubleArray(6)
-        entries[0] = Drivetrain.estimatedPose.rotation.degrees
-        entries[1] = 0.0
-        entries[2] = 0.0
-        entries[3] = 0.0
-        entries[4] = 0.0
-        entries[5] = 0.0
-        table.getEntry("robot_orientation_set").setDoubleArray(entries)
+//        val entries = DoubleArray(6)
+//        entries[0] = Drivetrain.estimatedPose.rotation.degrees
+//        entries[1] = 0.0
+//        entries[2] = 0.0
+//        entries[3] = 0.0
+//        entries[4] = 0.0
+//        entries[5] = 0.0
+//        table.getEntry("robot_orientation_set").setDoubleArray(entries)
         inputs.measurement = botPose.readQueue().lastOrNull()?.let { update ->
             val x = update.value[0]
             val y = update.value[1]
