@@ -351,6 +351,7 @@ object Shooter {
         }
 
         fun zeroShooter(): Command = runOnce {
+            println("Zeroing pivot. New offset is: " + -inputs.uncorrectedEncoderPosition.degrees)
             io.updateOffset(-inputs.uncorrectedEncoderPosition)
         }
 
