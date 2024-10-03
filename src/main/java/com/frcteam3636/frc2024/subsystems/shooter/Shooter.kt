@@ -350,6 +350,10 @@ object Shooter {
             )
         }
 
+        fun zeroShooter(): Command = runOnce {
+            io.updateOffset(-inputs.uncorrectedEncoderPosition)
+        }
+
     }
 
     // Register the two subsystems which together form the shooter.
