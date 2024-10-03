@@ -101,6 +101,8 @@ interface PivotIO: TalonFXStatusProvider {
     fun driveVelocity(velocity: Measure<Velocity<Angle>>) {}
 
     fun setPivotPosition(newPosition: Rotation2d) {}
+
+    fun updateOffset(offset: Rotation2d) {}
 }
 
 class PivotIOKraken : PivotIO {
@@ -149,6 +151,8 @@ class PivotIOKraken : PivotIO {
 
         leftMotor.setPosition(HARDSTOP_OFFSET.rotations)
         rightMotor.setPosition(HARDSTOP_OFFSET.rotations)
+        // Potentially dangerous. This assumes that the pivot is in the zero position on code startup.
+        ABSOLUTE_ENCODER_OFFSET = rawAbsoluteEncoderPosition + HARDSTOP_OFFSET
     }
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
@@ -232,6 +236,10 @@ class PivotIOKraken : PivotIO {
         rightMotor.setControl(control)
     }
 
+    override fun updateOffset(offset: Rotation2d) {
+        ABSOLUTE_ENCODER_OFFSET = offset + HARDSTOP_OFFSET
+    }
+
     internal companion object Constants {
         const val GEAR_RATIO = 51.2
         const val SENSOR_TO_PIVOT_RATIO = 1.0
@@ -249,7 +257,7 @@ class PivotIOKraken : PivotIO {
         const val PROFILE_JERK = 80.0
 
         val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(138.8) + HARDSTOP_OFFSET
+        var ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(138.8) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)

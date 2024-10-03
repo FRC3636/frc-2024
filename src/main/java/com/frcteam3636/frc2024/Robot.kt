@@ -233,6 +233,8 @@ object Robot : LoggedRobot() {
             Drivetrain.zeroGyro()
         }))
 
+        JoystickButton(joystickLeft, 9).onTrue(Shooter.Pivot.zeroShooter())
+
 //        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
 
         // Switch pivot brake mode on and off while disabled.
