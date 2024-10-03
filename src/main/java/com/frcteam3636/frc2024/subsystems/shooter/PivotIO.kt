@@ -55,6 +55,8 @@ interface PivotIO: TalonFXStatusProvider {
 
         var absoluteEncoderConnected = false
 
+        var zeroOffset: Rotation2d = Rotation2d()
+
         override fun toLog(table: org.littletonrobotics.junction.LogTable) {
             table.put("Uncorrected Absolute Encoder Position", uncorrectedEncoderPosition)
             table.put("Absolute Encoder Position", absoluteEncoderPosition)
@@ -70,6 +72,7 @@ interface PivotIO: TalonFXStatusProvider {
             table.put("Rotor Distance Right (rotations)", rotorDistanceRight)
             table.put("Rotor Velocity Right", rotorVelocityRight)
             table.put("Absolute Encoder Connected", absoluteEncoderConnected)
+            table.put("Absolute Encoder Zero Offset", zeroOffset)
         }
 
         override fun fromLog(table: org.littletonrobotics.junction.LogTable) {
@@ -87,6 +90,7 @@ interface PivotIO: TalonFXStatusProvider {
             rotorVelocityLeft = table.get("Rotor Velocity Left", rotorVelocityLeft)
             rotorDistanceRight = table.get("Rotor Distance Right (rotations)", rotorDistanceRight)
             absoluteEncoderConnected = table.get("Absolute Encoder Connected", absoluteEncoderConnected)
+            zeroOffset = table.get("Absolute Encoder Zero Offset", zeroOffset)[0]
         }
     }
 
@@ -115,6 +119,8 @@ class PivotIOKraken : PivotIO {
     }
     private val rawAbsoluteEncoderPosition
         get() = Rotation2d.fromRotations(-absoluteEncoder.absolutePosition)
+
+    private var zeroOffset: Rotation2d = ABSOLUTE_ENCODER_OFFSET
 
     init {
         val config = TalonFXConfiguration().apply {
@@ -151,12 +157,11 @@ class PivotIOKraken : PivotIO {
 
         leftMotor.setPosition(HARDSTOP_OFFSET.rotations)
         rightMotor.setPosition(HARDSTOP_OFFSET.rotations)
-        // Potentially dangerous. This assumes that the pivot is in the zero position on code startup.
-        ABSOLUTE_ENCODER_OFFSET = -rawAbsoluteEncoderPosition + HARDSTOP_OFFSET
     }
 
     override fun updateInputs(inputs: PivotIO.Inputs) {
         inputs.absoluteEncoderConnected = absoluteEncoder.isConnected
+
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
         inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + ABSOLUTE_ENCODER_OFFSET.radians)
@@ -175,6 +180,8 @@ class PivotIOKraken : PivotIO {
         inputs.rotorVelocityLeft = Units.rotationsToRadians(leftMotor.rotorVelocity.value)
         inputs.rotorDistanceRight = Units.rotationsToRadians(rightMotor.rotorPosition.value)
         inputs.rotorVelocityRight = Units.rotationsToRadians(rightMotor.rotorVelocity.value)
+
+        inputs.zeroOffset = zeroOffset
     }
 
     override fun pivotToAndStop(position: Rotation2d) {
@@ -237,7 +244,7 @@ class PivotIOKraken : PivotIO {
     }
 
     override fun updateOffset(offset: Rotation2d) {
-        ABSOLUTE_ENCODER_OFFSET = offset + HARDSTOP_OFFSET
+        zeroOffset = offset + HARDSTOP_OFFSET
     }
 
     internal companion object Constants {
@@ -257,7 +264,7 @@ class PivotIOKraken : PivotIO {
         const val PROFILE_JERK = 80.0
 
         val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
-        var ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(138.8) + HARDSTOP_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(138.8) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)

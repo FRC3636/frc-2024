@@ -249,6 +249,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
+        Shooter.Pivot.zeroShooter()
         autoCommand = autoChooser.selected
         autoCommand?.schedule()
     }
