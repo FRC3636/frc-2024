@@ -199,6 +199,8 @@ object Shooter {
             val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians)
 //            io.offset = Rotation2d(currentZero)
 
+            Logger.recordOutput("Shooter/Pivot/Offset Constant", PivotIOKraken.ABSOLUTE_ENCODER_OFFSET)
+
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
@@ -272,6 +274,7 @@ object Shooter {
 
         fun followMotionProfile(targetOverride: Target?): Command =
             run {
+                println("Running motion profile")
                 val target = targetOverride ?: this.target
                 val position = target.profile.position()
                 val velocity = target.profile.velocity()
