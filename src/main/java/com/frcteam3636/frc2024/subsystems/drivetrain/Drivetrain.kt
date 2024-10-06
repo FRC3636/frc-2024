@@ -42,6 +42,12 @@ import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
 object Drivetrain : Subsystem, TalonFXStatusProvider {
+    // Translation/rotation coefficient for teleoperated driver controls
+    /** Unit: Percent of max robot speed */
+    private const val TRANSLATION_SENSITIVITY = 1.0
+    /** Unit: Rotations per second */
+    private const val ROTATION_SENSITIVITY = 0.9
+
     private val io = when (Robot.model) {
         Robot.Model.SIMULATION -> DrivetrainIOSim()
         Robot.Model.COMPETITION -> DrivetrainIOReal(MODULE_POSITIONS.zip(MODULE_CAN_IDS_COMP).map { (position, ids) ->
@@ -235,9 +241,9 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        translationInput.x * FREE_SPEED.baseUnitMagnitude() * 1.0 / 1.5,
-                        translationInput.y * FREE_SPEED.baseUnitMagnitude() * 1.0 / 1.5,
-                        -rotationJoystick.x * TAU * 1.25 / 1.25,
+                        translationInput.x * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
+                        translationInput.y * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
+                        -rotationJoystick.x * TAU * ROTATION_SENSITIVITY,
                         gyroRotation.toRotation2d()
                     )
             } else {
