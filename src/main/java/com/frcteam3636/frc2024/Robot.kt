@@ -232,6 +232,7 @@ object Robot : LoggedRobot() {
             Drivetrain.zeroGyro()
         }))
 
+        // FIXME: Remove when pivot is working properly
         controller.button(7).onTrue(Shooter.Pivot.zeroShooter())
 
 //        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
@@ -248,6 +249,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
+        // FIXME: Remove when pivot is working properly
         Shooter.Pivot.zeroShooter()
         autoCommand = autoChooser.selected
         autoCommand?.schedule()

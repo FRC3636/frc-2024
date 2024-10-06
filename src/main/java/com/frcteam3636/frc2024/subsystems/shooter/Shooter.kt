@@ -350,6 +350,7 @@ object Shooter {
             )
         }
 
+        // FIXME: Remove when pivot is working properly
         fun zeroShooter(): Command = runOnce {
             println("Zeroing pivot. New offset is: " + -inputs.uncorrectedEncoderPosition.degrees)
             println("Good luck :3")
