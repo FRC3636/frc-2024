@@ -274,7 +274,6 @@ object Shooter {
 
         fun followMotionProfile(targetOverride: Target?): Command =
             run {
-                println("Running motion profile")
                 val target = targetOverride ?: this.target
                 val position = target.profile.position()
                 val velocity = target.profile.velocity()

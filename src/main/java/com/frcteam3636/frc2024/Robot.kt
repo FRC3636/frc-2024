@@ -102,6 +102,18 @@ object Robot : LoggedRobot() {
                 Shooter.Flywheels.rev(580.0, 0.0)
             )
         )
+        NamedCommands.registerCommand(
+            "revAimSpeaker",
+            Commands.parallel(
+                Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.SPEAKER),
+                Shooter.Flywheels.rev(580.0, 0.0)
+            )
+        )
+        NamedCommands.registerCommand("stow",
+            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+        )
+
+
         NamedCommands.registerCommand("stowIntakeRevAim",
             Commands.sequence(
                 Commands.parallel(
@@ -117,7 +129,10 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand(
             "shootWhenReady",
             Commands.sequence(
-                Commands.waitUntil(Shooter.Pivot.isReadyToShoot.and(Shooter.Flywheels.atDesiredVelocity)),
+                Commands.parallel(
+                    Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity).withTimeout(3.0),
+                    Commands.waitUntil(Shooter.Pivot.isReadyToShoot).withTimeout(3.0),
+                ),
                 Shooter.Feeder.feed().withTimeout(0.7)
             ))
 
@@ -231,7 +246,7 @@ object Robot : LoggedRobot() {
         JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({
             println("Zeroing gyro.")
             Drivetrain.zeroGyro()
-        }))
+        }).ignoringDisable(true))
 
 //        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
 

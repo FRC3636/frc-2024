@@ -18,7 +18,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "revAim"
+                  "name": "revAimSpeaker"
                 }
               },
               {
@@ -28,6 +28,12 @@
                 }
               }
             ]
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "stow"
           }
         }
       ]
