@@ -110,7 +110,7 @@ object Robot : LoggedRobot() {
             )
         )
         NamedCommands.registerCommand("stow",
-            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED)
+            Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED).until(Shooter.Pivot.isStowed)
         )
 
 
@@ -125,6 +125,13 @@ object Robot : LoggedRobot() {
                     Shooter.Flywheels.rev(590.0, 0.0)
                 )
             ))
+
+        NamedCommands.registerCommand("ensureNoteSecure",
+            Commands.parallel(
+                Shooter.Feeder.intake(),
+                Shooter.Flywheels.intake(),
+            ).withTimeout(2.0)
+        )
 
         NamedCommands.registerCommand(
             "shootWhenReady",
