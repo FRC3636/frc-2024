@@ -235,9 +235,9 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        translationInput.x * FREE_SPEED.baseUnitMagnitude(),
-                        translationInput.y * FREE_SPEED.baseUnitMagnitude(),
-                        -rotationJoystick.x * TAU * 1.25,
+                        translationInput.x * FREE_SPEED.baseUnitMagnitude() * 1.0 / 1.5,
+                        translationInput.y * FREE_SPEED.baseUnitMagnitude() * 1.0 / 1.5,
+                        -rotationJoystick.x * TAU * 1.25 / 1.25,
                         gyroRotation.toRotation2d()
                     )
             } else {
