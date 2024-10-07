@@ -199,6 +199,8 @@ object Shooter {
             val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians)
 //            io.offset = Rotation2d(currentZero)
 
+            Logger.recordOutput("Shooter/Pivot/Offset Constant", PivotIOKraken.ABSOLUTE_ENCODER_OFFSET)
+
             io.updateInputs(inputs)
             Logger.processInputs("Shooter/Pivot", inputs)
 
