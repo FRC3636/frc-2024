@@ -15,7 +15,6 @@ import edu.wpi.first.math.util.Units
 import edu.wpi.first.networktables.NetworkTableInstance
 import edu.wpi.first.util.struct.Struct
 import edu.wpi.first.util.struct.StructSerializable
-import edu.wpi.first.wpilibj.Timer
 import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
@@ -51,22 +50,17 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
         .getTable(name)
     private val stddev = VecBuilder.fill(.7, .7, 9999999.0)
 
-    private val botPose = table.getDoubleArrayTopic("botpose_wpiblue").subscribe(null)
+    private val botPose = table.getDoubleArrayTopic("botpose_orb_wpiblue").subscribe(null)
     private val cl = table.getDoubleTopic("cl").subscribe(0.0)
     private val tl = table.getDoubleTopic("tl").subscribe(0.0)
-    private val disconnectTimeout = Timer().apply {
-        start()
-    }
 
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
-//        val entries = DoubleArray(6)
-//        entries[0] = Drivetrain.estimatedPose.rotation.degrees
-//        entries[1] = 0.0
-//        entries[2] = 0.0
-//        entries[3] = 0.0
-//        entries[4] = 0.0
-//        entries[5] = 0.0
-//        table.getEntry("robot_orientation_set").setDoubleArray(entries)
+        val entries = DoubleArray(6)
+        for (i in entries.indices) {
+            entries[i] = 0.0
+        }
+        entries[0] = Drivetrain.estimatedPose.rotation.degrees
+        table.getEntry("robot_orientation_set").setDoubleArray(entries)
         inputs.measurement = botPose.readQueue().lastOrNull()?.let { update ->
             val x = update.value[0]
             val y = update.value[1]
@@ -75,8 +69,6 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
             val pitch = Units.degreesToRadians(update.value[4])
             val yaw = Units.degreesToRadians(update.value[5])
             val tagCount = update.value[7]
-
-            disconnectTimeout.restart()
 
             if (tagCount == 0.0 || Drivetrain.gyroRate > 720) {
                 return
@@ -95,8 +87,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
         }
     }
 
-    override val cameraConnected
-        get() = disconnectTimeout.hasElapsed(1.0)
+    override val cameraConnected = true // we determine this value in a ping thread
 }
 
 @Suppress("unused")
