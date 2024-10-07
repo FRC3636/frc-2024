@@ -98,7 +98,7 @@ object Robot : LoggedRobot() {
         NamedCommands.registerCommand(
             "revAim",
             Commands.parallel(
-                Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
+                Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.PODIUM),
                 Shooter.Flywheels.rev(580.0, 0.0)
             )
         )
@@ -203,7 +203,6 @@ object Robot : LoggedRobot() {
         // Pivot velocity control
         controller.button(8)
             .whileTrue(Shooter.Pivot.runAtVelocity { Units.DegreesPerSecond.of(controller.leftY * 30) })
-            .onFalse(Shooter.Pivot.holdCurrentPosition())
 
         // Intake
         controller.rightBumper()
@@ -255,6 +254,8 @@ object Robot : LoggedRobot() {
             Drivetrain.zeroGyro()
         }).ignoringDisable(true))
 
+        controller.button(7).onTrue(Shooter.Pivot.zeroShooter())
+
 //        JoystickButton(joystickLeft, 9).debounce(0.15).whileTrue(Shooter.Pivot.pivotAndStop(Rotation2d(-25.5)))
 
         // Switch pivot brake mode on and off while disabled.
@@ -269,6 +270,7 @@ object Robot : LoggedRobot() {
     }
 
     override fun autonomousInit() {
+        Shooter.Pivot.zeroShooter()
         autoCommand = autoChooser.selected
         autoCommand?.schedule()
     }
