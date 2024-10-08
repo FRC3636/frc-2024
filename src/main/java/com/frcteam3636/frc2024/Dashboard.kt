@@ -26,6 +26,7 @@ object Dashboard {
                     }
                 }
                 limelightsConnected = allConnected
+                Thread.sleep(2000)
             }
         }
 

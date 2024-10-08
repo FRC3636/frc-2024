@@ -236,7 +236,7 @@ object Robot : LoggedRobot() {
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
                         Shooter.Feeder.feed().withTimeout(0.4).beforeStarting({
-                            if (Note.state == Note.State.SHOOTER) {
+                            if (Note.state == Note.State.SHOOTER || Note.state == Note.State.HANDOFF) {
                                 Note.state = Note.State.NONE
                             }
                         }),

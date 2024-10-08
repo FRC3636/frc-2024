@@ -55,10 +55,7 @@ class LimelightPoseIOReal(name: String) : AbsolutePoseIO {
     private val tl = table.getDoubleTopic("tl").subscribe(0.0)
 
     override fun updateInputs(inputs: AbsolutePoseIO.Inputs) {
-        val entries = DoubleArray(6)
-        for (i in entries.indices) {
-            entries[i] = 0.0
-        }
+        val entries = DoubleArray(6) { 0.0 }
         entries[0] = Drivetrain.estimatedPose.rotation.degrees
         table.getEntry("robot_orientation_set").setDoubleArray(entries)
         inputs.measurement = botPose.readQueue().lastOrNull()?.let { update ->
