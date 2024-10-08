@@ -302,7 +302,7 @@ object Robot : LoggedRobot() {
     }
 }
 
-private fun doIntakeSequence(handeoffTimeout: Double?): Command =
+private fun doIntakeSequence(handoffTimeout: Double?): Command =
     Commands.sequence(
         Intake.intake(),
         Commands.runOnce({ Note.state = Note.State.HANDOFF }),
@@ -324,8 +324,8 @@ private fun doIntakeSequence(handeoffTimeout: Double?): Command =
                 Commands.waitUntil(Trigger { !Shooter.Flywheels.aboveIntakeThreshold }),
                 Commands.runOnce({ Note.state = Note.State.SHOOTER })
             ).let {
-                if (handeoffTimeout != null) {
-                    return it.withTimeout(handeoffTimeout)
+                if (handoffTimeout != null) {
+                    return it.withTimeout(handoffTimeout)
                 } else {
                     return it
                 }
