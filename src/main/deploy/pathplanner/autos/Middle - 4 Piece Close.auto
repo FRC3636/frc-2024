@@ -12,6 +12,12 @@
     "data": {
       "commands": [
         {
+          "type": "named",
+          "data": {
+            "name": "ensureNoteSecure"
+          }
+        },
+        {
           "type": "deadline",
           "data": {
             "commands": [
@@ -24,7 +30,7 @@
               {
                 "type": "named",
                 "data": {
-                  "name": "revAim"
+                  "name": "revAimSpeaker"
                 }
               }
             ]

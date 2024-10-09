@@ -164,7 +164,7 @@ class PivotIOKraken : PivotIO {
 
 
         inputs.uncorrectedEncoderPosition = this.rawAbsoluteEncoderPosition
-        inputs.absoluteEncoderPosition = Rotation2d(inputs.uncorrectedEncoderPosition.radians + zeroOffset.radians)
+        inputs.absoluteEncoderPosition = inputs.uncorrectedEncoderPosition + ABSOLUTE_ENCODER_OFFSET
 
         inputs.leftPosition = Rotation2d.fromRotations(leftMotor.position.value)
         inputs.leftVelocity = Rotation2d.fromRotations(leftMotor.velocity.value)
@@ -259,12 +259,12 @@ class PivotIOKraken : PivotIO {
         val FF_GAINS = MotorFFGains(2.5, 0.0, 0.0)
         const val GRAVITY_GAIN = 11.5
 
-        const val PROFILE_VELOCITY = 70.0
-        const val PROFILE_ACCELERATION = 50.0
+        const val PROFILE_VELOCITY = 35.0
+        const val PROFILE_ACCELERATION = 35.0
         const val PROFILE_JERK = 80.0
 
         val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(202.2) + HARDSTOP_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(219.5) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
