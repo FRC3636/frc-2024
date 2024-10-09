@@ -323,13 +323,14 @@ private fun doIntakeSequence(handoffTimeout: Double?): Command =
                 //note stowed
                 Commands.waitUntil(Trigger { !Shooter.Flywheels.aboveIntakeThreshold }),
                 Commands.runOnce({ Note.state = Note.State.SHOOTER })
-            ).let {
-                if (handoffTimeout != null) {
-                    return it.withTimeout(handoffTimeout)
-                } else {
-                    return it
-                }
-            }
+            )
+//            .let {
+//                if (handoffTimeout != null) {
+//                    return it.withTimeout(handoffTimeout)
+//                } else {
+//                    return it
+//                }
+//            }
         )
     )
 
