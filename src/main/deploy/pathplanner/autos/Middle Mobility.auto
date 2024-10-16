@@ -1,0 +1,25 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.302428960800171,
+      "y": 5.578441619873047
+    },
+    "rotation": 0.0
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Middle 1-Piece, Mobility"
+          }
+        }
+      ]
+    }
+  },
+  "folder": "Amp Side",
+  "choreoAuto": true
+}

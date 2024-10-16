@@ -2,10 +2,10 @@
   "version": 1.0,
   "startingPose": {
     "position": {
-      "x": 1.3535296301361848,
-      "y": 5.525487974052871
+      "x": 1.302428960800171,
+      "y": 5.578441619873047
     },
-    "rotation": 0
+    "rotation": 0.0
   },
   "command": {
     "type": "sequential",
@@ -40,6 +40,12 @@
           "type": "named",
           "data": {
             "name": "stow"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Middle 1-Piece, Mobility"
           }
         }
       ]
