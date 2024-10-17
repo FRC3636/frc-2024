@@ -264,7 +264,7 @@ class PivotIOKraken : PivotIO {
         const val PROFILE_JERK = 80.0
 
         val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(219.5) + HARDSTOP_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(229.5) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)
