@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -171,17 +172,17 @@ object Robot : LoggedRobot() {
 
 
         // Polar driving
-//        Trigger(joystickLeft::getTrigger)
-//            .whileTrue(
-//                Commands.defer({
-//                    Drivetrain.driveWithJoystickPointingTowards(
-//                        joystickLeft,
-//                        DriverStation.getAlliance()
-//                            .orElse(DriverStation.Alliance.Blue)
-//                            .speakerTranslation.toTranslation2d()
-//                    )
-//                }, setOf(Drivetrain))
-//            )
+        Trigger(joystickLeft::getTrigger)
+            .whileTrue(
+                Commands.defer({
+                    Drivetrain.driveWithJoystickPointingTowards(
+                        joystickLeft,
+                        DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Blue)
+                            .speakerTranslation.toTranslation2d()
+                    )
+                }, setOf(Drivetrain))
+            )
 
         // Follow a motion profile to the selected pivot target
         controller.leftTrigger()
@@ -244,10 +245,10 @@ object Robot : LoggedRobot() {
                     )
                 )
             )
-        Trigger(joystickLeft::getTrigger)
-            .whileTrue(
-                Shooter.Flywheels.intake()
-            )
+//        Trigger(joystickLeft::getTrigger)
+//            .whileTrue(
+//                Shooter.Flywheels.intake()
+//            )
 
         JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({
             println("Zeroing gyro.")

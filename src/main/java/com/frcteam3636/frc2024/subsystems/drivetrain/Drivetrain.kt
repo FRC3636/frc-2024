@@ -38,6 +38,7 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
+import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -280,16 +281,23 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             enableContinuousInput(0.0, TAU)
         }
         return run {
+            val translationInput = if (abs(translationJoystick.x) > JOYSTICK_DEADBAND
+                || abs(translationJoystick.y) > JOYSTICK_DEADBAND
+            ) {
+                Translation2d(-translationJoystick.y, -translationJoystick.x)
+            } else {
+                Translation2d()
+            }
             val magnitude = rotationPIDController.calculate(
                 target.minus(estimatedPose.translation).angle.radians - (TAU/2),
                 estimatedPose.rotation.radians
             )
 
             chassisSpeeds = ChassisSpeeds.fromFieldRelativeSpeeds(
-                translationJoystick.y * FREE_SPEED.baseUnitMagnitude(),
-                translationJoystick.x * FREE_SPEED.baseUnitMagnitude(),
-                magnitude,
-                gyroRotation.toRotation2d(),
+                translationInput.x * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
+                translationInput.y * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
+                -magnitude,
+                gyroRotation.toRotation2d()
             )
         }
     }
@@ -297,7 +305,11 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     fun zeroGyro() {
         // When zeroing the gyro happens, the robot is facing the speaker-side.
         // This is a different direction on the red vs. blue sides.
-        gyroRotation = Rotation3d()
+        gyroRotation = if (DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red)) {
+            Rotation3d(0.0, 0.0, PI)
+        } else {
+            Rotation3d()
+        }
     }
 
     @Suppress("unused")
