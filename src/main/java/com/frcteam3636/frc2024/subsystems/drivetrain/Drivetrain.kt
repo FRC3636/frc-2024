@@ -38,7 +38,6 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
-import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -246,7 +245,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
                 || abs(rotationJoystick.x) > JOYSTICK_DEADBAND
             ) {
                 val translationInput =
-                    Translation2d(-translationJoystick.y, -translationJoystick.x).rotateBy(DRIVER_ROTATION)
+                    Translation2d(-translationJoystick.y, -translationJoystick.x)
 
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
@@ -298,11 +297,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     fun zeroGyro() {
         // When zeroing the gyro happens, the robot is facing the speaker-side.
         // This is a different direction on the red vs. blue sides.
-        gyroRotation = if (DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red)) {
-            Rotation3d(0.0, 0.0, PI)
-        } else {
-            Rotation3d()
-        }
+        gyroRotation = Rotation3d()
     }
 
     @Suppress("unused")
