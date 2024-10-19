@@ -46,7 +46,7 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     /** Unit: Percent of max robot speed */
     private const val TRANSLATION_SENSITIVITY = 1.0
     /** Unit: Rotations per second */
-    private const val ROTATION_SENSITIVITY = 0.9
+    private const val ROTATION_SENSITIVITY = 1.25
 
     private val io = when (Robot.model) {
         Robot.Model.SIMULATION -> DrivetrainIOSim()
