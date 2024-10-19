@@ -4,10 +4,32 @@ import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
 import edu.wpi.first.wpilibj.RobotController
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard
+import java.net.InetAddress
 import kotlin.concurrent.thread
 
 object Dashboard {
+    private val limelightAddrs = ArrayList<String>()
+    private var limelightsConnected = true
+
     init {
+        limelightAddrs.add("10.36.36.11") // TODO: Think of a better way to do this
+
+        thread(isDaemon = true) {
+            while (true) {
+                var allConnected = true // Prevent the value from flickering
+                for (addr in limelightAddrs) {
+                    try {
+                        InetAddress.getByName(addr).isReachable(1000)
+                    } catch (err: Exception) {
+                        allConnected = false
+                        break
+                    }
+                }
+                limelightsConnected = allConnected
+                Thread.sleep(2000)
+            }
+        }
+
         thread(isDaemon = true) {
             val canDiagnostics = TalonFXDiagnosticCollector(Drivetrain, Shooter.Pivot)
             while (true) {
@@ -26,6 +48,6 @@ object Dashboard {
     fun update() {
         SmartDashboard.putBoolean("Battery Full", RobotController.getBatteryVoltage() >= 12.3)
         SmartDashboard.putBoolean("NavX OK", Drivetrain.gyroConnected)
-        SmartDashboard.putBoolean("All Cameras OK", Drivetrain.allCamerasConnected)
+        SmartDashboard.putBoolean("All Cameras OK", limelightsConnected && Drivetrain.allCamerasConnected)
     }
 }

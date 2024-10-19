@@ -118,7 +118,7 @@ object Robot : LoggedRobot() {
             Commands.sequence(
                 Commands.parallel(
                     Shooter.Pivot.pivotAndStop(Shooter.Pivot.Target.STOWED.profile.position()),
-                    doIntakeSequence()
+                    doIntakeSequence(5.0)
                 ),
                 Commands.parallel(
                     Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.AIM),
@@ -208,7 +208,7 @@ object Robot : LoggedRobot() {
         controller.rightBumper()
             .debounce(0.150)
             .whileTrue(
-                doIntakeSequence()
+                doIntakeSequence(null)
             )
 
         // Outtake
@@ -236,7 +236,7 @@ object Robot : LoggedRobot() {
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
                         Shooter.Feeder.feed().withTimeout(0.4).beforeStarting({
-                            if (Note.state == Note.State.SHOOTER) {
+                            if (Note.state == Note.State.SHOOTER || Note.state == Note.State.HANDOFF) {
                                 Note.state = Note.State.NONE
                             }
                         }),
@@ -304,7 +304,7 @@ object Robot : LoggedRobot() {
     }
 }
 
-private fun doIntakeSequence(): Command =
+private fun doIntakeSequence(handoffTimeout: Double?): Command =
     Commands.sequence(
         Intake.intake(),
         Commands.runOnce({ Note.state = Note.State.HANDOFF }),
@@ -326,8 +326,16 @@ private fun doIntakeSequence(): Command =
                 Commands.waitUntil(Trigger { !Shooter.Flywheels.aboveIntakeThreshold }),
                 Commands.runOnce({ Note.state = Note.State.SHOOTER })
             )
+//            .let {
+//                if (handoffTimeout != null) {
+//                    return it.withTimeout(handoffTimeout)
+//                } else {
+//                    return it
+//                }
+//            }
         )
     )
+
 
 object Note {
     enum class State(val index: Long) {
