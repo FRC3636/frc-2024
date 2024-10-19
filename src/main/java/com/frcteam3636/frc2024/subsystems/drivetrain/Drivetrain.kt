@@ -38,6 +38,7 @@ import org.littletonrobotics.junction.LogTable
 import org.littletonrobotics.junction.Logger
 import org.littletonrobotics.junction.inputs.LoggableInputs
 import java.util.*
+import kotlin.math.PI
 import kotlin.math.abs
 
 // A singleton object representing the drivetrain.
@@ -124,8 +125,8 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             inputs.gyroRotation.toRotation2d(), // initial gyro rotation
             inputs.measuredPositions.toTypedArray(), // initial module positions
             Pose2d(), // initial pose
-            WHEEL_ODOMETRY_STD_DEV,
-            VecBuilder.fill(0.7, 0.7, 999999.0) //will be overwritten be each added vision measurement
+            VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5.0)),
+            VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(10.0))
         )
 
     val gyroConnected
@@ -163,12 +164,13 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             val (io, inputs) = ioPair
 
             io.updateInputs(inputs)
-            Logger.processInputs("Absolute Pose/$name", inputs)
-            Logger.recordOutput("Absolute Pose/$name/Is Null", inputs.measurement == null)
+            Logger.processInputs("Drivetrain/Absolute Pose/$name", inputs)
+            Logger.recordOutput("Drivetrain/Absolute Pose/$name/Is Null", inputs.measurement == null)
 
             inputs.measurement?.let {
                 poseEstimator.addAbsolutePoseMeasurement(it)
                 Logger.recordOutput("Drivetrain/Last Added Pose", it.pose)
+                Logger.recordOutput("Drivetrain/Absolute Pose/$name/Pose", it.pose)
             }
         }
 
@@ -221,9 +223,16 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
             moduleStates = states
         }
 
-    // Get the estimated pose of the drivetrain using the pose estimator.
+    // Get the estimated pose of the drivetrain using the pose estimator, with the gyro's rotation.
     var estimatedPose: Pose2d
-        get() = poseEstimator.estimatedPosition
+        get() {
+            val estimated = poseEstimator.estimatedPosition
+            return Pose2d(
+                estimated.x,
+                estimated.y,
+                gyroRotation.toRotation2d(),
+            )
+        }
         set(value) = poseEstimator.resetPosition(
             gyroRotation.toRotation2d(),
             inputs.measuredPositions.toTypedArray(),
@@ -241,8 +250,8 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
 
                 chassisSpeeds =
                     ChassisSpeeds.fromFieldRelativeSpeeds(
-                        -translationInput.x * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
-                        -translationInput.y * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
+                        translationInput.x * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
+                        translationInput.y * FREE_SPEED.baseUnitMagnitude() * TRANSLATION_SENSITIVITY,
                         -rotationJoystick.x * TAU * ROTATION_SENSITIVITY,
                         gyroRotation.toRotation2d()
                     )
@@ -287,7 +296,13 @@ object Drivetrain : Subsystem, TalonFXStatusProvider {
     }
 
     fun zeroGyro() {
-        gyroRotation = Rotation3d()
+        // When zeroing the gyro happens, the robot is facing the speaker-side.
+        // This is a different direction on the red vs. blue sides.
+        gyroRotation = if (DriverStation.getAlliance() == Optional.of(DriverStation.Alliance.Red)) {
+            Rotation3d(0.0, 0.0, PI)
+        } else {
+            Rotation3d()
+        }
     }
 
     @Suppress("unused")
@@ -421,7 +436,6 @@ internal val MODULE_POSITIONS = when (Robot.model) {
 // Chassis Control
 internal val FREE_SPEED = MetersPerSecond.of(8.132)
 internal val ROTATION_SPEED = RadiansPerSecond.of(14.604)
-internal val WHEEL_ODOMETRY_STD_DEV = VecBuilder.fill(0.2, 0.2, 0.005)
 
 internal val TRANSLATION_PID_GAINS = PIDGains(0.5, 0.0, 1.0)
 internal val ROTATION_PID_GAINS = PIDGains(3.0, 0.0, 0.4)

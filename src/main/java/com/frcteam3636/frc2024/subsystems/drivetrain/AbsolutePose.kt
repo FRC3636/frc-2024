@@ -138,7 +138,7 @@ fun SwerveDrivePoseEstimator.addAbsolutePoseMeasurement(measurement: AbsolutePos
     addVisionMeasurement(
         measurement.pose.toPose2d(),
         measurement.timestamp,
-        measurement.stdDeviation
+//        measurement.stdDeviation // seems to fire the bot into orbit
     )
 }
 
