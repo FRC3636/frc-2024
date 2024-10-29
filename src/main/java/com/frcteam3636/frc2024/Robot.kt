@@ -3,6 +3,7 @@ package com.frcteam3636.frc2024
 import com.frcteam3636.frc2024.subsystems.drivetrain.Drivetrain
 import com.frcteam3636.frc2024.subsystems.intake.Intake
 import com.frcteam3636.frc2024.subsystems.shooter.Shooter
+import com.frcteam3636.frc2024.subsystems.shooter.speakerTranslation
 import com.pathplanner.lib.auto.AutoBuilder
 import com.pathplanner.lib.auto.NamedCommands
 import edu.wpi.first.hal.FRCNetComm.tInstances
@@ -56,6 +57,8 @@ object Robot : LoggedRobot() {
             tResourceType.kResourceType_Language, tInstances.kLanguage_Kotlin, 0, WPILibVersion.Version
         )
 
+        DriverStation.silenceJoystickConnectionWarning(true)
+
         if (isReal()) {
             Logger.addDataReceiver(WPILOGWriter("/U")) // Log to a USB stick
             Logger.addDataReceiver(NT4Publisher()) // Publish data to NetworkTables
@@ -63,7 +66,6 @@ object Robot : LoggedRobot() {
                 1, PowerDistribution.ModuleType.kRev
             ) // Enables power distribution logging
         } else {
-            DriverStation.silenceJoystickConnectionWarning(true)
             var logPath: String? = null
             try {
                 logPath = LogFileUtil.findReplayLog() // Pull the replay log from AdvantageScope (or
@@ -171,17 +173,17 @@ object Robot : LoggedRobot() {
 
 
         // Polar driving
-//        Trigger(joystickLeft::getTrigger)
-//            .whileTrue(
-//                Commands.defer({
-//                    Drivetrain.driveWithJoystickPointingTowards(
-//                        joystickLeft,
-//                        DriverStation.getAlliance()
-//                            .orElse(DriverStation.Alliance.Blue)
-//                            .speakerTranslation.toTranslation2d()
-//                    )
-//                }, setOf(Drivetrain))
-//            )
+        Trigger(joystickLeft::getTrigger)
+            .whileTrue(
+                Commands.defer({
+                    Drivetrain.driveWithJoystickPointingTowards(
+                        joystickLeft,
+                        DriverStation.getAlliance()
+                            .orElse(DriverStation.Alliance.Blue)
+                            .speakerTranslation.toTranslation2d()
+                    )
+                }, setOf(Drivetrain))
+            )
 
         // Follow a motion profile to the selected pivot target
         controller.leftTrigger()
@@ -236,18 +238,16 @@ object Robot : LoggedRobot() {
                     Commands.sequence(
                         Commands.waitUntil(Shooter.Flywheels.atDesiredVelocity),
                         Shooter.Feeder.feed().withTimeout(0.4).beforeStarting({
-                            if (Note.state == Note.State.SHOOTER) {
-                                Note.state = Note.State.NONE
-                            }
+                            Note.state = Note.State.NONE
                         }),
                         Shooter.Pivot.followMotionProfile(Shooter.Pivot.Target.STOWED),
                     )
                 )
             )
-        Trigger(joystickLeft::getTrigger)
-            .whileTrue(
-                Shooter.Flywheels.intake()
-            )
+//        Trigger(joystickLeft::getTrigger)
+//            .whileTrue(
+//                Shooter.Flywheels.intake()
+//            )
 
         JoystickButton(joystickLeft, 8).onTrue(Commands.runOnce({
             println("Zeroing gyro.")

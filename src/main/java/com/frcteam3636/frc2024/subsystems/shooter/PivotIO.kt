@@ -3,7 +3,6 @@ package com.frcteam3636.frc2024.subsystems.shooter
 import com.ctre.phoenix6.StatusSignal
 import com.ctre.phoenix6.configs.TalonFXConfiguration
 import com.ctre.phoenix6.controls.MotionMagicTorqueCurrentFOC
-import com.ctre.phoenix6.controls.PositionTorqueCurrentFOC
 import com.ctre.phoenix6.controls.VelocityTorqueCurrentFOC
 import com.ctre.phoenix6.controls.VoltageOut
 import com.ctre.phoenix6.signals.GravityTypeValue
@@ -200,7 +199,7 @@ class PivotIOKraken : PivotIO {
     override fun pivotToAndMove(position: Rotation2d, velocity: Rotation2d) {
         Logger.recordOutput("Shooter/Pivot/Position Setpoint", position)
 
-        val leftControl = PositionTorqueCurrentFOC(0.0).apply {
+        val leftControl = MotionMagicTorqueCurrentFOC(0.0).apply {
             Slot = 0
             Position = position.rotations
         }
@@ -264,7 +263,7 @@ class PivotIOKraken : PivotIO {
         const val PROFILE_JERK = 80.0
 
         val HARDSTOP_OFFSET: Rotation2d = Rotation2d.fromDegrees(-27.0)
-        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(229.5) + HARDSTOP_OFFSET
+        val ABSOLUTE_ENCODER_OFFSET: Rotation2d = Rotation2d.fromDegrees(343.3) + HARDSTOP_OFFSET
     }
 
     override val talonCANStatuses = listOf(leftMotor.version, rightMotor.version)

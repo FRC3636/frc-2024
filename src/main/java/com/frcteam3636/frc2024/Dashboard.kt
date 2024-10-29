@@ -18,6 +18,7 @@ object Dashboard {
                 SmartDashboard.putBoolean("CANivore Bus OK", (talonCanStatus.isOK))
                 SmartDashboard.putString("CANivore Bus Status", talonCanStatus.getName())
                 SmartDashboard.putBoolean("Pivot Encoder OK", Shooter.Pivot.encoderConnected)
+                SmartDashboard.putBoolean("Pivot Stowed", Shooter.Pivot.isStowed.asBoolean)
                 Thread.sleep(250)
             }
         }
