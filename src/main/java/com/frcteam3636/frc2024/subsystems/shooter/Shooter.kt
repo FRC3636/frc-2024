@@ -188,6 +188,8 @@ object Shooter {
 
         var target: Target = Target.AIM
 
+        var numTicks: Int = 0
+
 
         private val processedAbsoluteEncoderPosition
             get() =
@@ -196,7 +198,9 @@ object Shooter {
         val encoderConnected get() = inputs.absoluteEncoderConnected
 
         override fun periodic() {
-            val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians)
+            numTicks++
+//            println(numTicks)
+//            val currentZero = zeroPos.getDouble(PivotIOKraken.ABSOLUTE_ENCODER_OFFSET.radians)
 //            io.offset = Rotation2d(currentZero)
 
             Logger.recordOutput("Shooter/Pivot/Offset Constant", PivotIOKraken.ABSOLUTE_ENCODER_OFFSET)
@@ -205,7 +209,10 @@ object Shooter {
             Logger.processInputs("Shooter/Pivot", inputs)
 
             val encoderPos = processedAbsoluteEncoderPosition
-            io.setPivotPosition(encoderPos)
+            if (numTicks == 20) {
+                io.setPivotPosition(encoderPos)
+                numTicks = 0
+            }
             Logger.recordOutput("Shooter/Pivot/Processed Encoder Position", encoderPos)
             Logger.recordOutput("Shooter/Pivot/Required Offset", -inputs.uncorrectedEncoderPosition)
 
