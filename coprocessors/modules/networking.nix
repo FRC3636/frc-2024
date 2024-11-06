@@ -20,6 +20,8 @@ in
 
   config = {
     networking = {
+      firewall.enable = false;
+
       nameservers = [ "1.1.1.1" "1.0.0.1" ];
 
       interfaces."${robotNetworkConfig.interface}" = {
